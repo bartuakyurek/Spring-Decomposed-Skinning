@@ -141,3 +141,6 @@ DFaust_67/50002/50002_jiggle_on_toes_poses.npz
 DFaust_67/50002/50002_hips_poses.npz
 DFaust_67/50002/50002_chicken_wings_poses.npz
 DFaust_67/.DS_Store
+*.h5
+*.npz
+*.pt

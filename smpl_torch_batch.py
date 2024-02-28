@@ -204,10 +204,11 @@ class SMPLModel(Module):
     v = torch.reshape(v, (batch_num, -1, 4))[:, :, :3]
     result = v + torch.reshape(trans, (batch_num, 1, 3))
     # estimate 3D joint locations
-    # print(result.shape)
-    # print(self.joint_regressor.shape)
-    # joints = torch.tensordot(result, self.joint_regressor, dims=([1], [0])).transpose(1, 2)
-    return result
+    #print(result.shape)
+    #print(self.joint_regressor.shape)
+    joints = torch.tensordot(result, self.joint_regressor, dims=([1], [1])).transpose(1, 2)
+    
+    return result, joints
 
 
 def test_gpu(gpu_id=[0]):
