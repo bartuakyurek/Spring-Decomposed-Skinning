@@ -14,8 +14,27 @@ import pyvista as pv
 import matplotlib.pyplot as plt
 
 # Visualizes a .obj file with corresponding skeleton
+# TODO: implement another function that takes SMPL result directly (not .obj file) adds the mesh to the plot
+# TODO: implement a function that adds skeleton to the plot 
+# TODO modify the function below to use two of the functions above
+# TODO: implement an animating function with the modified function described above
 def plot_obj_w_skeleton(result_path, nodes, edges):
+    """
+    
+    Parameters
+    ----------
+    result_path : str
+        path of the .obj file
+    nodes : array
+        3D joint locations of the skeleton
+    edges : 2D array
+        kinematic tree of the skeleton
 
+    Returns
+    -------
+    None.
+    
+    """
     reader = pv.get_reader(result_path)
     mesh = reader.read()
     
@@ -43,10 +62,20 @@ def plot_obj_w_skeleton(result_path, nodes, edges):
 
 def matplot_skeleton(joint_locations, kintree):
     """
-        joints: array object including joint locations of a skeleton
-        kintree: 2D array object of kinematic tree of skeleton, 
-                    every instance has the joint indices of a bone's 
-                    beginning joint and ending joint
+
+    Parameters
+    ----------
+    joint_locations : array
+        Array object including joint locations of a skeleton.
+    kintree : 2D array
+        2D array object of kinematic tree of skeleton, 
+        every instance has the joint indices of a bone's 
+        beginning joint and ending joint.
+
+    Returns
+    -------
+    None.
+ 
     """
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
