@@ -13,12 +13,11 @@ import numpy as np
 import pyvista as pv
 import matplotlib.pyplot as plt
 
-
-def visualize_pv(result_path, nodes, edges):
+# Visualizes a .obj file with corresponding skeleton
+def plot_obj_w_skeleton(result_path, nodes, edges):
 
     reader = pv.get_reader(result_path)
     mesh = reader.read()
-    #mesh.plot(cpos='yz', show_scalar_bar=False)
     
     pl = pv.Plotter()
     pl.add_mesh(mesh, opacity=0.6)
@@ -38,6 +37,7 @@ def visualize_pv(result_path, nodes, edges):
                 cmap='jet',
                 show_scalar_bar=False)
     
+    pl.view_xy()
     pl.show()
     
 

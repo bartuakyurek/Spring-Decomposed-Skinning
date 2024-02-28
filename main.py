@@ -51,7 +51,7 @@ for data in data_loader:
    #smpl_model.write_obj(smpl_verts[SELECTED_FRAME], './smpl_result.obj')
    #smpl_model.write_obj(target_verts[SELECTED_FRAME], './target.obj')
     
-   visualize_pv("./results/smpl_result.obj", joint_locations, kintree)
+   plot_obj_w_skeleton("./results/smpl_result.obj", joint_locations, kintree)
    
    # criterion = nn.MSELoss()
    # smpl_loss = criterion(smpl_verts+trans, target_verts)
