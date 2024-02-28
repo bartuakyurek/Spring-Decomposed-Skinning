@@ -18,7 +18,7 @@ import torch
 
 from smpl_torch_batch import SMPLModel
 from skeleton_data import get_smpl_skeleton
-
+from plots import matplot_skeleton
 
 # TODO: use './data/female_bpts2dbs.pt' 
 # TODO: turn shuffle on for training dataset
@@ -40,12 +40,17 @@ for data in data_loader:
    trans = beta_pose_trans_seq[:,82:]
 
    target_verts = data[1].squeeze()
-
    smpl_result, joints = smpl_model(betas, pose, trans)
    
    # Write one frame of the resulting .objs
-   #smpl_model.write_obj(smpl_result[150], './smpl_result.obj')
-   #smpl_model.write_obj(target_verts[150], './target.obj')
+   SELECTED_FRAME = 150
+   #smpl_model.write_obj(smpl_result[SELECTED_FRAME], './smpl_result.obj')
+   #smpl_model.write_obj(target_verts[SELECTED_FRAME], './target.obj')
+   
+   skeleton_joints = joints[SELECTED_FRAME].numpy()
+   kintree = get_smpl_skeleton()
+   
+   matplot_skeleton(skeleton_joints, kintree)
    break
     
    #outmesh_path = './smpl_torch_{}.obj'
@@ -53,3 +58,5 @@ for data in data_loader:
     
     # criterion = nn.MSELoss()
     # smpl_loss = criterion(smpl_vert+translation, verts)
+
+
