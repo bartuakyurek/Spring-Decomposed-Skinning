@@ -1,3 +1,12 @@
+"""
+    Very fast implementation of SMPL model in PyTorch.
+    Note: this is not the original implementation.
+    
+    DISCLAIMER: This code is borrowed from 
+    https://github.com/CalciferZh/SMPL/blob/master/smpl_torch_batch.py
+
+"""
+
 import numpy as np
 import pickle
 import torch
@@ -6,7 +15,7 @@ import os
 from time import time
 
 class SMPLModel(Module):
-  def __init__(self, device="cpu", model_path='./body_models/smpl/female/model.pkl'):
+  def __init__(self, device, model_path):
     
     super(SMPLModel, self).__init__()
     with open(model_path, 'rb') as f:
