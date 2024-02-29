@@ -13,39 +13,33 @@ import numpy as np
 import pyvista as pv
 import matplotlib.pyplot as plt
 
-# Visualizes a .obj file with corresponding skeleton
-# TODO: implement another function that takes SMPL result directly (not .obj file) adds the mesh to the plot
-# TODO: implement a function that adds skeleton to the plot 
-# TODO modify the function below to use two of the functions above
-# TODO: implement an animating function with the modified function described above
-def plot_obj_w_skeleton(result_path, nodes, edges):
+def _add_padded_column(base_array, number_to_pad):
     """
-    
+
     Parameters
     ----------
-    result_path : str
-        path of the .obj file
-    nodes : array
-        3D joint locations of the skeleton
-    edges : 2D array
-        kinematic tree of the skeleton
+    base_array : 2D array of ints
+        Depicts connections in a topology, e.g. faces array for a 2D or 3D mesh
+    number_to_pad : int
+        a single integer to be padded in the first column of base_array
 
     Returns
     -------
-    None.
-    
+    New 2D array with number_to_pad added to the first column of base_array.
+    Use number_to_pad = 2 for edges, = 3 for triangular faces
     """
-    reader = pv.get_reader(result_path)
+    padding = np.empty(base_array.shape[0], int) 
+    padding[:] = number_to_pad
+    return np.vstack((padding, base_array.T)).T
+    
+def _add_obj_mesh_to_plot(pl, obj_path, opacity=0.8):
+    reader = pv.get_reader(obj_path)
     mesh = reader.read()
-    
-    pl = pv.Plotter()
-    pl.add_mesh(mesh, opacity=0.6)
-    
+    pl.add_mesh(mesh, opacity=opacity)
+
+def _add_skeleton_to_plot(pl, nodes, edges):
     # We must "pad" the edges to indicate to vtk how many points per edge
-    padding = np.empty(edges.shape[0], int) * 2
-    padding[:] = 2
-    edges_w_padding = np.vstack((padding, edges.T)).T
- 
+    edges_w_padding = _add_padded_column(edges, 2)
     skel_mesh = pv.PolyData(nodes, edges_w_padding)
     colors = range(edges.shape[0])
     
@@ -55,10 +49,33 @@ def plot_obj_w_skeleton(result_path, nodes, edges):
                 line_width=10,
                 cmap='jet',
                 show_scalar_bar=False)
+
+# Visualizes a .obj file with corresponding skeleton
+# TODO modify the function below to use two of the functions above
+# TODO: implement an animating function with the modified function described above
+def plot_obj_w_skeleton(obj_path, nodes, edges, obj_opacity=0.8):
+   
+    pl = pv.Plotter()
+    _add_obj_mesh_to_plot(pl, obj_path, opacity=obj_opacity)
+    _add_skeleton_to_plot(pl, nodes, edges)
+    
+    pl.view_xy()
+    pl.show()
+
+
+def plot_verts(verts, faces, opacity=0.8):
+    pl = pv.Plotter()
+    
+    # We must "pad" the edges to indicate to vtk how many points per face
+    # We are working with triangular data
+   
+    mesh = pv.PolyData(verts, _add_padded_column(faces, 3))
+    pl.add_mesh(mesh, opacity=opacity)
     
     pl.view_xy()
     pl.show()
     
+
 
 def matplot_skeleton(joint_locations, kintree):
     """
