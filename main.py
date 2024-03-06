@@ -51,14 +51,24 @@ for data in data_loader:
    
    # -----------------------------------------------------------------------
    # -----------------------------------------------------------------------
-   freq = 10
-   omega = 2 * np.pi * freq
-   t = 1000
-   modified_verts = smpl_verts.numpy()
-   displacement = np.sin(omega * t) * 0 #1e11
-   modified_verts[:, 0:1000, 1] += displacement
+   
+   
+   num_frames = smpl_verts.shape[0] 
+   # TODO: verify the shapes of smpl and original dataset mesh are the same
+   vert_error = torch.zeros(smpl_verts.shape[1])
+   for frame in range(num_frames):
+       single_frame_diff = target_verts[frame] - smpl_verts[frame].numpy() 
+       # Take the square as absolute value (L1 norm) is not differentiable?
+       error = torch.sum(torch.square(single_frame_diff), dim=1)
+       vert_error += error
+   
+   max_error_vert_idx = torch.argmax(vert_error)
+   
+   # Highligh the max vert idx
    viewer = Viewer()
-   viewer.add_animated_mesh(modified_verts, smpl_model.faces)
+   viewer.add_mesh(smpl_verts[SELECTED_FRAME].numpy(), smpl_model.faces)
+   viewer.add_points(smpl_verts[SELECTED_FRAME].numpy()[max_error_vert_idx], point_size=25)
+   viewer.run()
    
    # -----------------------------------------------------------------------
    # -----------------------------------------------------------------------

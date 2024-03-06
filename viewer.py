@@ -76,12 +76,30 @@ class Viewer:
         style='modern',
         interaction_event='always'
     )
+    return
+
+  def add_mesh(self, verts, faces, opacity=1.0):
+      mesh = pv.PolyData(verts, _add_padded_column(faces, 3))
+      self.pl.add_mesh(mesh, opacity=opacity)
+      return
     
+  def add_points(self, locations, point_size=10.0, color='red'):
+      """
+          Locations is a [num_points, 3] array-like variable.
+      """
+      self.pl.add_points(locations, render_points_as_spheres=True, point_size=point_size, color=color)
+      return
+  
+  def run(self):
+    """
+        Call this function to show viewer in the last step
+    """
     self.pl.view_xy()
     self.pl.show()
+    return
     
 
 
-    
+  
     
 
