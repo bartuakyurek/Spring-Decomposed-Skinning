@@ -60,13 +60,11 @@ class Viewer:
   def __init__(self):
     self.pl = pv.Plotter()
     
-
-  def add_animated_mesh(self, verts, faces):
+  def add_animated_mesh(self, verts, faces, opacity=1.0):
       
     starting_mesh = pv.PolyData(verts[0], _add_padded_column(faces, 3))
     self.engine = Animation(verts, faces, starting_mesh)
-    self.pl.add_mesh(starting_mesh, opacity=0.8)
-    
+    self.pl.add_mesh(starting_mesh, opacity=opacity)
     
     self.pl.add_slider_widget(
         callback=lambda value: self.engine('current_frame_idx', int(value)),
