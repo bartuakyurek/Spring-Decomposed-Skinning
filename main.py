@@ -22,6 +22,22 @@ from plots import *
 from viewer import *
 from particle import *
 
+def get_max_error_vertex_idx(mesh_array, num_max_verts=1):
+    num_frames = mesh_array.shape[0] 
+    vert_error = torch.zeros(mesh_array.shape[1])
+    for frame in range(num_frames):
+        single_frame_diff = target_verts[frame] - smpl_verts[frame].numpy() 
+        # Take the square as absolute value (L1 norm) is not differentiable?
+        error = torch.sum(torch.square(single_frame_diff), dim=1)
+        vert_error += error
+    
+    max_errors_idx = torch.empty(num_max_verts, dtype=int)
+    for i in range(num_max_verts):
+        idx = torch.argmax(vert_error)
+        max_errors_idx[i] = idx
+        vert_error = torch.cat((vert_error[:idx], vert_error[idx+1:]))
+    return max_errors_idx
+
 # TODO: use './data/female_bpts2dbs.pt' 
 # TODO: turn shuffle on for training dataset
 # TODO: create validation and test splits as well
@@ -53,21 +69,12 @@ for data in data_loader:
    # -----------------------------------------------------------------------
    
    
-   num_frames = smpl_verts.shape[0] 
-   # TODO: verify the shapes of smpl and original dataset mesh are the same
-   vert_error = torch.zeros(smpl_verts.shape[1])
-   for frame in range(num_frames):
-       single_frame_diff = target_verts[frame] - smpl_verts[frame].numpy() 
-       # Take the square as absolute value (L1 norm) is not differentiable?
-       error = torch.sum(torch.square(single_frame_diff), dim=1)
-       vert_error += error
-   
-   max_error_vert_idx = torch.argmax(vert_error)
-   
+   max_error_vert_idx = get_max_error_vertex_idx(smpl_verts, 1000)
+   print(max_error_vert_idx)
    # Highligh the max vert idx
    viewer = Viewer()
    viewer.add_mesh(smpl_verts[SELECTED_FRAME].numpy(), smpl_model.faces)
-   viewer.add_points(smpl_verts[SELECTED_FRAME].numpy()[max_error_vert_idx], point_size=25)
+   viewer.add_points(smpl_verts[SELECTED_FRAME].numpy()[max_error_vert_idx], point_size=15)
    viewer.run()
    
    # -----------------------------------------------------------------------
