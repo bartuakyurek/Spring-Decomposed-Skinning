@@ -21,7 +21,23 @@ from skeleton_data import get_smpl_skeleton
 from plots import *
 from viewer import *
 from particle import *
-from signal_filtering import *
+
+
+def get_max_error_vertex_idx(mesh_array, num_max_verts=1):
+    num_frames = mesh_array.shape[0] 
+    vert_error = torch.zeros(mesh_array.shape[1])
+    for frame in range(num_frames):
+        single_frame_diff = target_verts[frame] - smpl_verts[frame].numpy() 
+        # Take the square as absolute value (L1 norm) is not differentiable?
+        error = torch.sum(torch.square(single_frame_diff), dim=1)
+        vert_error += error
+    
+    max_errors_idx = torch.empty(num_max_verts, dtype=int)
+    for i in range(num_max_verts):
+        idx = torch.argmax(vert_error)
+        max_errors_idx[i] = idx
+        vert_error = torch.cat((vert_error[:idx], vert_error[idx+1:]))
+    return max_errors_idx
 
 # TODO: use './data/female_bpts2dbs.pt' 
 # TODO: turn shuffle on for training dataset
@@ -52,22 +68,19 @@ for data in data_loader:
    
    # -----------------------------------------------------------------------
    # -----------------------------------------------------------------------
-   selected_vert = 4000
    
-   target_x = target_verts[:,selected_vert, 0]
-   target_y = target_verts[:,selected_vert, 1]
-   target_z = target_verts[:,selected_vert, 2]
    
-   smpl_x = smpl_verts[:,selected_vert, 0]
-   smpl_y = smpl_verts[:,selected_vert, 1]
-   smpl_z = smpl_verts[:,selected_vert, 2]
+   max_error_vert_idx = get_max_error_vertex_idx(smpl_verts, 1000)
+   print(max_error_vert_idx)
+   # Highligh the max vert idx
+   viewer = Viewer()
+   viewer.add_mesh(smpl_verts[SELECTED_FRAME].numpy(), smpl_model.faces)
+   viewer.add_points(smpl_verts[SELECTED_FRAME].numpy()[max_error_vert_idx], point_size=15)
+   viewer.run()
    
-   draw_same_length_signals([target_x, target_y, target_z], " Original for vertex " + str(selected_vert))
-   draw_same_length_signals([smpl_x, smpl_y, smpl_z], " SMPL for vertex " + str(selected_vert))
+   # TODO: you can also color the error vertices (put a color bar next to mesh), 
+   # that way we can observe all the error distribution.
    
-   target_x_freqs, target_x_amps = draw_FFT(target_x, show=False)
-   smpl_x_freqs, smpl_x_amps = draw_FFT(smpl_x, color='red')
-
    # -----------------------------------------------------------------------
    # -----------------------------------------------------------------------
    
@@ -81,7 +94,9 @@ for data in data_loader:
    #matplot_skeleton(joint_locations, kintree)
    #smpl_model.write_obj(smpl_verts[SELECTED_FRAME], './smpl_result.obj')
    #smpl_model.write_obj(target_verts[SELECTED_FRAME], './target.obj')
-
+    
+   # criterion = nn.MSELoss()
+   # smpl_loss = criterion(smpl_verts+trans, target_verts)
    break
 
 
