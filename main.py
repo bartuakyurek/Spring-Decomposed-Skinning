@@ -30,7 +30,6 @@ bpts2dbs_data = torch.load('./data/50004_dataset.pt')
 training_data = bpts2dbs_data 
 data_loader = torch.utils.data.DataLoader(training_data, batch_size=1, shuffle=False)
 
-
 # TODO: search for available devices (in colab demo)
 # TODO: gather every path variable in a path.py file, e.g. SMPL_PATH = './path/to/smpl'
 device = "cpu"
@@ -39,7 +38,7 @@ smpl_model = SMPLModel(device=device, model_path='./body_models/smpl/female/mode
 for data in data_loader:
    beta_pose_trans_seq = data[0].squeeze().type(torch.float64)
    betas = beta_pose_trans_seq[:,:10]
-   pose = beta_pose_trans_seq[:,10:82]
+   pose = beta_pose_trans_seq[:,10:82] 
    trans = beta_pose_trans_seq[:,82:]
 
    target_verts = data[1].squeeze()
@@ -52,6 +51,8 @@ for data in data_loader:
    
    # -----------------------------------------------------------------------
    # -----------------------------------------------------------------------
+   
+   """
    selected_vert = 4000
    
    target_x = target_verts[:,selected_vert, 0]
@@ -67,12 +68,14 @@ for data in data_loader:
    
    target_x_freqs, target_x_amps = draw_FFT(target_x, show=False)
    smpl_x_freqs, smpl_x_amps = draw_FFT(smpl_x, color='red')
-
+   """
+   
    # -----------------------------------------------------------------------
    # -----------------------------------------------------------------------
    
-   #viewer = Viewer()
-   #viewer.add_animated_mesh(smpl_verts.numpy(), smpl_model.faces)
+   viewer = Viewer()
+   viewer.add_animated_mesh(smpl_verts.numpy(), smpl_model.faces)
+   viewer.run()
    
    #faces = smpl_model.faces
    #verts = smpl_verts[SELECTED_FRAME].numpy()
