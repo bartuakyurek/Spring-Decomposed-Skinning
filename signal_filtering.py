@@ -73,16 +73,27 @@ def pass_filter(filter_type, data, cutoff, sample_rate, poles = 5):
     
     return filtered_data
 
-def draw_FFT(signal, color='black', show=True):
+
+def get_FFT(signal):
     FFT = np.fft.fft(signal)
     new_N=int(len(FFT)/2) 
     f_nat=1
     freqs = np.linspace(10**-12, f_nat/2, new_N, endpoint=True)
-    new_Xph=1.0/(freqs)
+    periods =1.0/(freqs)
     FFT_abs=np.abs(FFT)
+    amplitudes = 2*FFT_abs[0:int(len(FFT)/2.)]/len(periods)
     
-    amplitudes = 2*FFT_abs[0:int(len(FFT)/2.)]/len(new_Xph)
-    plt.plot(new_Xph, amplitudes,color=color)
+    return freqs, amplitudes
+    
+
+
+# TODO: if we are using plots.py, move this one there
+# else, remove plots.py from the project.
+def draw_FFT(freqs, amplitudes, color='black', show=True):
+    
+    periods =1.0/(freqs)
+    
+    plt.plot(periods, amplitudes,color=color)
     plt.xlabel('Period ($h$)',fontsize=15)
     plt.ylabel('Amplitude',fontsize= 15)
     plt.title('(Fast) Fourier Transform Method Algorithm',fontsize=15)
@@ -91,7 +102,7 @@ def draw_FFT(signal, color='black', show=True):
     if show:
         plt.show()
     
-    return freqs, amplitudes
+    
 
 if __name__ == "__main__":
     
@@ -113,8 +124,27 @@ if __name__ == "__main__":
     # OPTION - 3
     # Draw FFT graph
     # -------------------------------------------------------
-    draw_FFT(z_t)
+    # draw_FFT(z_t) --> function changed
     # -------------------------------------------------------
 
-
+    """
+    selected_vert = 4000
+    
+    target_x = target_verts[:,selected_vert, 0]
+    target_y = target_verts[:,selected_vert, 1]
+    target_z = target_verts[:,selected_vert, 2]
+    
+    smpl_x = smpl_verts[:,selected_vert, 0]
+    smpl_y = smpl_verts[:,selected_vert, 1]
+    smpl_z = smpl_verts[:,selected_vert, 2]
+    
+    draw_same_length_signals([target_x, target_y, target_z], " Original for vertex " + str(selected_vert))
+    draw_same_length_signals([smpl_x, smpl_y, smpl_z], " SMPL for vertex " + str(selected_vert))
+    
+    target_x_freqs, target_x_amps = get_FFT(target_x)
+    smpl_x_freqs, smpl_x_amps = get_FFT(smpl_x)
+    
+    draw_FFT(target_x_freqs, target_x_amps, show=False)
+    draw_FFT(smpl_x_freqs, smpl_x_amps, color='red')
+    """
 

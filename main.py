@@ -38,8 +38,8 @@ smpl_model = SMPLModel(device=device, model_path='./body_models/smpl/female/mode
 for data in data_loader:
    beta_pose_trans_seq = data[0].squeeze().type(torch.float64)
    betas = beta_pose_trans_seq[:,:10]
-   pose = beta_pose_trans_seq[:,10:82] 
-   trans = beta_pose_trans_seq[:,82:]
+   pose = beta_pose_trans_seq[:,10:82]
+   trans = beta_pose_trans_seq[:,82:] 
 
    target_verts = data[1].squeeze()
    smpl_verts, joints = smpl_model(betas, pose, trans)
@@ -51,6 +51,11 @@ for data in data_loader:
    
    # -----------------------------------------------------------------------
    # -----------------------------------------------------------------------
+   
+   
+   viewer = Viewer()
+   viewer.add_animated_mesh(smpl_verts.numpy(), smpl_model.faces)
+   viewer.run()
    
    """
    selected_vert = 4000
@@ -66,16 +71,28 @@ for data in data_loader:
    draw_same_length_signals([target_x, target_y, target_z], " Original for vertex " + str(selected_vert))
    draw_same_length_signals([smpl_x, smpl_y, smpl_z], " SMPL for vertex " + str(selected_vert))
    
-   target_x_freqs, target_x_amps = draw_FFT(target_x, show=False)
-   smpl_x_freqs, smpl_x_amps = draw_FFT(smpl_x, color='red')
+   target_x_freqs, target_x_amps = get_FFT(target_x)
+   smpl_x_freqs, smpl_x_amps = get_FFT(smpl_x)
+   
+   draw_FFT(target_x_freqs, target_x_amps, show=False)
+   draw_FFT(smpl_x_freqs, smpl_x_amps, color='red')
+   """
+   
+   """
+   # Draw joint motion
+   selected_joint = 5
+   joint_x = joints[:, selected_joint, 0] 
+   joint_y = joints[:, selected_joint, 1] 
+   joint_z = joints[:, selected_joint, 2] 
+   draw_same_length_signals([joint_x, joint_y, joint_z], " Joint " + str(selected_joint))
+
+   # Draw global translation components 
+   draw_same_length_signals([trans[:,0] , trans[:,1], trans[:,2]], " Global Translations ")
    """
    
    # -----------------------------------------------------------------------
    # -----------------------------------------------------------------------
    
-   viewer = Viewer()
-   viewer.add_animated_mesh(smpl_verts.numpy(), smpl_model.faces)
-   viewer.run()
    
    #faces = smpl_model.faces
    #verts = smpl_verts[SELECTED_FRAME].numpy()
