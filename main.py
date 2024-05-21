@@ -18,10 +18,8 @@ import torch
 
 from smpl_torch_batch import SMPLModel
 from skeleton_data import get_smpl_skeleton
-from plots import *
-from viewer import *
-from particle import *
-from signal_filtering import *
+from verts_animation import *
+
 
 # TODO: use './data/female_bpts2dbs.pt' 
 # TODO: turn shuffle on for training dataset
@@ -51,57 +49,11 @@ for data in data_loader:
    
    # -----------------------------------------------------------------------
    # -----------------------------------------------------------------------
-   
-   
-   viewer = Viewer()
-   viewer.add_animated_mesh(smpl_verts.numpy(), smpl_model.faces)
-   viewer.run()
-   
-   """
-   selected_vert = 4000
-   
-   target_x = target_verts[:,selected_vert, 0]
-   target_y = target_verts[:,selected_vert, 1]
-   target_z = target_verts[:,selected_vert, 2]
-   
-   smpl_x = smpl_verts[:,selected_vert, 0]
-   smpl_y = smpl_verts[:,selected_vert, 1]
-   smpl_z = smpl_verts[:,selected_vert, 2]
-   
-   draw_same_length_signals([target_x, target_y, target_z], " Original for vertex " + str(selected_vert))
-   draw_same_length_signals([smpl_x, smpl_y, smpl_z], " SMPL for vertex " + str(selected_vert))
-   
-   target_x_freqs, target_x_amps = get_FFT(target_x)
-   smpl_x_freqs, smpl_x_amps = get_FFT(smpl_x)
-   
-   draw_FFT(target_x_freqs, target_x_amps, show=False)
-   draw_FFT(smpl_x_freqs, smpl_x_amps, color='red')
-   """
-   
-   """
-   # Draw joint motion
-   selected_joint = 5
-   joint_x = joints[:, selected_joint, 0] 
-   joint_y = joints[:, selected_joint, 1] 
-   joint_z = joints[:, selected_joint, 2] 
-   draw_same_length_signals([joint_x, joint_y, joint_z], " Joint " + str(selected_joint))
 
-   # Draw global translation components 
-   draw_same_length_signals([trans[:,0] , trans[:,1], trans[:,2]], " Global Translations ")
-   """
+   v = smpl_verts.numpy()
+   f = smpl_model.faces
+   verts_animation(target_verts, f) #, jpg_dir="./rendered_jpgs/{}.jpg")
    
-   # -----------------------------------------------------------------------
-   # -----------------------------------------------------------------------
-   
-   
-   #faces = smpl_model.faces
-   #verts = smpl_verts[SELECTED_FRAME].numpy()
-   #plot_verts(verts, faces)
-   #plot_obj_w_skeleton("./results/smpl_result.obj", joint_locations, kintree)
-   #matplot_skeleton(joint_locations, kintree)
-   #smpl_model.write_obj(smpl_verts[SELECTED_FRAME], './smpl_result.obj')
-   #smpl_model.write_obj(target_verts[SELECTED_FRAME], './target.obj')
-
    break
 
 
