@@ -52,13 +52,15 @@ for data in data_loader:
    j = joints.detach().cpu().numpy()
    f = smpl_model.faces
    jpg_path = "./rendered_jpgs/"
-   
-   viewer = Viewer()
-   viewer.add_mesh_animation(v, f)
-   viewer.set_mesh_opacity(0.6)
-   
-   viewer.add_skeletal_animation(j, kintree)
-   viewer.run_animation() #, jpg_dir=jpg_path+"{}.jpg")
+
+   spring_rest_locations = [[0.4, 0.2, 0.0],
+                            [0.1, 0.2, 0.3]]
+    
+   single_mesh_viewer = Viewer()
+   single_mesh_viewer.set_mesh_animation(v, f)
+   single_mesh_viewer.set_mesh_opacity(0.6)
+   single_mesh_viewer.set_skeletal_animation(j, kintree)
+   single_mesh_viewer.run_animation() #, jpg_dir=jpg_path+"{}.jpg")
 
    break
 

@@ -4,6 +4,10 @@
 Created on Wed May 22 12:46:50 2024
 
 @author: bartu
+
+
+TODO: this should be not viewer.py but rather a canvas for a single mesh, so that we can write a generic viewer and 
+add this canvas to there. The naming is confusing right now. It is pretty specific to spring rig animation. 
 """
 
 from itertools import count
@@ -46,34 +50,32 @@ class Viewer:
         # SUGG: You can make it a list of items to be rendered, each item object (like in blender)
         # can have a specific type with specific polydata to be rendered. That ensures extensibility
         # but you don't need it for this application right now.
-        self.meshes = []
-        self.skeletons = []
+        self.mesh = None #es = []
+        self.skeleton = None #s = []
+        
         
     
     def run_animation(self, render_skeleton=True, save_jpg_dir=None):
         @mlab.animate(delay=40, ui=False)
         def update_animation():
             
-            for mesh_idx, mesh, in enumerate(self.meshes):
-                
-                skeleton = self.skeletons[mesh_idx] if render_skeleton else None
-                
+
                 for i in count():
-                    frame = i % len(mesh.verts_numpy)
-                    mesh.verts_polydata.points = mesh.verts_numpy[frame] 
+                    frame = i % len(self.mesh.verts_numpy)
+                    self.mesh.verts_polydata.points = self.mesh.verts_numpy[frame] 
                     
                     # Make sure to just save jpegs up to animation period
-                    if save_jpg_dir and i < len(mesh.verts_numpy):
+                    if save_jpg_dir and i < len(self.mesh.verts_numpy):
                         mlab.savefig(save_jpg_dir.format(frame),magnification=1)
                         #mlab.options.offscreen = True
                         #figure.scene.movie_maker.record = True
                     
                     # Set skeleton here
-                    if skeleton:
+                    if render_skeleton:
                         #skeleton.joints_mlab_points = self._add_joint_nodes(skeleton.joints_numpy[frame])
-                        current_nodes = skeleton.joints_numpy[frame]
+                        current_nodes = self.skeleton.joints_numpy[frame]
                         x, y, z = current_nodes[:, 0], current_nodes[:, 1], current_nodes[:, 2]
-                        skeleton.joints_mlab_points.mlab_source.set(x=x, y=y, z=z)
+                        self.skeleton.joints_mlab_points.mlab_source.set(x=x, y=y, z=z)
                         
                     #plt.mlab_source.set(x=x, y=y, z=z)
                     # ...
@@ -84,7 +86,7 @@ class Viewer:
         animation_decorator = update_animation()
         mlab.show()    
     
-    def add_mesh_animation(self, verts, faces=None):
+    def set_mesh_animation(self, verts, faces=None):
         
         if torch.is_tensor(verts):
             verts = verts.detach().cpu().numpy()
@@ -106,11 +108,10 @@ class Viewer:
                            shading=True, diffuse=0.8)
 
         self.figure.scene.add_actor(actor)
-        self.meshes.append(Actor_Animation_Data(verts, mesh_polydata, actor))
+        self.mesh = Actor_Animation_Data(verts, mesh_polydata, actor)
     
-    def set_mesh_opacity(self, opacity, mesh_idx=0):
-        
-        actor = self.meshes[mesh_idx].verts_actor
+    def set_mesh_opacity(self, opacity):
+        actor = self.mesh.verts_actor
         actor.property.set(opacity=opacity)
         actor.property.backface_culling = True
     
@@ -127,11 +128,11 @@ class Viewer:
         mlab.pipeline.surface(tubes, color=color)
         return tubes
     
-    def add_skeletal_animation(self, joints, kintree, node_scale=0.03):
+    def set_skeletal_animation(self, joints, kintree, node_scale=0.03):
         
         nodes = self._add_joint_nodes(joints[0], node_scale)
         tubes = self._add_bone_tubes( nodes, node_scale, kintree)
-        self.skeletons.append(Armature_Animation_Data(joints, nodes, tubes))
+        self.skeleton = Armature_Animation_Data(joints, nodes, tubes)
         
         
         
