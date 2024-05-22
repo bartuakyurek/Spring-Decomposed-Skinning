@@ -46,22 +46,32 @@ for data in data_loader:
    kintree = get_smpl_skeleton()
    
    # -----------------------------------------------------------------------
-   # -----------------------------------------------------------------------
 
+   ### Declare data we want to visualize
    v = smpl_verts.numpy()
    j = joints.detach().cpu().numpy()
    f = smpl_model.faces
    jpg_path = "./rendered_jpgs/"
-
-   spring_rest_locations = [[0.4, 0.2, 0.0],
-                            [0.1, 0.2, 0.3]]
-    
+   
+   ### Manuel Spring Data
+   spring_rest_locations = np.array([[0.4, 0.2, 0.0],
+                            [0.1, 0.2, 0.3]])
+   spring_parents =  [6, 20]
+   
+   ## Create viewer canvas and add a mesh (only single mesh is allowed rn)
    single_mesh_viewer = Viewer()
    single_mesh_viewer.set_mesh_animation(v, f)
    single_mesh_viewer.set_mesh_opacity(0.6)
+   
+   ## Skeleton and springs
    single_mesh_viewer.set_skeletal_animation(j, kintree)
+   single_mesh_viewer.set_spring_rig(spring_parents, kintree, spring_rest_locations)
+   
+   ## Run animation
    single_mesh_viewer.run_animation() #, jpg_dir=jpg_path+"{}.jpg")
-
+   
+   # -----------------------------------------------------------------------
+   # Break from for loop since we only wanna visualize one mesh rn
    break
 
-
+     

@@ -33,15 +33,17 @@ class Armature_Animation_Data:
     joints_mlab_points: tvtk.PolyData
     bones_mlab_tubes: tvtk.Actor
     
+@dataclass
+class Spring_Armature_Animation_Data:
+    parent_bone_indices: list
+    mass_locations_numpy: np.ndarray
+    mass_locations_mlab_points: tvtk.PolyData
+    #springs_mlab_tubes: tvtk.Actor
+    
 def _create_mayavi_figure(background_color=(1,1,1), size=(800,800)):
     fig = mlab.figure(bgcolor=background_color, size=size)
     fig.scene.z_plus_view()
     return fig
-
-def _get_red_color_by_shape(shape):
-    red_color = np.zeros(shape)
-    red_color[:,0] = 1.
-    return red_color
 
 class Viewer:
     def __init__(self):
@@ -52,36 +54,29 @@ class Viewer:
         # but you don't need it for this application right now.
         self.mesh = None #es = []
         self.skeleton = None #s = []
-        
-        
+        self.spring_rig = None
+
+        self.spring_parent_indicators = None
+        self.kintree = None
     
     def run_animation(self, render_skeleton=True, save_jpg_dir=None):
+        
         @mlab.animate(delay=40, ui=False)
-        def update_animation():
-            
-
-                for i in count():
-                    frame = i % len(self.mesh.verts_numpy)
-                    self.mesh.verts_polydata.points = self.mesh.verts_numpy[frame] 
-                    
-                    # Make sure to just save jpegs up to animation period
-                    if save_jpg_dir and i < len(self.mesh.verts_numpy):
-                        mlab.savefig(save_jpg_dir.format(frame),magnification=1)
-                        #mlab.options.offscreen = True
-                        #figure.scene.movie_maker.record = True
-                    
-                    # Set skeleton here
-                    if render_skeleton:
-                        #skeleton.joints_mlab_points = self._add_joint_nodes(skeleton.joints_numpy[frame])
-                        current_nodes = self.skeleton.joints_numpy[frame]
-                        x, y, z = current_nodes[:, 0], current_nodes[:, 1], current_nodes[:, 2]
-                        self.skeleton.joints_mlab_points.mlab_source.set(x=x, y=y, z=z)
-                        
-                    #plt.mlab_source.set(x=x, y=y, z=z)
-                    # ...
-                    
-                    self.figure.scene.render()
-                    yield
+        def update_animation():  
+            for i in count():
+                frame_idx = i % len(self.mesh.verts_numpy)
+                self.mesh.verts_polydata.points = self.mesh.verts_numpy[frame_idx] 
+                
+                # Make sure to just save jpegs up to animation period
+                if save_jpg_dir and i < len(self.mesh.verts_numpy):
+                    mlab.savefig(save_jpg_dir.format(frame_idx),magnification=1)
+                
+                if render_skeleton:
+                    self._update_skeleton_nodes(frame_idx)
+                    self._update_parent_indicators(frame_idx)
+                
+                self.figure.scene.render()
+                yield # Continue render from current frame
         
         animation_decorator = update_animation()
         mlab.show()    
@@ -114,14 +109,68 @@ class Viewer:
         actor = self.mesh.verts_actor
         actor.property.set(opacity=opacity)
         actor.property.backface_culling = True
+     
+    def _find_bone_midpoints(self, joints, kintree, selected_bone_indices):
+        parent_bone_mid_coordinates = []
+        for bone_idx in selected_bone_indices:
+            begin = kintree[bone_idx][0]
+            end = kintree[bone_idx][1]
+            current_nodes = joints
+            
+            half_bone_vector = (current_nodes[end] - current_nodes[begin]) / 2.
+            mid_coordinate = current_nodes[begin] + half_bone_vector
+            parent_bone_mid_coordinates.append(mid_coordinate)
+            
+        return np.array(parent_bone_mid_coordinates)
     
-    def _add_joint_nodes(self, skeleton, node_scale=0.03):
+    def _update_skeleton_nodes(self, frame_idx):
+        current_nodes = self.skeleton.joints_numpy[frame_idx]
+        x, y, z = current_nodes[:, 0], current_nodes[:, 1], current_nodes[:, 2]
+        self.skeleton.joints_mlab_points.mlab_source.set(x=x, y=y, z=z)
+    
+    
+    def _update_parent_indicators(self, frame_idx):
+        
+        parent_bone_mid_coordinates = self._find_bone_midpoints(self.skeleton.joints_numpy[frame_idx], 
+                                                                self.kintree, 
+                                                                self.spring_rig.parent_bone_indices)
+        x = parent_bone_mid_coordinates[:,0]
+        y = parent_bone_mid_coordinates[:,1]
+        z = parent_bone_mid_coordinates[:,2]
+        self.spring_parent_indicators.mlab_source.set(x=x, y=y, z=z)
+        
+
+    def _add_joint_nodes(self, skeleton, node_scale=0.03, color=(1,0,0)):
         x, y, z = skeleton[:,0], skeleton[:,1], skeleton[:,2]
+        
+        #s = np.repeat(node_scale, len(x)) * 0.1
+        #c = s
+        #nodes = mlab.quiver3d(x, y, z, s, s, s, scalars=c, mode='sphere')
+        #nodes.glyph.color_mode = 'color_by_scalar'
+        
         nodes = mlab.points3d(x, y, z, scale_factor=node_scale, resolution=20)
-        nodes.mlab_source.dataset.point_data.scalars = _get_red_color_by_shape((skeleton.shape[0], 3))
+        
+        red_color = np.repeat(color, len(skeleton), axis=0)
+        nodes.mlab_source.dataset.point_data.scalars = red_color
+       
         return nodes
     
-    def _add_bone_tubes(self, nodes, node_scale, kintree, color=(0.8, 0.8, 0)):
+    
+    # NOT WORKING -------------------------
+    def _recolor_joint_nodes(self, joint_indices=None, color=(0.,1.,1.)):
+        
+        # If joint indices are not specified, color all joints
+        if not joint_indices:
+            num_joints = self.skeleton.joints_numpy.shape[0]
+            colors = np.repeat(color, num_joints, axis=0)
+            self.skeleton.joints_mlab_points.mlab_source.dataset.point_data.scalars = colors
+            # TODO: REFACTOR THOSE NAMES BRO
+        else:
+            for idx in joint_indices:
+                self.skeleton.joints_mlab_points.mlab_source.dataset.point_data.scalars[idx] = color            
+    # END OF NOT WORKING -------------------------
+    
+    def _add_bone_tubes(self, nodes, node_scale, kintree, color=(0.8, 0.8, 1.)):
         # Add bones as tubes
         nodes.mlab_source.dataset.lines = np.array(kintree)
         tubes = mlab.pipeline.tube(nodes, tube_radius= node_scale * 0.2)
@@ -133,7 +182,19 @@ class Viewer:
         nodes = self._add_joint_nodes(joints[0], node_scale)
         tubes = self._add_bone_tubes( nodes, node_scale, kintree)
         self.skeleton = Armature_Animation_Data(joints, nodes, tubes)
+                
+    def set_spring_rig(self, parent_bones, kintree, spring_rest_locations, node_scale=0.05):
+        nodes = self._add_joint_nodes(spring_rest_locations, node_scale)
         
+        self.spring_rig = Spring_Armature_Animation_Data(parent_bones, spring_rest_locations, nodes)
+        self.kintree = kintree
         
+        parent_bone_mid_coordinates = self._find_bone_midpoints(self.skeleton.joints_numpy[0], 
+                                                                self.kintree, 
+                                                                self.spring_rig.parent_bone_indices)
+        
+        self.spring_parent_indicators = self._add_joint_nodes(parent_bone_mid_coordinates, 
+                                                               color=(1,1,1),
+                                                               node_scale=0.03)
         
         
