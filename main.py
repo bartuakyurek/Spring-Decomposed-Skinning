@@ -18,8 +18,7 @@ import torch
 
 from smpl_torch_batch import SMPLModel
 from skeleton_data import get_smpl_skeleton
-from verts_animation import *
-
+from viewer import Viewer
 
 # TODO: use './data/female_bpts2dbs.pt' 
 # TODO: turn shuffle on for training dataset
@@ -42,7 +41,6 @@ for data in data_loader:
    target_verts = data[1].squeeze()
    smpl_verts, joints = smpl_model(betas, pose, trans)
    
-   
    SELECTED_FRAME = 150
    joint_locations = joints[SELECTED_FRAME].numpy()
    kintree = get_smpl_skeleton()
@@ -52,8 +50,15 @@ for data in data_loader:
 
    v = smpl_verts.numpy()
    f = smpl_model.faces
-   verts_animation(target_verts, f) #, jpg_dir="./rendered_jpgs/{}.jpg")
+   jpg_path = "./rendered_jpgs/"
    
+   viewer = Viewer()
+   viewer.add_mesh_animation(v, f)
+   viewer.set_mesh_opacity(0.6)
+   
+   viewer.add_skeletal_animation(joints, kintree)
+   #viewer.run_animation() #, jpg_dir=jpg_path+"{}.jpg")
+
    break
 
 
