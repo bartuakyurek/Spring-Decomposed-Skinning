@@ -18,11 +18,16 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Mesh_Animation_Data:
+class Actor_Animation_Data:
     verts_numpy: np.ndarray
     verts_polydata: tvtk.PolyData
     verts_actor: tvtk.Actor
-   
+    
+@dataclass
+class Armature_Animation_Data:
+    joints_numpy: np.ndarray
+    joints_mlab_points: tvtk.PolyData
+    bones_mlab_tubes: tvtk.Actor
     
 def _create_mayavi_figure(background_color=(1,1,1), size=(800,800)):
     fig = mlab.figure(bgcolor=background_color, size=size)
@@ -45,11 +50,14 @@ class Viewer:
         self.skeletons = []
         
     
-    def run_animation(self, save_jpg_dir=None):
+    def run_animation(self, render_skeleton=True, save_jpg_dir=None):
         @mlab.animate(delay=40, ui=False)
         def update_animation():
-            for mesh in self.meshes:
-              
+            
+            for mesh_idx, mesh, in enumerate(self.meshes):
+                
+                skeleton = self.skeletons[mesh_idx] if render_skeleton else None
+                
                 for i in count():
                     frame = i % len(mesh.verts_numpy)
                     mesh.verts_polydata.points = mesh.verts_numpy[frame] 
@@ -59,8 +67,14 @@ class Viewer:
                         mlab.savefig(save_jpg_dir.format(frame),magnification=1)
                         #mlab.options.offscreen = True
                         #figure.scene.movie_maker.record = True
-                        
+                    
                     # Set skeleton here
+                    if skeleton:
+                        #skeleton.joints_mlab_points = self._add_joint_nodes(skeleton.joints_numpy[frame])
+                        current_nodes = skeleton.joints_numpy[frame]
+                        x, y, z = current_nodes[:, 0], current_nodes[:, 1], current_nodes[:, 2]
+                        skeleton.joints_mlab_points.mlab_source.set(x=x, y=y, z=z)
+                        
                     #plt.mlab_source.set(x=x, y=y, z=z)
                     # ...
                     
@@ -92,7 +106,7 @@ class Viewer:
                            shading=True, diffuse=0.8)
 
         self.figure.scene.add_actor(actor)
-        self.meshes.append(Mesh_Animation_Data(verts,mesh_polydata, actor))
+        self.meshes.append(Actor_Animation_Data(verts, mesh_polydata, actor))
     
     def set_mesh_opacity(self, opacity, mesh_idx=0):
         
@@ -100,37 +114,24 @@ class Viewer:
         actor.property.set(opacity=opacity)
         actor.property.backface_culling = True
     
-    def add_skeletal_animation(self, joints, kintree, node_scale=0.03):
-        if torch.is_tensor(joints):
-            joints = joints.detach().cpu().numpy()
-            
-        
-        skeleton = joints[0]
-        color = np.zeros((skeleton.shape[0], 3))
-        color[:,0] = 1.
-        nodes = mlab.points3d(skeleton[:,0], 
-                            skeleton[:,1], 
-                            skeleton[:,2], 
-                            scale_factor=node_scale, resolution=20)
-        
+    def _add_joint_nodes(self, skeleton, node_scale=0.03):
+        x, y, z = skeleton[:,0], skeleton[:,1], skeleton[:,2]
+        nodes = mlab.points3d(x, y, z, scale_factor=node_scale, resolution=20)
         nodes.mlab_source.dataset.point_data.scalars = _get_red_color_by_shape((skeleton.shape[0], 3))
-        
+        return nodes
+    
+    def _add_bone_tubes(self, nodes, node_scale, kintree, color=(0.8, 0.8, 0)):
+        # Add bones as tubes
         nodes.mlab_source.dataset.lines = np.array(kintree)
+        tubes = mlab.pipeline.tube(nodes, tube_radius= node_scale * 0.2)
+        mlab.pipeline.surface(tubes, color=color)
+        return tubes
+    
+    def add_skeletal_animation(self, joints, kintree, node_scale=0.03):
         
-        # Use a tube fiter to plot tubes on the link, varying the radius with the
-        # scalar value
-        tube = mlab.pipeline.tube(nodes, tube_radius=node_scale*0.2)
-        tube.filter.radius_factor = 1.
-        tube.filter.vary_radius = 'vary_radius_by_scalar'
-        
-        yellow=(0.8, 0.8, 0)
-        mlab.pipeline.surface(tube, color=yellow)
-        
-        # Visualize the local atomic density
-        mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(nodes))
-        
-        
-        mlab.show()
+        nodes = self._add_joint_nodes(joints[0], node_scale)
+        tubes = self._add_bone_tubes( nodes, node_scale, kintree)
+        self.skeletons.append(Armature_Animation_Data(joints, nodes, tubes))
         
         
         

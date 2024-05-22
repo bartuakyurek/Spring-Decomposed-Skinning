@@ -49,6 +49,7 @@ for data in data_loader:
    # -----------------------------------------------------------------------
 
    v = smpl_verts.numpy()
+   j = joints.detach().cpu().numpy()
    f = smpl_model.faces
    jpg_path = "./rendered_jpgs/"
    
@@ -56,8 +57,8 @@ for data in data_loader:
    viewer.add_mesh_animation(v, f)
    viewer.set_mesh_opacity(0.6)
    
-   viewer.add_skeletal_animation(joints, kintree)
-   #viewer.run_animation() #, jpg_dir=jpg_path+"{}.jpg")
+   viewer.add_skeletal_animation(j, kintree)
+   viewer.run_animation() #, jpg_dir=jpg_path+"{}.jpg")
 
    break
 
