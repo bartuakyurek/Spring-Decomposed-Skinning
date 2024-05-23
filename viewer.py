@@ -17,9 +17,9 @@ from tvtk.common import configure_input
 import numpy as np
 import pickle
 import torch
-
 from dataclasses import dataclass
 
+from spring import Spring
 
 @dataclass
 class Actor_Animation_Data:
@@ -36,6 +36,7 @@ class Armature_Animation_Data:
 @dataclass
 class Spring_Armature_Animation_Data:
     parent_bone_indices: list
+    springs: list
     mass_locations_numpy: np.ndarray
     mass_locations_mlab_points: tvtk.PolyData
     #springs_mlab_tubes: tvtk.Actor
@@ -137,7 +138,22 @@ class Viewer:
         x = parent_bone_mid_coordinates[:,0]
         y = parent_bone_mid_coordinates[:,1]
         z = parent_bone_mid_coordinates[:,2]
+        
+        ######
+        new_mass_locations = []
+        for i, spring in enumerate(self.spring_rig.springs):
+            spring.update_connection(parent_bone_mid_coordinates[i])
+            new_mass_locations.append(spring.get_mass_coord())
+        
+        mass_loc = np.array(new_mass_locations)
+        self.spring_rig.mass_locations_mlab_points.mlab_source.set(x=mass_loc[:,0],
+                                                                   y=mass_loc[:,1],
+                                                                   z=mass_loc[:,2])
+        ######
         self.spring_parent_indicators.mlab_source.set(x=x, y=y, z=z)
+        
+    def _update_mass_spring_locations(self, frame_idx):
+        pass 
         
 
     def _add_joint_nodes(self, skeleton, node_scale=0.03, color=(1,0,0)):
@@ -186,7 +202,8 @@ class Viewer:
     def set_spring_rig(self, parent_bones, kintree, spring_rest_locations, node_scale=0.05):
         nodes = self._add_joint_nodes(spring_rest_locations, node_scale)
         
-        self.spring_rig = Spring_Armature_Animation_Data(parent_bones, spring_rest_locations, nodes)
+        
+        self.spring_rig = Spring_Armature_Animation_Data(parent_bones, [], spring_rest_locations, nodes)
         self.kintree = kintree
         
         parent_bone_mid_coordinates = self._find_bone_midpoints(self.skeleton.joints_numpy[0], 
@@ -197,4 +214,10 @@ class Viewer:
                                                                color=(1,1,1),
                                                                node_scale=0.03)
         
+        for mid_coord in parent_bone_mid_coordinates:
+            
+            #TODO make rest vector normalized, perpendicular to parent bone
+            rest_vector = np.array([0.1,0,0])
+            spring = Spring(mid_coord, rest_vector)
+            self.spring_rig.springs.append(spring)
         

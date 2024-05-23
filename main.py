@@ -51,7 +51,7 @@ for data in data_loader:
    v = smpl_verts.numpy()
    j = joints.detach().cpu().numpy()
    f = smpl_model.faces
-   jpg_path = "./rendered_jpgs/"
+   jpg_path = "./results/rendered_jpgs/"
    
    ### Manuel Spring Data
    spring_rest_locations = np.array([[0.4, 0.2, 0.0],
