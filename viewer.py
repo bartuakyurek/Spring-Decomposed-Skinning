@@ -20,6 +20,7 @@ import torch
 from dataclasses import dataclass
 
 from spring import Spring
+from math_utils import perpendicular_vector
 
 @dataclass
 class Actor_Animation_Data:
@@ -139,33 +140,27 @@ class Viewer:
         y = parent_bone_mid_coordinates[:,1]
         z = parent_bone_mid_coordinates[:,2]
         
-        ######
+        self.spring_parent_indicators.mlab_source.set(x=x, y=y, z=z)
+        # TODO: this shouldn't be here, store mid coordinates somewhere else
+        self._update_mass_spring_locations(frame_idx, parent_bone_mid_coordinates)
+        
+        
+    def _update_mass_spring_locations(self, frame_idx, parent_bone_mid_coordinates):
         new_mass_locations = []
         for i, spring in enumerate(self.spring_rig.springs):
+            spring.simulate()
             spring.update_connection(parent_bone_mid_coordinates[i])
-            new_mass_locations.append(spring.get_mass_coord())
+            new_mass_locations.append(spring.mass_coord)
         
         mass_loc = np.array(new_mass_locations)
         self.spring_rig.mass_locations_mlab_points.mlab_source.set(x=mass_loc[:,0],
                                                                    y=mass_loc[:,1],
                                                                    z=mass_loc[:,2])
-        ######
-        self.spring_parent_indicators.mlab_source.set(x=x, y=y, z=z)
-        
-    def _update_mass_spring_locations(self, frame_idx):
-        pass 
         
 
     def _add_joint_nodes(self, skeleton, node_scale=0.03, color=(1,0,0)):
         x, y, z = skeleton[:,0], skeleton[:,1], skeleton[:,2]
-        
-        #s = np.repeat(node_scale, len(x)) * 0.1
-        #c = s
-        #nodes = mlab.quiver3d(x, y, z, s, s, s, scalars=c, mode='sphere')
-        #nodes.glyph.color_mode = 'color_by_scalar'
-        
         nodes = mlab.points3d(x, y, z, scale_factor=node_scale, resolution=20)
-        
         red_color = np.repeat(color, len(skeleton), axis=0)
         nodes.mlab_source.dataset.point_data.scalars = red_color
        
@@ -211,13 +206,18 @@ class Viewer:
                                                                 self.spring_rig.parent_bone_indices)
         
         self.spring_parent_indicators = self._add_joint_nodes(parent_bone_mid_coordinates, 
-                                                               color=(1,1,1),
-                                                               node_scale=0.03)
+                                                               color=(1,0.8,1),
+                                                               node_scale=0.01)
         
-        for mid_coord in parent_bone_mid_coordinates:
-            
+        for i, mid_coord in enumerate(parent_bone_mid_coordinates):
+            joints = self.skeleton.joints_numpy[0]
             #TODO make rest vector normalized, perpendicular to parent bone
-            rest_vector = np.array([0.1,0,0])
+            begin_idx, end_idx = kintree[parent_bones[i]]
+            parent_bone_vector = joints[end_idx] - joints[begin_idx]
+            
+            spring_length = 0.1
+            rest_vector = perpendicular_vector(parent_bone_vector) * spring_length
+            
             spring = Spring(mid_coord, rest_vector)
             self.spring_rig.springs.append(spring)
         
