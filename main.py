@@ -65,7 +65,7 @@ for data in data_loader:
    
    ## Skeleton and springs
    single_mesh_viewer.set_skeletal_animation(j, kintree)
-   single_mesh_viewer.set_spring_rig(spring_parents, kintree, spring_rest_locations)
+   single_mesh_viewer.set_spring_rig(spring_parents, kintree)
    
    ## Run animation
    single_mesh_viewer.run_animation() #, jpg_dir=jpg_path+"{}.jpg")

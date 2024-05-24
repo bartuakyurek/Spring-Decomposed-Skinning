@@ -75,7 +75,8 @@ class Viewer:
                 
                 if render_skeleton:
                     self._update_skeleton_nodes(frame_idx)
-                    self._update_parent_indicators(frame_idx)
+                    if self.spring_rig:
+                        self._update_parent_indicators(frame_idx)
                 
                 self.figure.scene.render()
                 yield # Continue render from current frame
@@ -111,7 +112,7 @@ class Viewer:
         actor = self.mesh.verts_actor
         actor.property.set(opacity=opacity)
         actor.property.backface_culling = True
-     
+
     def _find_bone_midpoints(self, joints, kintree, selected_bone_indices):
         parent_bone_mid_coordinates = []
         for bone_idx in selected_bone_indices:
@@ -142,7 +143,8 @@ class Viewer:
         
         self.spring_parent_indicators.mlab_source.set(x=x, y=y, z=z)
         # TODO: this shouldn't be here, store mid coordinates somewhere else
-        self._update_mass_spring_locations(frame_idx, parent_bone_mid_coordinates)
+        if len(self.spring_rig.springs) > 0:
+            self._update_mass_spring_locations(frame_idx, parent_bone_mid_coordinates)
         
         
     def _update_mass_spring_locations(self, frame_idx, parent_bone_mid_coordinates):
@@ -153,11 +155,16 @@ class Viewer:
             new_mass_locations.append(spring.mass_coord)
         
         mass_loc = np.array(new_mass_locations)
+        
+        
         self.spring_rig.mass_locations_mlab_points.mlab_source.set(x=mass_loc[:,0],
                                                                    y=mass_loc[:,1],
                                                                    z=mass_loc[:,2])
         
 
+    ## TODO: rename it to add_sphere_nodes as mass-spring also uses it but they are not joints!
+    ## Also add expected types like skeleton: ...
+    ## Also rename skeleton to something like coordinates or xyz, it is vague!!
     def _add_joint_nodes(self, skeleton, node_scale=0.03, color=(1,0,0)):
         x, y, z = skeleton[:,0], skeleton[:,1], skeleton[:,2]
         nodes = mlab.points3d(x, y, z, scale_factor=node_scale, resolution=20)
@@ -194,11 +201,10 @@ class Viewer:
         tubes = self._add_bone_tubes( nodes, node_scale, kintree)
         self.skeleton = Armature_Animation_Data(joints, nodes, tubes)
                 
-    def set_spring_rig(self, parent_bones, kintree, spring_rest_locations, node_scale=0.05):
-        nodes = self._add_joint_nodes(spring_rest_locations, node_scale)
-        
-        
-        self.spring_rig = Spring_Armature_Animation_Data(parent_bones, [], spring_rest_locations, nodes)
+    def set_spring_rig(self, parent_bones, kintree):
+       
+
+        self.spring_rig = Spring_Armature_Animation_Data(parent_bones, [], None, None)
         self.kintree = kintree
         
         parent_bone_mid_coordinates = self._find_bone_midpoints(self.skeleton.joints_numpy[0], 
@@ -206,9 +212,10 @@ class Viewer:
                                                                 self.spring_rig.parent_bone_indices)
         
         self.spring_parent_indicators = self._add_joint_nodes(parent_bone_mid_coordinates, 
-                                                               color=(1,0.8,1),
-                                                               node_scale=0.01)
+                                                               color=(1,1,1),
+                                                               node_scale=0.03)
         
+        rest_locations = []
         for i, mid_coord in enumerate(parent_bone_mid_coordinates):
             joints = self.skeleton.joints_numpy[0]
             #TODO make rest vector normalized, perpendicular to parent bone
@@ -220,4 +227,11 @@ class Viewer:
             
             spring = Spring(mid_coord, rest_vector)
             self.spring_rig.springs.append(spring)
+            rest_locations.append(rest_vector)
+        
+        self.spring_rig.mass_locations_numpy = np.array(rest_locations)
+        self.spring_rig.mass_locations_mlab_points = self._add_joint_nodes(self.spring_rig.mass_locations_numpy, 
+                                                                           node_scale=0.02, color=(1,1,1))
+
+        
         
