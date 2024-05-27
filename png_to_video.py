@@ -11,7 +11,46 @@ import numpy as np
 from os.path import isfile, join
 
 
+def combine_two_videos(first_video_path, second_video_path, 
+                       new_video_path="combined.mp4", im_resolution=None):
+    
+    video1 = cv2.VideoCapture(first_video_path)
+    video2 = cv2.VideoCapture(second_video_path)
+    
+    frame_rate = int(video1.get(cv2.CAP_PROP_FPS))
+    frame_width = int(video1.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height= int(video1.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    
+    if im_resolution:
+        frame_width, frame_height = im_resolution   
+    else:
+        im_resolution = (frame_width, frame_height)
+    
+    resolution = (frame_width*2, frame_height)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(new_video_path, fourcc, frame_rate, resolution)
+    
+    while True:
+       
+        ret1, frame1 = video1.read()
+        ret2, frame2 = video2.read()
+        
+        if not ret1 or not ret2:
+            break
+        
+        frame1 = center_crop(frame1, im_resolution)
+        frame2 = center_crop(frame2, im_resolution) 
+        canvas = np.zeros((frame_height, frame_width * 2, 3), dtype=np.uint8)
+        canvas[:, :frame_width] = frame1
+        canvas[:, frame_width:] = frame2
+        out.write(canvas)
 
+    video1.release() 
+    video2.release()
+    out.release()
+    
+"""
+DOESNT WORK IDK WHY
 def concatenate_videos(new_video_path, *videos):
    
     video_list = [cv2.VideoCapture(v) for v in videos]
@@ -45,24 +84,10 @@ def concatenate_videos(new_video_path, *videos):
         else:
             out.write(canvas)
         
-        """
-        ret1, frame1 = video_list[0].read()
-        ret2, frame2 = video_list[1].read()
-        
-        if not ret1 or not ret2:
-            break
-        
-        frame1 = center_crop(frame1, im_resolution)
-        frame2 = center_crop(frame2, im_resolution) #cv2.resize(frame2, (frame_width, frame_height))
-        canvas = np.zeros((frame_height, frame_width * 2, 3), dtype=np.uint8)
-        canvas[:, :frame_width] = frame1
-        canvas[:, frame_width:] = frame2
-        out.write(canvas)
-        
-    """
-    
     [v.release() for v in video_list]
     out.release()
+    
+"""
         
 def center_crop(img, dim):
 	"""Returns center cropped image
@@ -114,7 +139,13 @@ def png2video(input_path, output_path=None, fps=24):
 if __name__ == '__main__':
     print(">> Testing: ", os.path.basename(__file__))
     #png2video('./results/rendered_jpgs/', './results/result.avi')
-    concatenate_videos('./results/combined.mp4', './results/smpl_rigid.avi', './results/smpl_jiggle.avi', './results/smpl_rigid.avi')
+    
+    combine_two_videos(first_video_path = './results/smpl_rigid.avi', 
+                       second_video_path = './results/smpl_jiggle.avi',
+                       new_video_path = './results/combined.mp4',
+                       im_resolution = (1024, 1024))
+
+    #concatenate_videos('./results/combined.mp4', './results/smpl_rigid.avi', './results/smpl_jiggle.avi', './results/smpl_rigid.avi')
     
     
     
