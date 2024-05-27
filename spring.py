@@ -36,9 +36,9 @@ class Spring:
         spring_force = self.k * delta_x # Fs = k * x
         damper_force = self.b * self.velocity # Fb = b * x'
 
-        print(">> 1. Velocity ", self.velocity)
-        print(">> 1. Acc ", self.acceleration)
-        print(">> 1. Spring and Damper F ", spring_force, damper_force)
+        #print(">> 1. Velocity ", self.velocity)
+        #print(">> 1. Acc ", self.acceleration)
+        #print(">> 1. Spring and Damper F ", spring_force, damper_force)
         
         # If we leave the acceleration alone in equation
         # acceleration = - ((b * velocity) + (k * position)) / mass
@@ -46,7 +46,7 @@ class Spring:
         self.velocity += (self.acceleration * self.dt) # Integral(a) = v
         self.mass_coord += (self.velocity * self.dt) # Integral(v) = x
 
-        print(">> 2. Velocity ", self.velocity)
-        print(">> 2. Acc ", self.acceleration)
+        #print(">> 2. Velocity ", self.velocity)
+        #print(">> 2. Acc ", self.acceleration)
         
         return self.mass_coord

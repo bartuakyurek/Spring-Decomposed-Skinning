@@ -48,10 +48,24 @@ for data in data_loader:
    # -----------------------------------------------------------------------
 
    ### Declare data we want to visualize
-   v = smpl_verts.numpy()
+   v = smpl_verts.detach().cpu().numpy()
    j = joints.detach().cpu().numpy()
    f = smpl_model.faces
    jpg_path = "./results/rendered_jpgs/"
+   
+   #############
+   upto_this_frame = 10
+   f1 = 10
+   f2 = 100
+   v_short = np.repeat(np.expand_dims(v[f1], axis=0), 100, axis=0)
+   v_short[upto_this_frame:] = v[f2]
+   
+   j_short = np.repeat(np.expand_dims(j[f1], axis=0), 100, axis=0)
+   j_short[upto_this_frame:] = j[f2]
+   
+   v = v_short
+   j = j_short
+   #############
    
    ### Manuel Spring Data
    spring_rest_locations = np.array([[0.4, 0.2, 0.0],

@@ -52,7 +52,11 @@ def combine_two_videos(first_video_path, second_video_path,
 """
 DOESNT WORK IDK WHY
 def concatenate_videos(new_video_path, *videos):
-   
+    # A function to combine several videos in a single video
+    # Useful for side-to-side comparisons of results
+    # @param new_video_path: String
+    # @param videos*: String, path to videos
+    
     video_list = [cv2.VideoCapture(v) for v in videos]
         
     frame_width = 1024 #int(video_list[0].get(cv2.CAP_PROP_FRAME_WIDTH))
