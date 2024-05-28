@@ -78,8 +78,9 @@ class Viewer:
                     if self.spring_rig:
                         self._update_parent_indicators(frame_idx)
                 
-                self.figure.scene.render()
-                yield # Continue render from current frame
+                if self.figure.scene: # if not closed
+                    self.figure.scene.render()
+                    yield # Continue render from current frame
         
         animation_decorator = update_animation()
         mlab.show()    
