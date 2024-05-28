@@ -23,7 +23,7 @@ from viewer import Viewer
 # TODO: use './data/female_bpts2dbs.pt' 
 # TODO: turn shuffle on for training dataset
 # TODO: create validation and test splits as well
-bpts2dbs_data = torch.load('./data/500"04_dataset.pt')
+bpts2dbs_data = torch.load('./data/50004_dataset.pt')
 training_data = bpts2dbs_data 
 data_loader = torch.utils.data.DataLoader(training_data, batch_size=1, shuffle=False)
 
