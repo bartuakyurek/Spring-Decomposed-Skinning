@@ -8,7 +8,7 @@ Created on Thu May 23 10:07:32 2024
 import numpy as np
 
 class Spring:
-    def __init__(self, connection_coord, rest_vector=np.array([1.,0.,0.]), mass=2., stiffness=0.5, damper=1.):
+    def __init__(self, connection_coord, rest_vector=np.array([1.,0.,0.]), mass=10, stiffness=1., damper=1.):
         self.step = 0.0
         self.dt = 1./24.
         
@@ -27,21 +27,25 @@ class Spring:
         
         
     def update_connection(self, new_connection_coord):
+        
+        self.delta_x = new_connection_coord - self.connection_coord
+        
         self.connection_coord = new_connection_coord
         self.mass_rest_coord = self.connection_coord + self.rest_vector
-        self.mass_coord =  self.mass_rest_coord + self.delta_x
+        self.mass_coord =  self.mass_rest_coord #+ self.delta_x
+        
+        
         #print("MASS COORD ", self.mass_coord)
         #print(self.delta_x)
-        
+         
     def simulate(self):
     
-        self.delta_x = self.mass_coord - self.mass_rest_coord
+        #self.delta_x = self.mass_coord - self.mass_rest_coord
 
         spring_force = self.k * self.delta_x 
         damper_force = self.b * self.velocity # Fb = b * x'
 
-        print(self.delta_x)
-        
+        #print(self.delta_x)
         print(">> 1. Velocity ", self.velocity)
         print(">> 1. Acc ", self.acceleration)
         print(">> 1. Spring and Damper F ", spring_force, damper_force)
@@ -50,8 +54,8 @@ class Spring:
         
         # If we leave the acceleration alone in equation
         # acceleration = - ((b * velocity) + (k * position)) / mass
-        self.acceleration = - (spring_force + damper_force) / self.mass
-        self.velocity += (self.acceleration * self.dt) # Integral(a) = v 
+        self.acceleration = - (spring_force + damper_force) / self.mass 
+        self.velocity += (self.acceleration * self.dt)  # Integral(a) = v 
         self.mass_coord += (self.velocity * self.dt) # Integral(v) = x
         
         """
