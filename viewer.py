@@ -61,7 +61,9 @@ class Viewer:
         self.spring_parent_indicators = None
         self.kintree = None
     
-    def run_animation(self, render_skeleton=True, save_jpg_dir=None):
+        self.render_skeleton = False
+        
+    def run_animation(self, save_jpg_dir=None):
         
         @mlab.animate(delay=40, ui=False)
         def update_animation():  
@@ -73,7 +75,7 @@ class Viewer:
                 if save_jpg_dir and i < len(self.mesh.verts_numpy):
                     mlab.savefig(save_jpg_dir.format(frame_idx),magnification=1)
                 
-                if render_skeleton:
+                if self.render_skeleton:
                     self._update_skeleton_nodes(frame_idx)
                     if self.spring_rig:
                         self._update_parent_indicators(frame_idx)
@@ -152,7 +154,13 @@ class Viewer:
         new_mass_locations = []
         for i, spring in enumerate(self.spring_rig.springs):
             spring.simulate()
-            spring.update_connection(parent_bone_mid_coordinates[i])
+            
+            if frame_idx > 0:
+                parent_idx = self.spring_rig.parent_bone_indices[i]
+                delta_parents = self.skeleton.joints_numpy[frame_idx, parent_idx] - self.skeleton.joints_numpy[frame_idx-1, parent_idx]
+                if np.sum(delta_parents ** 2) > 1e-5:
+                    spring.update_connection(parent_bone_mid_coordinates[i])
+             
             new_mass_locations.append(spring.mass_coord)
         
         mass_loc = np.array(new_mass_locations)
@@ -200,7 +208,9 @@ class Viewer:
         
         nodes = self._add_joint_nodes(joints[0], node_scale)
         tubes = self._add_bone_tubes( nodes, node_scale, kintree)
+        
         self.skeleton = Armature_Animation_Data(joints, nodes, tubes)
+        self.render_skeleton = True
                 
     def set_spring_rig(self, parent_bones, kintree):
        

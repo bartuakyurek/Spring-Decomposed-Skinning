@@ -53,7 +53,7 @@ for data in data_loader:
    f = smpl_model.faces
    jpg_path = "./results/rendered_jpgs/"
    
-   
+   """
    #############
    upto_this_frame = 10
    f1 = 10
@@ -67,7 +67,7 @@ for data in data_loader:
    v = v_short
    j = j_short
    #############
-   
+   """
    
    ### Manuel Spring Data
    spring_rest_locations = np.array([[0.4, 0.2, 0.0],
