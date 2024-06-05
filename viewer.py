@@ -59,6 +59,7 @@ class Viewer:
         self.spring_rig = None
 
         self.spring_parent_indicators = None
+        self.animation_colors = None
         self.kintree = None
     
         self.render_skeleton = False
@@ -79,6 +80,9 @@ class Viewer:
                     self._update_skeleton_nodes(frame_idx)
                     if self.spring_rig:
                         self._update_parent_indicators(frame_idx)
+                        
+                if self.animation_colors:
+                    self._update_mesh_color(frame_idx)
                 
                 if self.figure.scene: # if not closed
                     self.figure.scene.render()
@@ -115,6 +119,15 @@ class Viewer:
         actor = self.mesh.verts_actor
         actor.property.set(opacity=opacity)
         actor.property.backface_culling = True
+        
+    def set_mesh_animation_colors(self, colors):
+        self.animation_colors = colors
+        pass
+        # TODO:set mesh colors (not a straightforward thing to do in mayavi so... i'll switch libraries...)
+        
+    def _update_mesh_color(self, frame_idx):
+        colors = self.animation_colors[frame_idx]
+        
 
     def _find_bone_midpoints(self, joints, kintree, selected_bone_indices):
         parent_bone_mid_coordinates = []
