@@ -17,6 +17,8 @@ import numpy as np
 import torch
 
 from smpl_torch_batch import SMPLModel
+from dmpl_torch_batch import DMPLModel
+
 from skeleton_data import get_smpl_skeleton
 from viewer import Viewer
 
@@ -31,16 +33,18 @@ data_loader = torch.utils.data.DataLoader(training_data, batch_size=1, shuffle=F
 # TODO: gather every path variable in a path.py file, e.g. SMPL_PATH = './path/to/smpl'
 device = "cpu"
 smpl_model = SMPLModel(device=device, model_path='./body_models/smpl/female/model.pkl')
+#dmpl_model = DMPLModel(device=device, model_path='./body_models/dmpls/male/model.npz')
 
 for data in data_loader:
    beta_pose_trans_seq = data[0].squeeze().type(torch.float64)
    betas = beta_pose_trans_seq[:,:10]
    pose = beta_pose_trans_seq[:,10:82]
    trans = beta_pose_trans_seq[:,82:] 
-
+   
+   
    target_verts = data[1].squeeze()
    smpl_verts, joints = smpl_model(betas, pose, trans)
-   
+   #dmpl_verts = dmpl_model()
    SELECTED_FRAME = 150
    joint_locations = joints[SELECTED_FRAME].numpy()
    kintree = get_smpl_skeleton()
@@ -51,7 +55,6 @@ for data in data_loader:
    v = smpl_verts.detach().cpu().numpy()
    j = joints.detach().cpu().numpy()
    f = smpl_model.faces
-   jpg_path = "./results/rendered_jpgs/"
    
    """
    #############
@@ -68,7 +71,7 @@ for data in data_loader:
    j = j_short
    #############
    """
-   
+   """
    ### Manuel Spring Data
    spring_rest_locations = np.array([[0.4, 0.2, 0.0],
                             [0.1, 0.2, 0.3]])
@@ -85,6 +88,7 @@ for data in data_loader:
    
    ## Run animation
    single_mesh_viewer.run_animation() #, jpg_dir=jpg_path+"{}.jpg")
+   """
    
    # -----------------------------------------------------------------------
    # Break from for loop since we only wanna visualize one mesh rn
