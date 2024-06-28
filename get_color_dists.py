@@ -7,6 +7,29 @@ Created on Tue Jun  4 13:20:39 2024
 """
 import numpy as np
 
+def get_color_by_val(dist):
+    color = [0., 0., 0.]
+    for c in range(3):
+        val = dist * 2.0           # Get normalized distance value
+        val = (-1 if val > 2.0 else val) # Sanity check to not get >2.0
+     
+        if val < 1.:
+            if c == 0:                                            ## R
+                color[c] = 0.
+            elif c == 1:                                          ## G
+                color[c] = float(val)
+            else:                                                 ## B
+                color[c] = 1. - colors[f, i, 1] # 1 - green
+        else:
+            if c == 0:                                            ## R
+                color[c] = float(val) - 1.
+            elif c == 1:                                          ## G
+                color[c] = 1. - colors[f, i, 0] # 1 - red
+            else:                                                 ## B
+                color[c] = 0.
+            
+    return color
+    
 def get_delta_distance(orig_verts, deformed_verts):
     assert orig_verts.shape == deformed_verts.shape, "Input arrays must be in the same shape."
     assert orig_verts.shape[-1] == 3 or orig_verts.shape[-1] == 2, "Expected shape 2 or 3 in axis -1, found {}.".format(orig_verts.shape[1])
@@ -52,9 +75,10 @@ for f in range(num_frames):
     # Loop over verts
     for i in range(num_verts):
         # Loop over color dims
+        dist = dists[f, i]
         for c in range(3):
             
-            val = dists[f, i] * 2.0           # Get normalized distance value
+            val = dist * 2.0           # Get normalized distance value
             val = (-1 if val > 2.0 else val) # Sanity check to not get >2.0
          
             if val < 1.:
