@@ -1,46 +1,67 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun 27 11:19:34 2024
 
-@author: bartu
+Computes cot Laplacian and its smallest 20 eigenfunctions.
+Selected eigenfunction is visually rendered in output .html file.
+
 """
 
-import igl
+import igl 
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.sparse.linalg import eigsh
 import meshplot
-from meshplot import plot, subplot, interact
+from meshplot import plot
 
-from get_color_dists import get_color_by_val
-
+import matplotlib
+from get_color_dists import get_color_by_val, my_cmap
+from matplotlib import cm
+ 
+COLOR_MAP_CHOICE = "jet"
+#"hot" # "rainbow", # "default" # "jet"
+                    
 def cotan_laplacian(V, F):
+    # TODO refactor main code into functions to be utilized in your pipeline.
     pass
 
 if __name__ == "__main__":
     
-    OBJ_PATH = "/Users/Bartu/Documents/Datasets/DFAUST/results/50004_jiggle_on_toes/00010.obj"
+    #OBJ_PATH = "/Users/Bartu/Documents/Datasets/DFAUST/results/50004_jiggle_on_toes/00010.obj"
+    OBJ_PATH = "./results/homer.obj" #SMPL-T.obj"
     V, _, _, F, _, _ = igl.read_obj(OBJ_PATH)  
+    
+   # _, V, F, _, _ = igl.decimate(V, F, 512)
+    
     
     L = igl.cotmatrix(V, F)
     num_eigvecs = 20
     eigvals, eigvecs = eigsh(L, k=num_eigvecs, which="SM")
     
-    i = selected_eigen_function = 19
-    eigvec = eigvecs[:,i]
+    selected_eigen_function = [0, 1, 2, 3, 4, 5, 6, 7]
+    for i in selected_eigen_function:
+        eigvec = eigvecs[:,i]
+        
+        normalized_eigvec = eigvec - np.min(eigvec)
+        normalized_eigvec /=   np.max(normalized_eigvec) 
+        
+        
+        colors = []  
+        for val in normalized_eigvec:
+
+            if COLOR_MAP_CHOICE == "hot":
+                colors.append(cm.hot(val)[0:3])
+                
+            elif COLOR_MAP_CHOICE == "rainbow":
+                colors.append(my_cmap(val)[0:3])
+                
+            elif COLOR_MAP_CHOICE == "jet":
+                colors.append(cm.jet(val)[0:3])
+                
+            else: #if COLOR_MAP_CHOICE == "default":
+                colors.append(get_color_by_val(val))
+        
+        colors = np.array(colors)
+        
+        meshplot.offline()
+        plot(V, F, colors, filename="Tpose-mode-{}.html".format(i))
     
-    normalized_eigvec = eigvec - np.min(eigvec)
-    normalized_eigvec /=   np.max(normalized_eigvec) 
-    
-    colors = []  
-    for val in normalized_eigvec:
-        colors.append(get_color_by_val(val))
-    
-    colors = np.array(colors)
-    
-    meshplot.offline()
-    plot(V, F, colors)
-    
-    #plt.plot(eigvecs[:, i])
-    #plt.show()
