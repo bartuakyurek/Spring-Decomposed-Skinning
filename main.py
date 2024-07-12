@@ -19,8 +19,10 @@ import torch
 from smpl_torch_batch import SMPLModel
 from dmpl_torch_batch import DMPLModel
 
+from skinning import *
 from skeleton_data import get_smpl_skeleton
 from viewer import Viewer
+from colors import SMPL_JOINT_COLORS
 
 # TODO: use './data/female_bpts2dbs.pt' 
 # TODO: turn shuffle on for training dataset
@@ -50,11 +52,25 @@ for data in data_loader:
    kintree = get_smpl_skeleton()
    
    # -----------------------------------------------------------------------
-
+   
    ### Declare data we want to visualize
-   v = smpl_verts.detach().cpu().numpy()
-   j = joints.detach().cpu().numpy()
+   SELECTED_FRAME = 0
+   theta = np.reshape(pose[SELECTED_FRAME], (24,3))
+   v = smpl_verts.detach().cpu().numpy()[SELECTED_FRAME]
+   j = joints.detach().cpu().numpy()[SELECTED_FRAME]
    f = smpl_model.faces
+   w = np.array(smpl_model.weights.detach().cpu())
+   
+   #np.savez("./results/skinning_sample_data.npz", v, f, j, theta, kintree, w)
+   
+   """
+   # Color the weights data of SMPL to verify bone-vertex weights.
+   w = np.array(smpl_model.weights.detach().cpu())
+   joint_colors = np.array(SMPL_JOINT_COLORS)
+   
+   vert_colors = w @ joint_colors
+   np.savez("smpl_weight_vertex_colors.npz", vert_colors)
+   """
    
    """
    #############

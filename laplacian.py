@@ -13,31 +13,28 @@ from scipy.sparse.linalg import eigsh
 import meshplot
 from meshplot import plot
 
-import matplotlib
 from get_color_dists import get_color_by_val, my_cmap
 from matplotlib import cm
  
 COLOR_MAP_CHOICE = "jet"
 #"hot" # "rainbow", # "default" # "jet"
                     
-def cotan_laplacian(V, F):
-    # TODO refactor main code into functions to be utilized in your pipeline.
-    pass
-
 if __name__ == "__main__":
     
+    ######### PARAMETERS TO BE SET ####################
+    num_eigvecs = 20
+    selected_eigen_function = [0, 1, 2, 3, 4, 10, 15, 19]
+    OBJ_PATH = "./results/SMPL-T.obj" #homer.obj"
     #OBJ_PATH = "/Users/Bartu/Documents/Datasets/DFAUST/results/50004_jiggle_on_toes/00010.obj"
-    OBJ_PATH = "./results/homer.obj" #SMPL-T.obj"
-    V, _, _, F, _, _ = igl.read_obj(OBJ_PATH)  
+    ###################################################
     
-   # _, V, F, _, _ = igl.decimate(V, F, 512)
-    
+    # Load object    
+    V, _, _, F, _, _ = igl.read_obj(OBJ_PATH)    
+    # _, V, F, _, _ = igl.decimate(V, F, 512)
     
     L = igl.cotmatrix(V, F)
-    num_eigvecs = 20
     eigvals, eigvecs = eigsh(L, k=num_eigvecs, which="SM")
     
-    selected_eigen_function = [0, 1, 2, 3, 4, 5, 6, 7]
     for i in selected_eigen_function:
         eigvec = eigvecs[:,i]
         
@@ -63,5 +60,5 @@ if __name__ == "__main__":
         colors = np.array(colors)
         
         meshplot.offline()
-        plot(V, F, colors, filename="Tpose-mode-{}.html".format(i))
+        plot(V, F, colors, filename="Tpose-mode-{}.html".format(i+1))
     
