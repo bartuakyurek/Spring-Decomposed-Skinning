@@ -10,33 +10,6 @@ IMPORTANT NOTES:
 import igl
 import torch
 import numpy as np
-
-def quat2axisangle(quat, in_radians=True):
-    """
-    
-
-    Parameters
-    ----------
-    quat : TYPE
-        DESCRIPTION.
-    in_radians : TYPE, optional
-        DESCRIPTION. The default is True.
-
-    Returns
-    -------
-    roll_x : TYPE
-        DESCRIPTION.
-    pitch_y : TYPE
-        DESCRIPTION.
-    yaw_z : TYPE
-        DESCRIPTION.
-
-    """
-    roll_x = 0
-    pitch_y = 0
-    yaw_z = 0
-    return roll_x, pitch_y, yaw_z
-    
     
 # todo:  taken https://github.com/Dou-Yiming/Pose_to_SMPL/blob/main/smplpytorch/pytorch/rodrigues_layer.py
 def quat2mat(quat):
@@ -115,13 +88,28 @@ def batch_axsang_to_quats(rot):
     qy = cos(roll) * sin(pitch) * cos(yaw)
     qz = cos(roll) * cos(pitch) * sin(yaw)
     qw = cos(roll) * cos(pitch) * cos(yaw)
-        
+    
     return stack((qx, qy, qz, qw)).transpose()
+
+def batch_axsang_to_quats2(axisang):
+    # TODO: HEPSINI TORCH'DA YAP YAPACAKSAN....
+    #axisang = torch.from_numpy(axisang)
+    
+    axisang_norm = torch.norm(axisang + 1e-8, p=2, dim=1)
+    angle = torch.unsqueeze(axisang_norm, -1)
+    axisang_normalized = torch.div(axisang, angle)
+    angle = angle * 0.5
+    v_cos = torch.cos(angle)
+    v_sin = torch.sin(angle)
+    quat = torch.cat([v_cos, v_sin * axisang_normalized], dim=1)
+    
+   # quat = np.array(quat)
+    return quat
 
 def forward_kin(joint_pos, 
                 joint_edges, 
                 joint_parents, 
-                relative_rot, 
+                relative_rot, # axis angle representation
                 relative_trans=None):
     
     relative_rot_q = batch_axsang_to_quats(relative_rot)
@@ -214,6 +202,8 @@ if __name__ == "__main__":
     #np.savez("./results/V_unposed.npz", V_unposed)
     F = np.array(F, dtype=int)
     igl.write_obj("V_unposed_SMPL.obj", V_unposed, F)
+    igl.write_obj("V_cycle_SMPL.obj", V_cycle, F)
+
     ## END OF UNPOSE FUNCTION ------------------------------------
     
     
