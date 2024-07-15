@@ -173,6 +173,7 @@ def LBS(V, W, J, JE, theta):
 def inverse_LBS(V_posed, W, J, JE, theta):
     
     unposed_V = LBS(V_posed, W, J, JE, -theta)
+    
     return unposed_V
 
 if __name__ == "__main__":
