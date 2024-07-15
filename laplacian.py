@@ -122,3 +122,6 @@ if __name__ == "__main__":
         meshplot.offline()
         plot(V, F, colors, filename="./results/eigenfunc/Tpose-mode-{}.html".format(i+1))
     
+    eigfunc_path = "./results/laplace-beltrami-eigs.npz"
+    print(">> Saving Laplace-Beltrami operator's eigen values and functions to ", eigfunc_path)
+    np.savez(eigfunc_path, eigvals, eigvecs)
