@@ -97,11 +97,11 @@ if __name__ == "__main__":
         normalized_eigvec = eigvec - np.min(eigvec)
         normalized_eigvec /=   np.max(normalized_eigvec) 
         
-        colors = [] # TODO: np.empty((num_verts, 3))
+        colors = []
         for val in normalized_eigvec:
 
             if COLOR_MAP_CHOICE == "hot":
-                colors = (cm.hot(val)[0:3])
+                colors.append(cm.hot(val)[0:3])
                 
             elif COLOR_MAP_CHOICE == "rainbow":
                 colors.append(my_cmap_RGB(val)[0:3])
