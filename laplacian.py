@@ -69,6 +69,7 @@ if __name__ == "__main__":
     
     # Load object    
     V, _, _, F, _, _ = igl.read_obj(OBJ_PATH)    
+    num_verts = V.shape[0]
     # _, V, F, _, _ = igl.decimate(V, F, 512)
     
     L = igl.cotmatrix(V, F)
@@ -89,7 +90,6 @@ if __name__ == "__main__":
         eigvals, eigvecs = scipy.sparse.linalg.eigs(L, k=num_eigvecs, which="SM")
         
     # eigvals, eigvecs = np.linalg.eig(L.todense()) --> computationally expensive
-    
     for i in selected_eigen_function:
     
         eigvec = np.real(eigvecs[:,i])
@@ -97,11 +97,11 @@ if __name__ == "__main__":
         normalized_eigvec = eigvec - np.min(eigvec)
         normalized_eigvec /=   np.max(normalized_eigvec) 
         
-        colors = []  
+        colors = [] # TODO: np.empty((num_verts, 3))
         for val in normalized_eigvec:
 
             if COLOR_MAP_CHOICE == "hot":
-                colors.append(cm.hot(val)[0:3])
+                colors = (cm.hot(val)[0:3])
                 
             elif COLOR_MAP_CHOICE == "rainbow":
                 colors.append(my_cmap_RGB(val)[0:3])
@@ -112,13 +112,11 @@ if __name__ == "__main__":
             else: #if COLOR_MAP_CHOICE == "default":
                 colors.append(get_color_by_val(val))
                 
-        
         #plt.plot(eigvec)
         #plt.ylabel(f'eigen_vector_{i}')
         #plt.show()
         
         colors = np.array(colors)
-        
         meshplot.offline()
         plot(V, F, colors, filename="./results/eigenfunc/Tpose-mode-{}.html".format(i+1))
     
