@@ -150,3 +150,5 @@ results/.DS_Store
 .DS_Store
 /legacy
 /horror
+V_cycle_SMPL.obj
+V_unposed_SMPL.obj
