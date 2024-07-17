@@ -8,69 +8,23 @@ Created on Wed Jul 17 15:01:08 2024
 import torch
 import igl
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
-def quat2mat(quat):
-    """
-    DISCLAIMER: Taken from
-    https://github.com/Dou-Yiming/Pose_to_SMPL/blob/main/smplpytorch/pytorch/rodrigues_layer.py
+def translate_affine(T, t):
+    assert T.shape[-1] == 4
+    assert T.shape[-2] == 4
+    assert t.shape[-1] == 3
+    assert len(T.shape) == 3 or len(T.shape) == 2
+    assert len(T.shape) == len(t.shape) + 1 
     
-    Convert quaternion coefficients to rotation matrix.
-    Args:
-        quat: size = [batch_size, 4] 4 <===>(w, x, y, z)
-    Returns:
-        Rotation matrix corresponding to the quaternion -- size = [batch_size, 3, 3]
-    """
-    norm_quat = quat
-    norm_quat = norm_quat / norm_quat.norm(p=2, dim=1, keepdim=True)
-    w, x, y, z = norm_quat[:, 0], norm_quat[:, 1], norm_quat[:,
-                                                             2], norm_quat[:,
-                                                                           3]
-    batch_size = quat.size(0)
-
-    w2, x2, y2, z2 = w.pow(2), x.pow(2), y.pow(2), z.pow(2)
-    wx, wy, wz = w * x, w * y, w * z
-    xy, xz, yz = x * y, x * z, y * z
-
-    rotMat = torch.stack([
-        w2 + x2 - y2 - z2, 2 * xy - 2 * wz, 2 * wy + 2 * xz, 2 * wz + 2 * xy,
-        w2 - x2 + y2 - z2, 2 * yz - 2 * wx, 2 * xz - 2 * wy, 2 * wx + 2 * yz,
-        w2 - x2 - y2 + z2
-    ],
-                         dim=1).view(batch_size, 3, 3)
-    return rotMat
-
-def batch_rodrigues(axisang):
-    """
-    DISCLAIMER: Taken from 
-    https://github.com/Dou-Yiming/Pose_to_SMPL/blob/main/smplpytorch/pytorch/rodrigues_layer.py
-
-    Parameters
-    ----------
-    axisang : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    rot_mat : TYPE
-        DESCRIPTION.
-
-    """
-    #axisang N x 3
-    axisang_norm = torch.norm(axisang + 1e-8, p=2, dim=1)
-    angle = torch.unsqueeze(axisang_norm, -1)
-    axisang_normalized = torch.div(axisang, angle)
-    angle = angle * 0.5
-    v_cos = torch.cos(angle)
-    v_sin = torch.sin(angle)
-    quat = torch.cat([v_cos, v_sin * axisang_normalized], dim=1)
-    rot_mat = quat2mat(quat)
-    rot_mat = rot_mat.view(rot_mat.shape[0], 9)
-    return rot_mat
-
-###############################################################################
-
-def _axisang_to_matrix(axisang):
-    return batch_rodrigues(axisang)
+    T_new = T
+    if len(T.shape) == 3:
+        assert T.shape[0] == t.shape[0]
+        T_new[:, :3,-1] += t[:]
+    else:
+        T_new[:3, -1] += t
+    
+    return T_new
     
 
 def _get_affine(R, t):
@@ -82,40 +36,16 @@ def _get_affine(R, t):
     
     return affine
 
-def _axisang_to_affine(axisang, t):
-    rot_matrix = _axisang_to_matrix(axisang)
-    return _get_affine(rot_matrix, t)
-
-def batch_axsang_to_quats(axisang):
-    # TODO: HEPSINI TORCH'DA YAP YAPACAKSAN....
-    axisang = torch.from_numpy(axisang)
-    
-    axisang_norm = torch.norm(axisang + 1e-8, p=2, dim=1)
-    angle = torch.unsqueeze(axisang_norm, -1)
-    axisang_normalized = torch.div(axisang, angle)
-    angle = angle * 0.5
-    v_cos = torch.cos(angle)
-    v_sin = torch.sin(angle)
-    quat = torch.cat([v_cos, v_sin * axisang_normalized], dim=1)
-
-    quat = np.array(quat, order='F')
-    return quat
-
-###############################################################################
-
-def get_unpose_matrix(theta, t):
-    return _axisang_to_affine(-theta, -t)
-
-def get_pose_matrix(theta, t):
-    return _axisang_to_affine(theta, t)
-    
 def forward_kin(joint_pos, 
                 joint_edges, 
                 joint_parents, 
                 relative_rot, # axis angle representation
                 relative_trans=None):
     
-    relative_rot_q = batch_axsang_to_quats(relative_rot)
+    #relative_rot_q = batch_axsang_to_quats(relative_rot)
+    r = R.from_euler('xyz', relative_rot, degrees=False)
+    relative_rot_q = r.as_quat()
+    relative_rot_q = np.array(relative_rot_q, order='F') # order is for libigl's implementation
     
     if relative_trans is None:
         relative_trans = np.zeros_like(relative_rot_q)[:,:3]
@@ -133,10 +63,11 @@ def LBS(V, W, J, JE, theta):
     P = igl.directed_edge_parents(JE)
     abs_rot, abs_t = forward_kin(J, JE, P, theta)
     
-    R_mat = np.array(quat2mat(torch.from_numpy(abs_rot)))
+    r = R.from_quat(abs_rot)
+    R_mat = r.as_matrix()
+    #R_mat = np.array(quat2mat(torch.from_numpy(abs_rot)))
    
     num_bones = abs_t.shape[0]
-    
     V_posed = np.zeros_like(V)
     for vertex in range(V_posed.shape[0]):
         for bone in range(num_bones):
@@ -145,14 +76,29 @@ def LBS(V, W, J, JE, theta):
             if W[vertex, bone] < 1e-15:
                 continue # Weight is zero, don't add any contribution
             
+                        
+            R_mat[bone], abs_t[bone]
+            # TODO: J[bone] means the bone_tail, but you need bone_head location!
+            # TODO: maybe learn how to rotate a matrix with a quat as in Libigl's.
+            V_bone_space = V[vertex] - J[bone] #abs_t[bone]
+            V_bone_space_rotated = np.matmul(R_mat[bone].transpose(), V_bone_space)
+            V_world_space = V_bone_space_rotated + J[bone] #abs_t[bone]
+            
+            # TODO: WHICH ONE? TRANSPOSED OR UNTRANSPOSED?????????????????????????
+            V_posed[vertex] += W[vertex, bone] * V_world_space
+            
+            """
             transform_mat = _get_affine(R_mat[bone], abs_t[bone])
             V_homo = np.insert(V[vertex], 3, 1.0)
-            V_new_homo = W[vertex, bone] * transform_mat @ V_homo
+            
+            # TODO: WHICH ONE? TRANSPOSED OR UNTRANSPOSED?????????????????????????
+            V_new_homo = np.matmul(transform_mat, V_homo) #.transpose() @ V_homo
+            V_new_homo *=  W[vertex, bone]
             
             V_posed[vertex] += V_new_homo[:3]
+            """
             # TODO: put the rotation and translation into affine matrix
             # and then apply affine transformation!
-    
     return V_posed
 
 def inverse_LBS(V_posed, W, J, JE, theta):
@@ -161,9 +107,7 @@ def inverse_LBS(V_posed, W, J, JE, theta):
 if __name__ == "__main__":
     print(">> Testing transformations.py...")
     
-    
-    # TODO: add root bone's head location as origin so that we can have FK properly
-    
+
     # Load the mesh data
     with np.load("./results/skinning_sample_data.npz") as data:
         V = data['arr_0'] # Vertices, V x 3
@@ -173,7 +117,6 @@ if __name__ == "__main__":
         kintree = data['arr_4'] # Skeleton joint hierarchy (J-1) x 2
         W = data['arr_5']
         
-    
     # Modify the kintree by adding a ghost joint location to origin
     # to be compatible with libigl's forward kinematics
     J_modified = np.insert(J, J.shape[0], [0,0,0], axis=0)
