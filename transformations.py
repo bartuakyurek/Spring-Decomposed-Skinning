@@ -76,8 +76,21 @@ def LBS(V, W, J, JE, theta):
             if W[vertex, bone] < 1e-15:
                 continue # Weight is zero, don't add any contribution
             
-                        
-            R_mat[bone], abs_t[bone]
+            affine = np.eye(4)
+            affine[0:3, -1] += abs_t[bone]
+            affine2 = r[bone].apply(affine[0:3,0:3])
+            affine[0:3,0:3] = affine2
+            
+            V_homo = np.ones((4))
+            V_homo[:3] = V[vertex]
+            V_homo[-1] = 1.
+            
+            v_tmp = V_homo @ affine.transpose()  
+            v_tmp *= W[vertex, bone]
+            
+            V_posed[vertex] +=  v_tmp[:3]
+            
+            """
             # TODO: J[bone] means the bone_tail, but you need bone_head location!
             # TODO: maybe learn how to rotate a matrix with a quat as in Libigl's.
             V_bone_space = V[vertex] - J[bone] #abs_t[bone]
@@ -86,6 +99,8 @@ def LBS(V, W, J, JE, theta):
             
             # TODO: WHICH ONE? TRANSPOSED OR UNTRANSPOSED?????????????????????????
             V_posed[vertex] += W[vertex, bone] * V_world_space
+            
+            """
             
             """
             transform_mat = _get_affine(R_mat[bone], abs_t[bone])
@@ -129,9 +144,11 @@ if __name__ == "__main__":
     print(np.sum(V - V_cycle))
     #np.savez("./results/V_unposed.npz", V_unposed)
     F = np.array(F, dtype=int)
-    igl.write_obj("V_unposed_SMPL.obj", V_unposed, F)
-    igl.write_obj("V_cycle_SMPL.obj", V_cycle, F)
+    
+    random_str = str(np.random.rand())[3:-1]
+    igl.write_obj("V_unposed_SMPL"+random_str+".obj", V_unposed, F)
+    igl.write_obj("V_cycle_SMPL"+random_str+".obj", V_cycle, F)
     
     
-    print(">> End of test.")
+    print(">> End of test ", random_str)
 
