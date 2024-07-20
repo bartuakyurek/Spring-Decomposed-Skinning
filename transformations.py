@@ -78,14 +78,14 @@ def LBS(V, W, J, JE, theta):
             
             affine = np.eye(4)
             affine[0:3, -1] += abs_t[bone]
-            affine2 = r[bone].apply(affine[0:3,0:3])
-            affine[0:3,0:3] = affine2
+            #affine2 = r[bone].apply(affine[0:3,0:3])
+            affine[0:3,0:3] = R_mat[bone] #affine2
             
             V_homo = np.ones((4))
             V_homo[:3] = V[vertex]
             V_homo[-1] = 1.
             
-            v_tmp = V_homo @ affine.transpose()  
+            v_tmp = affine @ V_homo 
             v_tmp *= W[vertex, bone]
             
             V_posed[vertex] +=  v_tmp[:3]
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     #np.savez("./results/V_unposed.npz", V_unposed)
     F = np.array(F, dtype=int)
     
-    random_str = str(np.random.rand())[3:-1]
+    random_str = str(np.random.rand())[3:9]
     igl.write_obj("V_unposed_SMPL"+random_str+".obj", V_unposed, F)
     igl.write_obj("V_cycle_SMPL"+random_str+".obj", V_cycle, F)
     
