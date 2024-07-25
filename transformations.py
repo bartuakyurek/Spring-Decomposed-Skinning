@@ -76,16 +76,29 @@ def LBS(V, W, J, JE, theta):
             if W[vertex, bone] < 1e-15:
                 continue # Weight is zero, don't add any contribution
             
+            
+            ####
+            """
+            aff = np.eye(3)
+            q = np.array([0.053427851090398007,
+                          -0.012677099504295151,
+                          -0.28733881120315019,
+                          0.95625371290906935])
+            
+            r_tmp = R.from_quat(q)
+            aff2 = r_tmp.apply(aff)
+            """
+            ####
+            
             affine = np.eye(4)
             affine[0:3, -1] += abs_t[bone]
-            #affine2 = r[bone].apply(affine[0:3,0:3])
-            affine[0:3,0:3] = R_mat[bone] #affine2
+            affine[0:3,0:3] = R_mat[bone] #.transpose() 
             
-            V_homo = np.ones((4))
+            V_homo = np.zeros((4))
             V_homo[:3] = V[vertex]
             V_homo[-1] = 1.
             
-            v_tmp = affine @ V_homo 
+            v_tmp = affine @ V_homo # .transpose()
             v_tmp *= W[vertex, bone]
             
             V_posed[vertex] +=  v_tmp[:3]
@@ -124,31 +137,34 @@ if __name__ == "__main__":
     
 
     # Load the mesh data
-    with np.load("./results/skinning_sample_data.npz") as data:
+    with np.load("./results/skinning_T_pose_data.npz") as data:
         V = data['arr_0'] # Vertices, V x 3
         F = data['arr_1'] # Faces, F x 3
         J = data['arr_2'] # Joint locations J x 3
         theta = data['arr_3'] # Joint relative rotations J x 3
         kintree = data['arr_4'] # Skeleton joint hierarchy (J-1) x 2
         W = data['arr_5']
-        
+    
+    
     # Modify the kintree by adding a ghost joint location to origin
     # to be compatible with libigl's forward kinematics
     J_modified = np.insert(J, J.shape[0], [0,0,0], axis=0)
     kintree_modified = np.insert(kintree, kintree.shape[0], [24, 0], axis=0)
     
     theta = np.array(theta) # TODO: stick to either torch or numpy, dont juggle two
-    V_unposed = inverse_LBS(V, W, J_modified, kintree_modified, theta)
-    V_cycle = LBS(V_unposed, W, J_modified, kintree_modified, theta)
+    
+    V_posed = LBS(V, W, J_modified, kintree_modified, theta)
+    V_cycle = LBS(V_posed, W, J_modified, kintree_modified, -theta)
+    
+    #V_unposed = inverse_LBS(V, W, J_modified, kintree_modified, theta)
+    #V_cycle = LBS(V_unposed, W, J_modified, kintree_modified, theta)
     
     print(np.sum(V - V_cycle))
-    #np.savez("./results/V_unposed.npz", V_unposed)
     F = np.array(F, dtype=int)
     
     random_str = str(np.random.rand())[3:9]
-    igl.write_obj("V_unposed_SMPL"+random_str+".obj", V_unposed, F)
-    igl.write_obj("V_cycle_SMPL"+random_str+".obj", V_cycle, F)
-    
+    igl.write_obj("./results/pose-unpose/V_posed_SMPL"+random_str+".obj", V, F)
+    igl.write_obj("./results/pose-unpose/V_cycle_SMPL"+random_str+".obj", V, F)
     
     print(">> End of test ", random_str)
 

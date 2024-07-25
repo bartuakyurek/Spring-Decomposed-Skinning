@@ -15,6 +15,7 @@ DISCLAIMER: The base code is borrowed from https://github.com/haoranchen06/DBS
 import os
 import numpy as np
 import torch
+import meshplot 
 
 from smpl_torch_batch import SMPLModel
 from dmpl_torch_batch import DMPLModel
@@ -43,25 +44,78 @@ for data in data_loader:
    pose = beta_pose_trans_seq[:,10:82]
    trans = beta_pose_trans_seq[:,82:] 
    
-   
    target_verts = data[1].squeeze()
    smpl_verts, joints = smpl_model(betas, pose, trans)
-   #dmpl_verts = dmpl_model()
+   
+   
    SELECTED_FRAME = 150
    joint_locations = joints[SELECTED_FRAME].numpy()
    kintree = get_smpl_skeleton()
    
    # -----------------------------------------------------------------------
    
+   """
+   smpl_verts_T, joints_T = smpl_model(betas, torch.zeros_like(pose), trans)
+   
+   theta = np.reshape(pose[SELECTED_FRAME], (24,3)) #### sample pose
+   v = smpl_verts_T.detach().cpu().numpy()[SELECTED_FRAME]
+   j = joints_T.detach().cpu().numpy()[SELECTED_FRAME]
+   f = smpl_model.faces
+   w = np.array(smpl_model.weights.detach().cpu())
+   #np.savez("./results/skinning_T_pose_data.npz", v, f, j, theta, kintree, w)
+   """
+  
+   """
+   AYNISI....
+   sequence_len = target_verts.shape[0]
+   f = smpl_model.faces
+   _, _, LBS_T = smpl_model(betas, pose, trans, return_T=True)
+
+   v_unposed_seq = []
+   for i in range(sequence_len):
+       SELECTED_FRAME = i
+       T = LBS_T[SELECTED_FRAME]
+       T_inv = torch.inverse(T)
+       
+       tmp_verts = smpl_verts[SELECTED_FRAME] #target_verts[SELECTED_FRAME] 
+       tmp_verts -= trans[SELECTED_FRAME]
+       
+       v_homo = torch.cat([tmp_verts,torch.ones([6890, 1])], dim=-1)
+       v_unposed = torch.matmul(T_inv, torch.unsqueeze(v_homo, dim=-1)).squeeze()[ :,:3]
+       
+       v_unposed_seq.append(v_unposed)
+       
+   np.savez("./results/unposed_seq_smpl.npz", np.array(v_unposed_seq))
+   
+   #meshplot.offline()
+   #meshplot.plot(np.array(v_unposed), f, filename="./unposed-dfaust.html")
+   """
+   
+   _, _, LBS_T = smpl_model(betas, pose, trans, return_T=True)
+
+   T = LBS_T 
+   T_inv = torch.inverse(T)
+   num_batch = target_verts.shape[0]
+   
+   tmp_verts = target_verts #smpl_verts #target_verts 
+   tmp_verts -= torch.reshape(trans, (num_batch, 1, 3)) #trans[SELECTED_FRAME]
+   
+   v_homo = torch.cat([tmp_verts,torch.ones([num_batch, 6890, 1])], dim=2)
+   v_unposed = torch.matmul(T_inv, torch.unsqueeze(v_homo, dim=-1)).squeeze()[:, :,:3]
+
+   np.savez("./results/unposed_dfaust.npz", v_unposed)
+   
+
+   """
    ### Declare data we want to visualize
-   SELECTED_FRAME = 0
+   smpl_verts_T, joints_T = smpl_model(betas, torch.zeros_like(pose), trans)
+
    theta = np.reshape(pose[SELECTED_FRAME], (24,3))
    v = smpl_verts.detach().cpu().numpy()[SELECTED_FRAME]
    j = joints.detach().cpu().numpy()[SELECTED_FRAME]
    f = smpl_model.faces
    w = np.array(smpl_model.weights.detach().cpu())
-   
-   #np.savez("./results/skinning_sample_data.npz", v, f, j, theta, kintree, w)
+   """
    
    """
    # Color the weights data of SMPL to verify bone-vertex weights.

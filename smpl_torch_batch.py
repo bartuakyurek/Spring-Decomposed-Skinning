@@ -122,7 +122,7 @@ class SMPLModel(Module):
       for f in self.faces + 1:
         fp.write('f %d %d %d\n' % (f[0], f[1], f[2]))
         
-  def forward(self, betas, pose, trans, simplify=False):
+  def forward(self, betas, pose, trans, simplify=False, return_T=False):
     
     """
           Construct a compute graph that takes in parameters and outputs a tensor as
@@ -207,6 +207,9 @@ class SMPLModel(Module):
     #print(result.shape)
     #print(self.joint_regressor.shape)
     joints = torch.tensordot(result, self.joint_regressor, dims=([1], [1])).transpose(1, 2)
+    
+    if return_T:
+        return result, joints, T 
     
     return result, joints
 
