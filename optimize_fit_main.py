@@ -36,17 +36,19 @@ for data in data_loader:
    # -----------------------------------------------------------------------
    
    init_betas = torch.clone(betas)
+   init_pose = torch.clone(pose)
    
    betas_param = torch.nn.Parameter(betas, requires_grad=True)
    pose_param = torch.nn.Parameter(pose, requires_grad=True)
    trans_param = torch.nn.Parameter(trans, requires_grad=True)
 
-   n_iters = 70
+   n_iters = 50
    learning_rate = 1e-6
     
    criterion = torch.nn.MSELoss()
    optimizer = torch.optim.SGD([betas_param, pose_param, trans_param], learning_rate)
-
+   
+   
    smpl_model.eval() # ????
    train_loss = []
    for i in range(n_iters):
