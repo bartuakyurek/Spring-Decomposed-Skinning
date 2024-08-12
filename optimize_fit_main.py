@@ -21,10 +21,7 @@ from smpl_torch_batch import SMPLModel
 from dmpl_torch_batch import DMPLModel
 
 
-from unpose_LBS import unpose_verts_batch
 from skeleton_data import get_smpl_skeleton
-from viewer import Viewer
-from colors import SMPL_JOINT_COLORS
 
 # TODO: use './data/female_bpts2dbs.pt' 
 # TODO: turn shuffle on for training dataset
@@ -46,7 +43,7 @@ for data in data_loader:
    trans = beta_pose_trans_seq[:,82:] 
    
    target_verts = data[1].squeeze()
-   smpl_verts, joints = smpl_model(betas, pose, trans)
+   smpl_verts, joints, LBS_T = smpl_model(betas, pose, trans, return_T=True)
    
    
    SELECTED_FRAME = 150
@@ -55,10 +52,6 @@ for data in data_loader:
    
    # -----------------------------------------------------------------------
    
-   _, _, LBS_T = smpl_model(betas, pose, trans, return_T=True)
-
-   v_unposed = unpose_verts_batch(target_verts, trans, LBS_T)
-   np.savez("./results/unposed_dfaust.npz", v_unposed)
    
    
    # -----------------------------------------------------------------------
