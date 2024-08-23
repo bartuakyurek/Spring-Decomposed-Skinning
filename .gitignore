@@ -155,3 +155,4 @@ V_unposed_SMPL.obj
 .DS_Store
 .DS_Store
 /demo/plots
+/__pycache__

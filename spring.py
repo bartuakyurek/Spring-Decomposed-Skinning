@@ -8,11 +8,19 @@ Created on Thu May 23 10:07:32 2024
 import numpy as np
 
 class Spring:
-    def __init__(self, connection_coord, rest_vector=np.array([0.2,0.,0.]), mass=5.5, stiffness=20.3, damper=0.1):
+    def __init__(self, 
+                 connection_coord, 
+                 rest_vector=np.array([0.2,0.,0.]), 
+                 mass=5.5, 
+                 stiffness=20.3, 
+                 damper=0.1):
+        
         self.step = 0.0
         self.dt = 1./24.
         
         self.mass = mass
+        self.w = 1. / self.mass
+        
         self.k = stiffness
         self.b = damper
         self.velocity = 0.0
@@ -46,31 +54,15 @@ class Spring:
     def simulate(self):
     
         self.delta_x = self.mass_coord - self.mass_rest_coord
-
+        
         spring_force = self.k * self.delta_x 
         damper_force = self.b * self.velocity # Fb = b * x'
-        #print(self.delta_x)
-        """
+        total_force = - (spring_force + damper_force)
         
-        print(">> 1. Velocity ", self.velocity)
-        print(">> 1. Acc ", self.acceleration)
-        print(">> 1. Spring and Damper F ", spring_force, damper_force)
-        """
+        self.velocity += self.dt * self.w * total_force
+        new_coord = self.mass_coord + (self.velocity * self.dt) 
         
+        self.velocity = (new_coord - self.mass_coord) / self.dt
+        self.mass_coord = new_coord
         
-        # If we leave the acceleration alone in equation
-        # acceleration = - ((b * velocity) + (k * position)) / mass
-        self.acceleration = - (spring_force + damper_force) / self.mass 
-        self.velocity += (self.acceleration * self.dt)  # Integral(a) = v 
-        self.mass_coord += (self.velocity * self.dt) # Integral(v) = x
-        
-    
-        #self.delta_x = self.mass_coord - self.mass_rest_coord
-        #print(self.velocity)
-        
-        """
-        print(">> 2. Velocity ", self.velocity)
-        print(">> 2. Acc ", self.acceleration)
-        print("Mass coord ", self.mass_coord)
-        """
         return self.mass_coord
