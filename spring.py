@@ -10,10 +10,10 @@ import numpy as np
 class Spring:
     def __init__(self, 
                  connection_coord, 
-                 rest_vector=np.array([0.2,0.,0.]), 
-                 mass=5.5, 
-                 stiffness=20.3, 
-                 damper=0.1):
+                 rest_vector=np.array([0.1,0.,0.]), 
+                 mass=1.5, 
+                 stiffness=50.5, 
+                 damper=10.1):
         
         self.step = 0.0
         self.dt = 1./24.
