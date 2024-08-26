@@ -3,6 +3,8 @@
 """
 Created on Thu May 23 10:07:32 2024
 
+Spring simulation based on Position Based Dynamics.
+
 @author: bartu
 """
 import numpy as np

@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 
-Computes cot Laplacian and its smallest 20 eigenfunctions.
-Selected eigenfunction is visually rendered in output .html file.
+Computes cot Laplacian and its smallest K eigenfunctions for selected animation frames
+The resulting eigen decomposition is saved in the end.
 
 """
 
@@ -77,6 +77,7 @@ if __name__ == "__main__":
     
     ######### PARAMETERS TO BE SET ####################
     num_eigvecs = 10
+    selected_frames = [10, 15, 20, 25, 30, 35, 40]
     ###################################################
     
     # Load object   
@@ -88,10 +89,13 @@ if __name__ == "__main__":
         
         V = np.array(V, dtype=float)
         F = np.array(F, dtype=int)
-        
-    L = get_laplacian_batch(V, F)
+    
+    V_selected = V[selected_frames]
+    L = get_laplacian_batch(V_selected, F)
     eigvals_batch, eigvecs_batch = get_eigen_of_laplacian_batch(L)
-   
+    
+    np.savez("./results/eigdecomp_batch.npz", V_selected, selected_frames, L, eigvals_batch, eigvecs_batch)
+    
     """
     for i in range(num_eigvecs):
         eigvec = np.real(eigvecs[:,i])
