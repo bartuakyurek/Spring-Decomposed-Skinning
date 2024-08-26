@@ -47,6 +47,7 @@ for data in data_loader:
    target_verts = data[1].squeeze()
    smpl_verts, joints = smpl_model(betas, pose, trans)
    
+   #np.savez("./data/dfaust_sample_data.npz", betas, pose, trans, target_verts, smpl_verts, smpl_model.faces, joints)
    
    SELECTED_FRAME = 150
    joint_locations = joints[SELECTED_FRAME].numpy()
