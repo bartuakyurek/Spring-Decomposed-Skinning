@@ -54,8 +54,8 @@ for data in data_loader:
    
    ### Manuel Spring Data
    spring_rest_locations = np.array([[0.4, 0.2, 0.0],
-                            [0.1, 0.2, 0.3]])
-   spring_parents =  [13, 15]
+                                     [0.1, 0.2, 0.3]])
+   spring_parents = [9, 9] #[13, 15]
    
    ## Create viewer canvas and add a mesh (only single mesh is allowed rn)
    single_mesh_viewer = Viewer()

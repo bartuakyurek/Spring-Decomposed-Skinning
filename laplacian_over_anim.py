@@ -77,7 +77,7 @@ if __name__ == "__main__":
     
     ######### PARAMETERS TO BE SET ####################
     num_eigvecs = 10
-    selected_frames = [10, 15, 20, 25, 30, 35, 40]
+    selected_frames = np.arange(10, 110, 5)
     ###################################################
     
     # Load object   
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     L = get_laplacian_batch(V_selected, F)
     eigvals_batch, eigvecs_batch = get_eigen_of_laplacian_batch(L)
     
-    np.savez("./results/eigdecomp_batch.npz", V_selected, selected_frames, L, eigvals_batch, eigvecs_batch)
+    np.savez("./results/eigdecomp_batch_{}_frames.npz".format(len(selected_frames)), V_selected, selected_frames, L, eigvals_batch, eigvecs_batch)
     
     """
     for i in range(num_eigvecs):
