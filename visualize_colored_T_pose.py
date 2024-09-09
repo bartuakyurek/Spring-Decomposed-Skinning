@@ -16,7 +16,8 @@ if __name__ == "__main__":
     OBJ_PATH = "./results/SMPL-T.obj"
     V, _, _, F, _, _ = igl.read_obj(OBJ_PATH)
     
-    with np.load("./results/smpl_weight_vertex_colors.npz") as data:
+    with np.load("./results/laplacian-fft-normalized-colors.npz") as data:
+    #with np.load("./results/smpl_weight_vertex_colors.npz") as data:
         colors =  data['arr_0']
     
     meshplot.offline()
