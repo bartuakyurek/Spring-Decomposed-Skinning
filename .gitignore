@@ -157,3 +157,5 @@ V_unposed_SMPL.obj
 /demo/plots
 /__pycache__
 legacy/.DS_Store
+/results
+/results
