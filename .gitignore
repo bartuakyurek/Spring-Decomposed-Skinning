@@ -159,3 +159,4 @@ V_unposed_SMPL.obj
 legacy/.DS_Store
 /results
 /results
+/__pycache__
