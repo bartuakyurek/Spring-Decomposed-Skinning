@@ -10,6 +10,16 @@ class Scene_Node:
     def __init__(self,  V, F):
         self.vertices = V
         self.faces = F
+        self.node_type = None
+        
+    def get_node_type(self):
+        if self.node_type is None:
+            return "None"
+        if self.node_type.type is not str:
+            print(">> WARNING: Non-string node type encountered. Please implement a mapping.")
+            return "non_string_node_type"
+        else:
+            return self.node_type
         
 
 class Mesh(Scene_Node):
