@@ -84,19 +84,10 @@ def test_animation_callback():
 test_animation_callback()
 """
 
-current_frame = 0
 
 def custom_draw_geometry_with_rotation(pcd):
     
     def rotate_view(vis):
-        global current_frame
-        current_frame += 1
-        if current_frame >= n_frames:
-            current_frame = 0
-            
-        pcd.vertices = o3d.utility.Vector3dVector(V[current_frame])
-        o3d.visualization.O3DVisualizer.update_geometry(pcd)
-        
         ctr = vis.get_view_control()
         ctr.rotate(10.0, 0.0)
         return False
