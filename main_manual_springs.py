@@ -17,9 +17,7 @@ import numpy as np
 import torch
 
 from smpl_torch_batch import SMPLModel
-from dmpl_torch_batch import DMPLModel
 from skeleton_data import get_smpl_skeleton
-
 from matplot_viewer import Matplot_Viewer
 
 training_data = torch.load('./data/50004_dataset.pt')
