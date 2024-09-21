@@ -62,13 +62,13 @@ S = np.array([
    
 import open3d as o3d
 
-
 mesh_faces = o3d.utility.Vector3iVector(F)
 mesh_verts = o3d.utility.Vector3dVector(V[0])
 mesh = o3d.geometry.TriangleMesh(mesh_verts, mesh_faces)
 mesh.compute_vertex_normals()
 
 
+""""
 def test_animation_callback():
     oct = o3d.geometry.TriangleMesh.create_octahedron()
     def cb_test(vis, time):
@@ -82,11 +82,21 @@ def test_animation_callback():
                            show_ui=True)
     
 test_animation_callback()
-
 """
+
+current_frame = 0
+
 def custom_draw_geometry_with_rotation(pcd):
-   
+    
     def rotate_view(vis):
+        global current_frame
+        current_frame += 1
+        if current_frame >= n_frames:
+            current_frame = 0
+            
+        pcd.vertices = o3d.utility.Vector3dVector(V[current_frame])
+        o3d.visualization.O3DVisualizer.update_geometry(pcd)
+        
         ctr = vis.get_view_control()
         ctr.rotate(10.0, 0.0)
         return False
@@ -94,7 +104,7 @@ def custom_draw_geometry_with_rotation(pcd):
     o3d.visualization.draw_geometries_with_animation_callback([pcd],
                                                               rotate_view)
 custom_draw_geometry_with_rotation(mesh)
-"""
+
 
 
 
