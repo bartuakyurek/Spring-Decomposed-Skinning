@@ -9,7 +9,6 @@ Created on Wed May 22 12:46:50 2024
 TODO: this should be not viewer.py but rather a canvas for a single mesh, so that we can write a generic viewer and 
 add this canvas to there. The naming is confusing right now. It is pretty specific to spring rig animation. 
 """
-from typeguard import typechecked
 
 from scene_node import Scene_Node
 
@@ -29,19 +28,19 @@ class Viewer:
             self._next_frame()
         
     #=========== Setters ======================================================
-    @typechecked
+    
     def set_time_step_in_seconds(self, step : float):
         if step > 0.1:
             print(f">> WARNING: Time step is too large: {step} seconds.")
         self.dt = step
         
-    @typechecked
+
     def set_max_frames(self, cap : int):
         if cap > 500:
             print(f">> WARNING: Maximum number of frames might be too large: {cap} frames.")
         self.max_frames = round(cap)  # In case the input is not an integer value
     
-    @typechecked
+
     # Check the key root which is in the dictionary as "root_001_some_numbers"
     # Vulnerability: If there are node types with the same root, e.g. "Prism_Cube" and "Prism_Cylinder"
     #                then they both will be treated as the same type.
@@ -58,7 +57,6 @@ class Viewer:
                 
         return n_instance
         
-    @typechecked
     def add_scene_node(self, node):
         
         n_instance = self.__check_key_in_dict(self.nodes, self.seperator, node.node_type)
@@ -66,7 +64,6 @@ class Viewer:
         
         self.nodes[node_key] = node
         print(f">> INFO: Added {node_key}")
-    
     
     
     #========== Private Functions =============================================
