@@ -160,3 +160,5 @@ legacy/.DS_Store
 /results
 /results
 /__pycache__
+__pycache__/get_color_dists.cpython-39.pyc
+/__pycache__
