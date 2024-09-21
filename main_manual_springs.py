@@ -52,7 +52,7 @@ for data in data_loader:
    j = joints.detach().cpu().numpy()#[SELECTED_FRAME]
    f = smpl_model.faces
    
-   ### Manuel Spring Data
+   ### Manuel Spring Data 
    spring_rest_locations = np.array([[0.0, 0.0, 1.0],
                                      [0.0, 0.0, 1.0]])
    spring_parents = [13, 12]
