@@ -62,11 +62,13 @@ S = np.array([
    
 import open3d as o3d
 
-mesh_faces = o3d.utility.Vector3iVector(F)
-mesh_verts = o3d.utility.Vector3dVector(V[0])
-mesh = o3d.geometry.TriangleMesh(mesh_verts, mesh_faces)
-mesh.compute_vertex_normals()
-
+mesh_animation_list = []
+for i in range(n_frames):
+    mesh_faces = o3d.utility.Vector3iVector(F)
+    mesh_verts = o3d.utility.Vector3dVector(V[i])
+    mesh = o3d.geometry.TriangleMesh(mesh_verts, mesh_faces)
+    mesh.compute_vertex_normals()
+    mesh_animation_list.append(mesh)
 
 """"
 def test_animation_callback():
@@ -84,19 +86,25 @@ def test_animation_callback():
 test_animation_callback()
 """
 
-
-def custom_draw_geometry_with_rotation(pcd):
+current_frame = 0
+def custom_draw_geometry_with_rotation(pcd_list):
+    global current_frame
+    
+    if current_frame >= n_frames: 
+        print("Animation ended.")
+        current_frame = 0
+    else: 
+        current_frame += 1
     
     def rotate_view(vis):
         ctr = vis.get_view_control()
         ctr.rotate(10.0, 0.0)
         return False
 
-    o3d.visualization.draw_geometries_with_animation_callback([pcd],
+    o3d.visualization.draw_geometries_with_animation_callback([pcd_list[current_frame]],
                                                               rotate_view)
-custom_draw_geometry_with_rotation(mesh)
 
-
+custom_draw_geometry_with_rotation(mesh_animation_list)
 
 
 
