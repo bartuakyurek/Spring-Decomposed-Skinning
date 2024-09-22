@@ -35,8 +35,8 @@ for data in data_loader:
    smpl_verts, joints = smpl_model(betas, pose, trans)
    break
    
-V = smpl_verts.detach().cpu().numpy()#[SELECTED_FRAME]
-J = joints.detach().cpu().numpy()#[SELECTED_FRAME]
+#V = smpl_verts.detach().cpu().numpy()#[SELECTED_FRAME]
+#J = joints.detach().cpu().numpy()#[SELECTED_FRAME]
 n_frames, n_verts, n_dims = target_verts.shape
 
 ### Manual Spring Data 
