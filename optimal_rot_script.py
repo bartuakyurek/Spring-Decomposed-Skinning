@@ -110,7 +110,7 @@ def __equate_shapes(first_arr : np.ndarray, second_arr : np.ndarray, verbose=_DE
     else:
         raise Exception("Unexpected error occured. Are you sure your dimensionality assertions are correct?")
 
-def __check_set_equality(first_set, second_set, tolerance=_TOLERANCE_):
+def __check_equality(first_set, second_set, tolerance=_TOLERANCE_):
     # Used as a sanity check for naive vs. fast implementations of the same linear algebra operations.
     first_set, second_set = __equate_shapes(first_set, second_set)
     assert first_set.shape == second_set.shape, f"Two sets must have equal shapes. Provided are {first_set.shape} and {second_set.shape}"
@@ -130,9 +130,8 @@ def get_centroid(point_coords, weights):
     total_weights = np.sum(weights)
     weighted_point_sum = point_coords.T @ weights
     
-    
-    sanity_check = __naive_weighted_sum(point_coords, weights) + 1e-9
-    __check_set_equality(sanity_check, weighted_point_sum)
+    sanity_check = __naive_weighted_sum(point_coords, weights)
+    __check_equality(sanity_check, weighted_point_sum)
     
     centroid = weighted_point_sum / total_weights
     return centroid
@@ -144,8 +143,7 @@ def get_optimal_rigid_motion(P, Q, W):
     P_centroid = get_centroid(P, W)
     Q_centroid = get_centroid(Q, W)
     
-    print(f"P has a centroid at \n{P_centroid}")
-    print(f"Q has a centroid at \n{Q_centroid}")
+  
     
     return
 
@@ -183,11 +181,4 @@ if __name__ == "__main__":
     
     _ = get_optimal_rigid_motion(P, Q, W)
     
-    # Test centroids
-    test_arr = np.array([[0.0, 0.4, 1.0],
-                         [0.3, 0.6, 0.5]
-                        ])
-    test_weights = np.array([1, 0.2])
     
-    test_centroid = get_centroid(test_arr, weights=test_weights)
-    # I validated by eye [sic], it works good 
