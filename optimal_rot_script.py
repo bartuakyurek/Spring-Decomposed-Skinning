@@ -183,4 +183,11 @@ if __name__ == "__main__":
     
     _ = get_optimal_rigid_motion(P, Q, W)
     
+    # Test centroids
+    test_arr = np.array([[0.0, 0.4, 1.0],
+                         [0.3, 0.6, 0.5]
+                        ])
+    test_weights = np.array([1, 0.2])
     
+    test_centroid = get_centroid(test_arr, weights=test_weights)
+    # I validated by eye [sic], it works good 
