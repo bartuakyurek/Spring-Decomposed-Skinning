@@ -5,11 +5,15 @@ Created on Tue Sep 24 06:36:20 2024
 
 @author: bartu
 """
+
+# ================================================================================================================
+#                                           IMPORTS AND GLOBALS
+# ================================================================================================================
+
 import numpy as np
 
 _DEBUG_ = True
 _TOLERANCE_ = 1e-8
-
 
 # ================================================================================================================
 #                            SANITY CHECK FUNCTIONS FOR OPTIMAL RIGID MOTION ALGORITHM
@@ -122,7 +126,7 @@ def __check_set_equality(first_set, second_set, tolerance=_TOLERANCE_):
 # ================================================================================================================
 
 
-def compute_centroid(point_coords, weights):
+def get_centroid(point_coords, weights):
     total_weights = np.sum(weights)
     weighted_point_sum = point_coords.T @ weights
     
@@ -133,12 +137,24 @@ def compute_centroid(point_coords, weights):
     centroid = weighted_point_sum / total_weights
     return centroid
 
+def get_optimal_rigid_motion(P, Q, W):
+    
+    n_points, n_dims = __check_icp_set_shapes(P, Q, W)
+    
+    P_centroid = get_centroid(P, W)
+    Q_centroid = get_centroid(Q, W)
+    
+    print(f"P has a centroid at \n{P_centroid}")
+    print(f"Q has a centroid at \n{Q_centroid}")
+    
+    return
+
 # ================================================================================================================
 #                                           M A I N 
 # ================================================================================================================
 
 if __name__ == "__main__":
-    # ============================ INPUTS =========================================
+
     P = np.array([
                     [0.5, 3.0, 0.5],
                     [2.0, 3.0, 0.0],
@@ -163,14 +179,8 @@ if __name__ == "__main__":
                     [1],
                     [1],
                 ])
-    # =============================================================================
+
     
-    n_points, n_dims = __check_icp_set_shapes(P, Q, W)
-    
-    P_centroid = compute_centroid(P, W)
-    Q_centroid = compute_centroid(Q, W)
-    
-    print(f"P has a centroid at \n{P_centroid}")
-    print(f"Q has a centroid at \n{Q_centroid}")
+    _ = get_optimal_rigid_motion(P, Q, W)
     
     
