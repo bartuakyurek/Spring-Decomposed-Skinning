@@ -10,6 +10,11 @@ import numpy as np
 _DEBUG_ = True
 _TOLERANCE_ = 1e-8
 
+
+# ================================================================================================================
+#                            SANITY CHECK FUNCTIONS FOR OPTIMAL RIGID MOTION ALGORITHM
+# ================================================================================================================
+
 def __check_icp_set_shapes(P, Q, W):
     # Sanity checks for inputs of ICP algorithm
     # P is the original point set
@@ -112,6 +117,11 @@ def __check_set_equality(first_set, second_set, tolerance=_TOLERANCE_):
     assert total_diff < tolerance, f"Set equality check failed. Difference between sets are {total_diff} > tolerance"
     return total_diff
 
+# ================================================================================================================
+#                               CORE FUNCTIONS OF FINDING THE OPTIMAL RIGID MOTION
+# ================================================================================================================
+
+
 def compute_centroid(point_coords, weights):
     total_weights = np.sum(weights)
     weighted_point_sum = point_coords.T @ weights
@@ -122,6 +132,10 @@ def compute_centroid(point_coords, weights):
     
     centroid = weighted_point_sum / total_weights
     return centroid
+
+# ================================================================================================================
+#                                           M A I N 
+# ================================================================================================================
 
 if __name__ == "__main__":
     # ============================ INPUTS =========================================
