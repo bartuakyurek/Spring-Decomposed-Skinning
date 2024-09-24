@@ -18,6 +18,7 @@ import torch
 
 from smpl_torch_batch import SMPLModel
 from skeleton_data import get_smpl_skeleton
+from optimal_rigid_motion import get_optimal_rigid_motion
 from matplot_viewer import Matplot_Viewer
 
 training_data = torch.load('./data/50004_dataset.pt')
@@ -35,10 +36,11 @@ for data in data_loader:
    smpl_verts, joints = smpl_model(betas, pose, trans)
    break
    
-#V = smpl_verts.detach().cpu().numpy()#[SELECTED_FRAME]
-#J = joints.detach().cpu().numpy()#[SELECTED_FRAME]
+V = smpl_verts.detach().cpu().numpy()#[SELECTED_FRAME]
+J = joints.detach().cpu().numpy()#[SELECTED_FRAME]
 n_frames, n_verts, n_dims = target_verts.shape
 
+"""
 ### Manual Spring Data 
 P = np.array([
                 [0.5, 3.0, 0.5],
@@ -57,4 +59,22 @@ S = np.array([
    
 viewer = Matplot_Viewer()
 viewer.run()
+"""
 
+SELECTED_FRAME = 10
+
+# Declare two sets P and Q, to compute rigid motion P -> Q
+# and the weights for all points
+P = t_pose = smpl_model(betas, torch.zeros_like(pose) ,trans)[0][0].detach().cpu().numpy()
+Q = deformed_pose = V[SELECTED_FRAME]
+W = np.ones(P.shape[0])
+
+# Compute the optimal rotation and translation and apply it to the first set
+R, t = get_optimal_rigid_motion(P, Q, W)
+P_star = P @ R + t
+
+# Compute Mean Squared Error between two sets
+err = None
+
+# Visualize the results
+pass
