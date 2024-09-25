@@ -114,7 +114,14 @@ def get_optimal_rigid_motion(P, Q, W):
     __check_equality(S[1], S_sanity[1])
     __check_equality(S[2], S_sanity[2])
     
-    V = V.T # The V np.linalg.svd returns, is the transposed of V in step 4 in the notes.
+    
+    #V = V.T # The V np.linalg.svd returns, is the transposed of V in step 4 in the notes.
+    
+    tmp_V = V
+    tmp_U = U
+    U = V.T
+    V = U
+    
     det_vu = np.linalg.det(V @ U.T)
     I = np.eye(n_dims)
     I[-1, -1] = det_vu
