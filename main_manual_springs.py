@@ -49,7 +49,8 @@ SELECTED_FRAME = 10
 
 # Declare two sets P and Q, to compute rigid motion P -> Q
 # and the weights for all points
-P = t_pose = smpl_model(betas, torch.zeros_like(pose) ,trans)[0][0].detach().cpu().numpy()
+#P = t_pose = smpl_model(betas, torch.zeros_like(pose) ,trans)[0][0].detach().cpu().numpy()
+P = V[SELECTED_FRAME]
 Q = deformed_pose = V[SELECTED_FRAME]
 W = np.ones(P.shape[0])
 
@@ -71,9 +72,9 @@ mesh_T_node = Mesh(P, F)
 mesh_optimized_node = Mesh(P_star, F)
 mesh_target_node = Mesh(Q, F)
 
-viewer.add_scene_node(mesh_T_node)
-#viewer.add_scene_node(mesh_optimized_node)
-#viewer.add_scene_node(mesh_target_node)
+#viewer.add_scene_node(mesh_T_node)
+viewer.add_scene_node(mesh_optimized_node)
+viewer.add_scene_node(mesh_target_node)
 
 viewer.run()
 
