@@ -72,8 +72,8 @@ mesh_optimized_node = Mesh(P_star, F)
 mesh_target_node = Mesh(Q, F)
 
 viewer.add_scene_node(mesh_T_node)
-viewer.add_scene_node(mesh_optimized_node)
-viewer.add_scene_node(mesh_target_node)
+#viewer.add_scene_node(mesh_optimized_node)
+#viewer.add_scene_node(mesh_target_node)
 
 viewer.run()
 

@@ -7,6 +7,8 @@ Created on Sat Sep 21 12:57:13 2024
 """
 
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.colors import LightSource
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -20,6 +22,11 @@ class Matplot_Viewer(Viewer):
         
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(projection='3d')
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
+        self.ax.set_zticks([])
+        
+        self.ls = LightSource(270, 45)
         
     def run(self):
         
@@ -41,11 +48,26 @@ class Matplot_Viewer(Viewer):
         edge_color = (50 / 255, 50 / 255, 50 / 255)
         mesh.set_edgecolor(edge_color)
         mesh.set_facecolor(face_color)
-        self.ax.add_collection3d(mesh)
+        
+        
+        x = verts[:,0]
+        y = verts[:,1]
+        z = verts[:,2]
+                
+        # To use a custom hillshading mode, override the built-in shading and pass
+        # in the rgb colors of the shaded surface calculated from "shade".
+        #rgb = self.ls.shade(data=z, cmap=cm.gist_earth, blend_mode='soft')
+        rgb = self.ls.shade(z, cmap=plt.get_cmap('gist_earth'))
+
+        surf = self.ax.plot_surface(x, y, z, rstride=1, cstride=1, facecolors=rgb,
+                               linewidth=0, antialiased=False, shade=False)
+        
+        return
     
     
-    
+      
 if __name__ == "__main__":
+    
     print(f"INFO: Running tests for {__file__}")
     import numpy as np
     from scene_node import Mesh
