@@ -125,10 +125,6 @@ def get_optimal_rigid_motion(P, Q, W):
     I[-1, -1] = det_vu
     Rot = Vh @ I @ U.T 
     
-    temp = np.copy(Rot[:, 1])
-    Rot[:, 1] = Rot[:, 2]
-    Rot[:, 2] = temp
-
     # Step 5: Compute the optimal translation
     trans = Q_centroid - (Rot @ P_centroid)
 
