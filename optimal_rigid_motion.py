@@ -103,10 +103,18 @@ def get_optimal_rigid_motion(P, Q, W):
     
     # Step 4: Compute the SVD and the optimal rotation
     U, Sigma, V = np.linalg.svd(S, full_matrices=True)
+    
     assert U.shape == (n_dims, n_dims)
     assert Sigma.shape == (n_dims, )
     assert V.shape == (n_dims, n_dims)
     
+    S_sanity = U @ (np.diag(Sigma) @ V)
+    assert S_sanity.shape == S.shape, f"Sanity Check Failed! SVD Reconstructed matrix has shape {S_sanity.shape}, expected {S.shape}"
+    __check_equality(S[0], S_sanity[0])
+    __check_equality(S[1], S_sanity[1])
+    __check_equality(S[2], S_sanity[2])
+    
+    V = V.T # The V np.linalg.svd returns, is the transposed of V in step 4 in the notes.
     det_vu = np.linalg.det(V @ U.T)
     I = np.eye(n_dims)
     I[-1, -1] = det_vu
