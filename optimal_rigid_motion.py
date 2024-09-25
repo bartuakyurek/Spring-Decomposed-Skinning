@@ -131,13 +131,14 @@ def get_optimal_rigid_motion(P, Q, W):
 
 if __name__ == "__main__":
     print(">> Testing ", __file__)
-   
+    from matplot_viewer import Matplot_Viewer
     
-   # ================================================================================================================
-   #        Testing trivial cases: rigid motion between two line segments
-   # ================================================================================================================
+    # ================================================================================================================
+    #        Testing trivial cases: rigid motion between two line segments
+    # ================================================================================================================
 
-    
+    # Case #1: Same line segments, see if you transform you'll still get the same line segment.
+
     line_segment = np.array([
                     [0.5, 3.0, 0.5],
                     [2.0, 3.0, 0.0]
@@ -149,7 +150,14 @@ if __name__ == "__main__":
     print("R\n", Rot)
     print("t ", trans)
     transformed_line_segment = (line_segment @ Rot) + trans
+    
+    
     print(__check_equality(line_segment, transformed_line_segment))
+    
+    
+    
+    
+    # Case #2: Two different line segments, see if you transform first segment, you'll get the second segment 
     
     another_line_segment = np.array([
                                         [0.5, 0.5, 3.0],
