@@ -97,7 +97,7 @@ def get_optimal_rigid_motion(P, Q, W):
     assert X_col_major.shape == (n_dims, n_points)
     assert X_col_major.shape == Y_col_major.shape
     
-    S = X.T @ W_diag @ Y
+    S = X.T @ (W_diag @ Y)
     sanity_check = X_col_major @ W_diag @ Y_col_major.T # Corresponds to matrix dimensions on notes 
     __check_equality(S, sanity_check)
     
@@ -113,7 +113,7 @@ def get_optimal_rigid_motion(P, Q, W):
     Rot = V @ I @ U.T
     
     # Step 5: Compute the optimal translation
-    trans = Q_centroid - Rot @ P_centroid
+    trans = Q_centroid - (Rot @ P_centroid)
 
     return Rot, trans
 
@@ -123,6 +123,34 @@ def get_optimal_rigid_motion(P, Q, W):
 
 if __name__ == "__main__":
     print(">> Testing ", __file__)
+   
+    
+   # ================================================================================================================
+   #        Testing trivial cases: rigid motion between two line segments
+   # ================================================================================================================
+
+    
+    line_segment = np.array([
+                    [0.5, 3.0, 0.5],
+                    [2.0, 3.0, 0.0]
+                ])
+    weights_segment = np.array([1.0, 1.0])
+    
+    print(">> Trivial case 1: rigid motion between two identical line segments")
+    Rot, trans = get_optimal_rigid_motion(line_segment, line_segment, weights_segment)
+    print("R\n", Rot)
+    print("t ", trans)
+    transformed_line_segment = (line_segment @ Rot) + trans
+    print(__check_equality(line_segment, transformed_line_segment))
+    
+    another_line_segment = np.array([
+                                        [0.5, 0.5, 3.0],
+                                        [0.0, 3.0, 2.0]
+                                    ])
+    # ================================================================================================================
+    #        Testing a small set of points
+    # ================================================================================================================
+
     P = np.array([
                     [0.5, 3.0, 0.5],
                     [2.0, 3.0, 0.0],
@@ -141,14 +169,12 @@ if __name__ == "__main__":
                 ])
     
     W = np.array([
-                    [0.5],
-                    [0.5],
-                    [1],
-                    [1],
-                    [1],
+                    [1.0],
+                    [1.0],
+                    [1.0],
+                    [1.0],
+                    [1.0],
                 ])
-
     
-    Rot, trans = get_optimal_rigid_motion(P, Q, W)
     
     
