@@ -8,6 +8,8 @@ Created on Sat Sep 21 12:37:49 2024
 
 class Scene_Node:
     def __init__(self,  V, F):
+        assert len(V.shape) == 2 and len(F.shape) == 2, f"Expected scene nodes points shape (N, 2) or (N, 3). Provided are V{V.shape} and F{F.shape}."
+        
         self.vertices = V
         self.faces = F
         self.node_type = None

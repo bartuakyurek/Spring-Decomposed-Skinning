@@ -7,7 +7,9 @@ Created on Sat Sep 21 12:57:13 2024
 """
 
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.animation import FuncAnimation
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from viewer import Viewer
 
@@ -21,16 +23,25 @@ class Matplot_Viewer(Viewer):
         
     def run(self):
         
-        for node in self.nodes:
+        for node_key in self.nodes:
+            node = self.nodes[node_key]
             verts = node.vertices
             faces = node.faces
-            pass
+            
+            self.render_node(verts, faces)
         
-        #plt.show()
+        # TODO: update the same plot?
+        # or save it and once the viewer is done, convert saved images to video (in main)
+        plt.show()
         
 
-    def animation_callback(self):
-        pass
+    def render_node(self, verts, faces):
+        mesh = Poly3DCollection(verts[faces], alpha=0.2)
+        face_color = (141 / 255, 184 / 255, 226 / 255)
+        edge_color = (50 / 255, 50 / 255, 50 / 255)
+        mesh.set_edgecolor(edge_color)
+        mesh.set_facecolor(face_color)
+        self.ax.add_collection3d(mesh)
     
     
     

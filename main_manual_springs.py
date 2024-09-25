@@ -65,7 +65,16 @@ err = MSE_np(Q, P_star)
 print("Error value: ", err)
 
 # Visualize the results
-#viewer = Matplot_Viewer()
-#viewer.run()
+viewer = Matplot_Viewer()
+
+mesh_T_node = Mesh(P, F)
+mesh_optimized_node = Mesh(P_star, F)
+mesh_target_node = Mesh(Q, F)
+
+viewer.add_scene_node(mesh_T_node)
+viewer.add_scene_node(mesh_optimized_node)
+viewer.add_scene_node(mesh_target_node)
+
+viewer.run()
 
 

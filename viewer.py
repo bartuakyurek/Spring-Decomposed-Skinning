@@ -27,6 +27,7 @@ class Viewer:
         if self.is_animating:
             self._next_frame()
         
+        
     #=========== Setters ======================================================
     
     def set_time_step_in_seconds(self, step : float):
@@ -74,5 +75,5 @@ class Viewer:
     #========== Private Functions =============================================
     def _next_frame(self):
         self.current_frame += 1
-        pass
+        print("INFO: switching to next frame.")
         
