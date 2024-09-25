@@ -44,12 +44,17 @@ class Viewer:
     # Check the key root which is in the dictionary as "root_001_some_numbers"
     # Vulnerability: If there are node types with the same root, e.g. "Prism_Cube" and "Prism_Cylinder"
     #                then they both will be treated as the same type.
+    
     def __count_key_root_occurence_in_dict(self,
-                                           root_name   : str,
+                                           dictionary : dict,
                                            key_seperator  : str,
-                                           dictionary : dict) -> int:
+                                           root_name   : str
+                                           ) -> int:
+        assert type(root_name) is str, f"Expected str in root_name, got {type(root_name)}"
+        
         n_instance = 0
         for key in self.nodes:
+            
             key_root = key.split(key_seperator)[0]
             
             if key_root == root_name:
@@ -59,7 +64,7 @@ class Viewer:
         
     def add_scene_node(self, node):
         
-        n_instance = self.__check_key_in_dict(self.nodes, self.seperator, node.node_type)
+        n_instance = self.__count_key_root_occurence_in_dict(self.nodes, self.seperator, node.node_type)
         node_key = node.get_node_type() + self.seperator + str(n_instance)
         
         self.nodes[node_key] = node

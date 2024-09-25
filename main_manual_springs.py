@@ -21,6 +21,7 @@ from skeleton_data import get_smpl_skeleton
 from optimal_rigid_motion import get_optimal_rigid_motion
 from cost import MSE_np
 
+from scene_node import *
 from matplot_viewer import Matplot_Viewer
 
 training_data = torch.load('./data/50004_dataset.pt')
@@ -42,26 +43,7 @@ V = smpl_verts.detach().cpu().numpy()#[SELECTED_FRAME]
 J = joints.detach().cpu().numpy()#[SELECTED_FRAME]
 n_frames, n_verts, n_dims = target_verts.shape
 
-"""
-### Manual Spring Data 
-P = np.array([
-                [0.5, 3.0, 0.5],
-                [2.0, 3.0, 0.0],
-                [1.0, 2.0, 1.0],
-                [1.0, 1.0, 0.0],
-                [0.0, 1.0, 0.0],
-            ])
-S = np.array([
-                [0, 2],
-                [1, 2],
-                [2, 4],
-                [2, 3],
-                [3, 4]
-            ])
-   
-viewer = Matplot_Viewer()
-viewer.run()
-"""
+
 
 SELECTED_FRAME = 10
 
@@ -83,4 +65,7 @@ err = MSE_np(Q, P_star)
 print("Error value: ", err)
 
 # Visualize the results
-pass
+#viewer = Matplot_Viewer()
+#viewer.run()
+
+

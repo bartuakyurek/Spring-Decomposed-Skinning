@@ -15,7 +15,7 @@ class Scene_Node:
     def get_node_type(self):
         if self.node_type is None:
             return "None"
-        if self.node_type.type is not str:
+        if type(self.node_type) is not str:
             print(">> WARNING: Non-string node type encountered. Please implement a mapping.")
             return "non_string_node_type"
         else:
