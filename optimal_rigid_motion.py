@@ -114,11 +114,8 @@ def get_optimal_rigid_motion(P, Q, W):
     __check_equality(S[1], S_sanity[1])
     __check_equality(S[2], S_sanity[2])
     
-    
-    #V = V.T # The V np.linalg.svd returns, is the transposed of V in step 4 in the notes.
-    
-    tmp_V = V
-    tmp_U = U
+    # What np.linalg.svd returns, is the transposed of what we need in step 4 in the notes.
+    tmp_V, tmp_U = V, U
     U = V.T
     V = U
     
@@ -157,19 +154,19 @@ if __name__ == "__main__":
     print("R\n", Rot)
     print("t ", trans)
     transformed_line_segment = (line_segment @ Rot) + trans
-    
-    
     print(__check_equality(line_segment, transformed_line_segment))
     
-    
-    
-    
+
     # Case #2: Two different line segments, see if you transform first segment, you'll get the second segment 
     
     another_line_segment = np.array([
                                         [0.5, 0.5, 3.0],
                                         [0.0, 3.0, 2.0]
                                     ])
+    Rot, trans = get_optimal_rigid_motion(line_segment, another_line_segment, weights_segment)
+    transformed_line_segment = (line_segment @ Rot) + trans
+    print(__check_equality(line_segment, transformed_line_segment))
+
     # ================================================================================================================
     #        Testing a small set of points
     # ================================================================================================================
