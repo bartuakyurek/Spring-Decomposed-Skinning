@@ -19,6 +19,8 @@ import torch
 from smpl_torch_batch import SMPLModel
 from skeleton_data import get_smpl_skeleton
 from optimal_rigid_motion import get_optimal_rigid_motion
+from cost import MSE_np
+
 from matplot_viewer import Matplot_Viewer
 
 training_data = torch.load('./data/50004_dataset.pt')
@@ -69,12 +71,16 @@ P = t_pose = smpl_model(betas, torch.zeros_like(pose) ,trans)[0][0].detach().cpu
 Q = deformed_pose = V[SELECTED_FRAME]
 W = np.ones(P.shape[0])
 
+err = MSE_np(Q, P)
+print("Error value before optimized: ", err)
+
 # Compute the optimal rotation and translation and apply it to the first set
 R, t = get_optimal_rigid_motion(P, Q, W)
 P_star = P @ R + t
 
 # Compute Mean Squared Error between two sets
-err = None
+err = MSE_np(Q, P_star)
+print("Error value: ", err)
 
 # Visualize the results
 pass
