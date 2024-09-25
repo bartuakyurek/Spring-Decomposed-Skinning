@@ -97,7 +97,8 @@ def get_optimal_rigid_motion(P, Q, W):
     assert X_col_major.shape == (n_dims, n_points)
     assert X_col_major.shape == Y_col_major.shape
     
-    S = X.T @ (W_diag @ Y)
+    # S is the coveriance matrix
+    S = X.T @ (W_diag @ Y) 
     sanity_check = X_col_major @ W_diag @ Y_col_major.T # Corresponds to matrix dimensions on notes 
     __check_equality(S, sanity_check)
     
@@ -116,8 +117,8 @@ def get_optimal_rigid_motion(P, Q, W):
     
     # What np.linalg.svd returns, is the transposed of what we need in step 4 in the notes.
     tmp_V, tmp_U = V, U
-    U = V.T
-    V = U
+    U = tmp_V
+    V = tmp_U.T
     
     det_vu = np.linalg.det(V @ U.T)
     I = np.eye(n_dims)
@@ -148,6 +149,7 @@ if __name__ == "__main__":
                     [2.0, 3.0, 0.0]
                 ])
     weights_segment = np.array([1.0, 1.0])
+    #weights_segment /= np.sum(weights_segment)
     
     print(">> Trivial case 1: rigid motion between two identical line segments")
     Rot, trans = get_optimal_rigid_motion(line_segment, line_segment, weights_segment)
@@ -158,7 +160,7 @@ if __name__ == "__main__":
     
 
     # Case #2: Two different line segments, see if you transform first segment, you'll get the second segment 
-    
+    print(">> Trivial case 2: rigid motion from one segment to another line segment")
     another_line_segment = np.array([
                                         [0.5, 0.5, 3.0],
                                         [0.0, 3.0, 2.0]
@@ -194,7 +196,8 @@ if __name__ == "__main__":
                     [1.0],
                     [1.0],
                     [1.0],
-                ])
+                ]) 
+    
     
     
     
