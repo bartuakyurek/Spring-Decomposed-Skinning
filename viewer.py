@@ -1,105 +1,79 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Feb 29 11:12:08 2024
+Created on Wed May 22 12:46:50 2024
 
 @author: bartu
+
+
+TODO: this should be not viewer.py but rather a canvas for a single mesh, so that we can write a generic viewer and 
+add this canvas to there. The naming is confusing right now. It is pretty specific to spring rig animation. 
 """
 
-import numpy as np
-import pyvista as pv
-import matplotlib.pyplot as plt
-
-def _add_padded_column(base_array, number_to_pad):
-    """
-
-    Parameters
-    ----------
-    base_array : 2D array of ints
-        Depicts connections in a topology, e.g. faces array for a 2D or 3D mesh
-    number_to_pad : int
-        a single integer to be padded in the first column of base_array
-
-    Returns
-    -------
-    New 2D array with number_to_pad added to the first column of base_array.
-    Use number_to_pad = 2 for edges, = 3 for triangular faces
-    """
-    padding = np.empty(base_array.shape[0], int) 
-    padding[:] = number_to_pad
-    return np.vstack((padding, base_array.T)).T
-
-
-class Animation:
-    def __init__(self, verts, faces, starting_mesh):
-        self.anim_verts = verts
-        self.faces = _add_padded_column(faces, 3)
-        
-        # Expected PyVista mesh type
-        self.output = starting_mesh 
-        
-        # default parameters
-        self.kwargs = {
-            'current_frame_idx': 0
-        }
-
-    def __call__(self, param, value):
-        self.kwargs[param] = value
-        self.update()
-
-    def update(self):
-        # This is where you call your simulation
-        frame_idx = self.kwargs['current_frame_idx']
-        verts = self.anim_verts[frame_idx]
-        result = pv.PolyData(verts, self.faces) 
-        self.output.copy_from(result)
-        
-        return
+from scene_node import Scene_Node
 
 class Viewer:
-  def __init__(self):
-    self.pl = pv.Plotter()
+    def __init__(self):
+        self.is_animating : bool  = False
+        self.dt           : float = 1. / 30
+        self.current_frame: int   = 0
+        self.max_frames   : int   = 100
+        self.nodes        : dict  = {}
+        
+        self.seperator    : str = "_"
     
-  def add_animated_mesh(self, verts, faces, opacity=1.0):
-      
-    starting_mesh = pv.PolyData(verts[0], _add_padded_column(faces, 3))
-    self.engine = Animation(verts, faces, starting_mesh)
-    self.pl.add_mesh(starting_mesh, opacity=opacity)
+    #========== Public Functions ==============================================
+    def run(self):
+        if self.is_animating:
+            self._next_frame()
+        
+        
+    #=========== Setters ======================================================
     
-    self.pl.add_slider_widget(
-        callback=lambda value: self.engine('current_frame_idx', int(value)),
-        rng=[0, verts.shape[0]-1],
-        value=0,
-        title="Frame Number",
-        pointa=(0.025, 0.1),
-        pointb=(0.31, 0.1),
-        style='modern',
-        interaction_event='always'
-    )
-    return
+    def set_time_step_in_seconds(self, step : float):
+        if step > 0.1:
+            print(f">> WARNING: Time step is too large: {step} seconds.")
+        self.dt = step
+        
 
-  def add_mesh(self, verts, faces, opacity=1.0):
-      mesh = pv.PolyData(verts, _add_padded_column(faces, 3))
-      self.pl.add_mesh(mesh, opacity=opacity)
-      return
-    
-  def add_points(self, locations, point_size=10.0, color='red'):
-      """
-          Locations is a [num_points, 3] array-like variable.
-      """
-      self.pl.add_points(locations, render_points_as_spheres=True, point_size=point_size, color=color)
-      return
-  
-  def run(self):
-    """
-        Call this function to show viewer in the last step
-    """
-    self.pl.view_xy()
-    self.pl.show()
-    return
+    def set_max_frames(self, cap : int):
+        if cap > 500:
+            print(f">> WARNING: Maximum number of frames might be too large: {cap} frames.")
+        self.max_frames = round(cap)  # In case the input is not an integer value
     
 
-
-  
+    # Check the key root which is in the dictionary as "root_001_some_numbers"
+    # Vulnerability: If there are node types with the same root, e.g. "Prism_Cube" and "Prism_Cylinder"
+    #                then they both will be treated as the same type.
     
-
+    def __count_key_root_occurence_in_dict(self,
+                                           dictionary : dict,
+                                           key_seperator  : str,
+                                           root_name   : str
+                                           ) -> int:
+        assert type(root_name) is str, f"Expected str in root_name, got {type(root_name)}"
+        
+        n_instance = 0
+        for key in self.nodes:
+            
+            key_root = key.split(key_seperator)[0]
+            
+            if key_root == root_name:
+                n_instance += 1
+                
+        return n_instance
+        
+    def add_scene_node(self, node):
+        
+        n_instance = self.__count_key_root_occurence_in_dict(self.nodes, self.seperator, node.node_type)
+        node_key = node.get_node_type() + self.seperator + str(n_instance)
+        
+        self.nodes[node_key] = node
+        print(f">> INFO: Added {node_key}")
+    
+    
+    #========== Private Functions =============================================
+    def _next_frame(self):
+        self.current_frame += 1
+        print("INFO: switching to next frame.")
+        

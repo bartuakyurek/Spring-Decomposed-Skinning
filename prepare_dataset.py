@@ -60,6 +60,7 @@ for femaleid in femaleids:
         pose_body = torch.cat((torch.zeros(pose_body.shape[0], 3).type(torch.float64),pose_body),1)
         
         if pose_body.shape[0]-verts.shape[0] != 0:
+            print(">> Found erronous data, skipping...")
             continue
         
         trans = torch.Tensor(bdata['trans']).type(torch.float64)
