@@ -24,18 +24,10 @@ def _create_mayavi_figure(background_color=(1,1,1), size=(800,800)):
 class Mayavi_Viewer(Viewer):
     def __init__(self):
         super().__init__()
-        pass
+        self.figure = _create_mayavi_figure()
         
     def run(self):
-        
-        for node_key in self.nodes:
-            node = self.nodes[node_key]
-            verts = node.vertices
-            faces = node.faces
-            
-            self.render_node(verts, faces)  
-        
-        self.launch()      
+        super().run()  
 
     def render_node(self, verts, faces):
         
