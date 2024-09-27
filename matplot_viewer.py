@@ -34,21 +34,11 @@ class Matplot_Viewer(Viewer):
         self.ax.set_ylim([-1.0, 1.0])
         self.ax.set_zlim([-1.0, 1.0])
         #self.ls = LightSource(270, 45)
-        
+         
     def run(self):
+        super().run()
         
-        for node_key in self.nodes:
-            node = self.nodes[node_key]
-            verts = node.vertices
-            faces = node.faces
-            
-            self.render_node(verts, faces)
         
-        # TODO: update the same plot?
-        # or save it and once the viewer is done, convert saved images to video (in main)
-        plt.show()
-        
-
     def render_node(self, verts, faces):
         
         mesh = Poly3DCollection(verts[faces], alpha=0.2)
@@ -60,7 +50,8 @@ class Matplot_Viewer(Viewer):
         self.ax.add_collection3d(mesh)
         return
     
-    
+    def launch(self):
+        plt.show()
       
 if __name__ == "__main__":
     print(f"INFO: Running tests for {__file__}")

@@ -11,6 +11,8 @@ add this canvas to there. The naming is confusing right now. It is pretty specif
 """
 
 from scene_node import Scene_Node
+from dict_utils import _count_key_root_occurence_in_dict
+
 
 class Viewer:
     def __init__(self):
@@ -27,8 +29,20 @@ class Viewer:
         if self.is_animating:
             self._next_frame()
         
-        
-    #=========== Setters ======================================================
+        for node_key in self.nodes:
+            node = self.nodes[node_key]
+            verts = node.vertices
+            faces = node.faces
+            
+            self.render_node(verts, faces)
+
+        self.launch()
+            
+    def render_node(self, verts, faces):
+        pass
+    
+    def launch(self):
+        pass
     
     def set_time_step_in_seconds(self, step : float):
         if step > 0.1:
@@ -45,27 +59,10 @@ class Viewer:
     # Check the key root which is in the dictionary as "root_001_some_numbers"
     # Vulnerability: If there are node types with the same root, e.g. "Prism_Cube" and "Prism_Cylinder"
     #                then they both will be treated as the same type.
-    
-    def __count_key_root_occurence_in_dict(self,
-                                           dictionary : dict,
-                                           key_seperator  : str,
-                                           root_name   : str
-                                           ) -> int:
-        assert type(root_name) is str, f"Expected str in root_name, got {type(root_name)}"
-        
-        n_instance = 0
-        for key in self.nodes:
-            
-            key_root = key.split(key_seperator)[0]
-            
-            if key_root == root_name:
-                n_instance += 1
-                
-        return n_instance
         
     def add_scene_node(self, node):
         
-        n_instance = self.__count_key_root_occurence_in_dict(self.nodes, self.seperator, node.node_type)
+        n_instance = _count_key_root_occurence_in_dict(self.nodes, self.seperator, node.node_type)
         node_key = node.get_node_type() + self.seperator + str(n_instance)
         
         self.nodes[node_key] = node
