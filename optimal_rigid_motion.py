@@ -115,15 +115,22 @@ def get_optimal_rigid_motion(P, Q, W):
     __check_equality(S[1], S_sanity[1])
     __check_equality(S[2], S_sanity[2])
     
-    # What np.linalg.svd returns, is the transposed of what we need in step 4 in the notes.
-    #tmp_V, tmp_U = V, U
-    #U = tmp_V
-    #V = tmp_U.T
     
-    det_vu = np.linalg.det(Vh @ U.T)
+    # What np.linalg.svd returns, is the transposed of what we need in step 4 in the notes.
+    V = Vh.T
+    
+    det_vu = np.linalg.det(V @ U.T)
     I = np.eye(n_dims)
+    #I = np.ones((n_dims, n_dims))
     I[-1, -1] = det_vu
-    Rot = Vh @ I @ U.T 
+    Rot = (V @ I) @ U.T
+   
+    #if det_vu < 0:
+        #[U,S,V] = svd(R)
+        #multiply 3rd column of V by -1
+    #    print("INFO: Negative determinant.")
+    #    V[:,-1] *= -1
+    #    R = V @ I @ U.T
     
     # Step 5: Compute the optimal translation
     trans = Q_centroid - (Rot @ P_centroid)

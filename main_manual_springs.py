@@ -51,7 +51,7 @@ SELECTED_FRAME = 10
 # and the weights for all points
 #P = t_pose = smpl_model(betas, torch.zeros_like(pose) ,trans)[0][0].detach().cpu().numpy()
 P = V[SELECTED_FRAME]
-Q = deformed_pose = V[SELECTED_FRAME]
+Q = deformed_pose = V[SELECTED_FRAME+50]
 W = np.ones(P.shape[0])
 
 err = MSE_np(Q, P)
