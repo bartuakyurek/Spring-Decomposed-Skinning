@@ -52,16 +52,16 @@ P = V[SELECTED_FRAME]
 Q = deformed_pose = V[SELECTED_FRAME+10]
 W = np.ones(P.shape[0])
 
-err = MSE_np(Q, P)
-print("Error value before optimized: ", err)
+err_before = MSE_np(Q, P)
+print("Error value before optimized: ", err_before)
 
 # Compute the optimal rotation and translation and apply it to the first set
 R, t = get_optimal_rigid_motion(P, Q, W)
 P_star = P @ R + t
 
 # Compute Mean Squared Error between two sets
-err = MSE_np(Q, P_star)
-print("Error value after optimization: ", err)
+err_after = MSE_np(Q, P_star)
+print("Error value after optimization: ", err_after)
 
 # Visualize the results
 viewer = Matplot_Viewer()
