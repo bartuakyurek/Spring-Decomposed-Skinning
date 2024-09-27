@@ -39,8 +39,8 @@ for data in data_loader:
    smpl_verts, joints = smpl_model(betas, pose, trans)
    break
    
-V = smpl_verts.detach().cpu().numpy()#[SELECTED_FRAME]
-J = joints.detach().cpu().numpy()#[SELECTED_FRAME]
+V = smpl_verts.detach().cpu().numpy()
+J = joints.detach().cpu().numpy()
 n_frames, n_verts, n_dims = target_verts.shape
 
 SELECTED_FRAME = 10
@@ -61,7 +61,7 @@ P_star = P @ R + t
 
 # Compute Mean Squared Error between two sets
 err = MSE_np(Q, P_star)
-print("Error value: ", err)
+print("Error value after optimization: ", err)
 
 # Visualize the results
 viewer = Matplot_Viewer()
