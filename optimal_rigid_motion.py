@@ -143,42 +143,10 @@ def get_optimal_rigid_motion(P, Q, W):
 
 if __name__ == "__main__":
     print(">> Testing ", __file__)
-    from matplot_viewer import Matplot_Viewer
     
-    # ================================================================================================================
-    #        Testing trivial cases: rigid motion between two line segments
-    #        WARNING: Tests on a single point does not work
-    # ================================================================================================================
-    """
-    # Case #1: Same line segments, see if you transform you'll still get the same line segment.
-
-    line_segment = np.array([
-                    [0.5, 3.0, 0.5],
-                    [2.0, 3.0, 0.0]
-                ])
-    weights_segment = np.array([1.0, 1.0])
-    #weights_segment /= np.sum(weights_segment)
-    
-    print(">> Trivial case 1: rigid motion between two identical line segments")
-    Rot, trans = get_optimal_rigid_motion(line_segment, line_segment, weights_segment)
-    print("R\n", Rot)
-    print("t ", trans)
-    transformed_line_segment = (line_segment @ Rot) + trans
-    print(__check_equality(line_segment, transformed_line_segment))
-    
-
-    # Case #2: Two different line segments, see if you transform first segment, you'll get the second segment 
-    print(">> Trivial case 2: rigid motion from one segment to another line segment")
-    another_line_segment = np.array([
-                                        [0.5, 0.5, 3.0],
-                                        [0.0, 3.0, 2.0]
-                                    ])
-    Rot, trans = get_optimal_rigid_motion(line_segment, another_line_segment, weights_segment)
-    transformed_line_segment = (line_segment @ Rot) + trans
-    print(__check_equality(line_segment, transformed_line_segment))
-    """
     # ================================================================================================================
     #        Testing a small set of points
+    #        WARNING: points sets with 2 elements may not return optimal R and t
     # ================================================================================================================
     
     # Random rotation and translation
@@ -192,8 +160,8 @@ if __name__ == "__main__":
     # remove reflection
     if np.linalg.det(R) < 0:
        Vt[2,:] *= -1
-       R = U@Vt
-    
+       R = U@Vt 
+       
     # number of points
     n = 10
     
@@ -204,7 +172,7 @@ if __name__ == "__main__":
     ret_R, ret_t = get_optimal_rigid_motion(A.T, B.T, W=np.ones(A.shape[1]))
 
     # Compare the recovered R and t with the original
-    B2 = (ret_R@A).T + ret_t
+    B2 = (ret_R @ A).T + ret_t
     B2 = B2.T
     
     # Find the root mean squared error
