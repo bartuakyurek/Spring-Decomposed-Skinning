@@ -6,7 +6,20 @@ Created on Fri Sep 27 13:08:09 2024
 @author: bartu
 """
 
+import numpy as np
+from mayavi import mlab
+from tvtk.api import tvtk
+from itertools import count
+from dataclasses import dataclass
+from tvtk.common import configure_input
+
 from viewer import Viewer
+
+
+def _create_mayavi_figure(background_color=(1,1,1), size=(800,800)):
+    fig = mlab.figure(bgcolor=background_color, size=size)
+    fig.scene.z_plus_view()
+    return fig
 
 class Mayavi_Viewer(Viewer):
     def __init__(self):

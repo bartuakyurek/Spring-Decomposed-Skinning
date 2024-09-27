@@ -12,8 +12,7 @@ Created on Tue Sep 24 06:36:20 2024
 
 import numpy as np
 from sanity_check import __check_equality, __equate_shapes
-
-_SPACE_DIMS_ = 3
+from global_vars import _SPACE_DIMS_
 
 # ================================================================================================================
 #                            SANITY CHECK FUNCTIONS FOR OPTIMAL RIGID MOTION ALGORITHM

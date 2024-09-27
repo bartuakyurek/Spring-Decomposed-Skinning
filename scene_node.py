@@ -5,6 +5,8 @@ Created on Sat Sep 21 12:37:49 2024
 
 @author: bartu
 """
+import numpy as np
+from global_vars import _SPACE_DIMS_, HOMO_COORD
 
 class Scene_Node:
     def __init__(self,  V, F):
@@ -12,6 +14,12 @@ class Scene_Node:
         
         self.vertices = V
         self.faces = F
+        
+        # Rigid Transformations
+        self.Rot = np.eye(_SPACE_DIMS_ + HOMO_COORD)
+        self.trans = np.zeros(_SPACE_DIMS_ + HOMO_COORD)
+        self.scale = 1.0
+        
         self.node_type = None
         
     def get_node_type(self):
