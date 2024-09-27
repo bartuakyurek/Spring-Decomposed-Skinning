@@ -147,8 +147,9 @@ if __name__ == "__main__":
     
     # ================================================================================================================
     #        Testing trivial cases: rigid motion between two line segments
+    #        WARNING: Tests on a single point does not work
     # ================================================================================================================
-
+    """
     # Case #1: Same line segments, see if you transform you'll still get the same line segment.
 
     line_segment = np.array([
@@ -175,36 +176,70 @@ if __name__ == "__main__":
     Rot, trans = get_optimal_rigid_motion(line_segment, another_line_segment, weights_segment)
     transformed_line_segment = (line_segment @ Rot) + trans
     print(__check_equality(line_segment, transformed_line_segment))
-
+    """
     # ================================================================================================================
     #        Testing a small set of points
     # ================================================================================================================
+    
+    # Random rotation and translation
+    R = np.random.rand(3,3)
+    t = np.random.rand(3,1)
+    
+    # make R a proper rotation matrix, force orthonormal
+    U, S, Vt = np.linalg.svd(R)
+    R = U@Vt
+    
+    # remove reflection
+    if np.linalg.det(R) < 0:
+       Vt[2,:] *= -1
+       R = U@Vt
+    
+    # number of points
+    n = 10
+    
+    A = np.random.rand(3, n)
+    B = R@A + t
+    
+    # Recover R and t
+    ret_R, ret_t = get_optimal_rigid_motion(A.T, B.T, W=np.ones(A.shape[1]))
 
-    P = np.array([
-                    [0.5, 3.0, 0.5],
-                    [2.0, 3.0, 0.0],
-                    [1.0, 2.0, 1.0],
-                    [1.0, 1.0, 0.0],
-                    [0.0, 1.0, 0.0],
-                ])
+    # Compare the recovered R and t with the original
+    B2 = (ret_R@A).T + ret_t
+    B2 = B2.T
     
+    # Find the root mean squared error
+    err = B2 - B
+    err = err * err
+    err = np.sum(err)
+    rmse = np.sqrt(err/n)
     
-    Q = np.array([
-                    [0.67, 2.0, 0.5],
-                    [2.0, 3.0, 0.12],
-                    [1.0, 1.5, 1.0],
-                    [1.1, 1.3, 0.0],
-                    [0.0, 1.0, 0.23],
-                ])
+    print("Points A")
+    print(A)
+    print("")
     
-    W = np.array([
-                    [1.0],
-                    [1.0],
-                    [1.0],
-                    [1.0],
-                    [1.0],
-                ]) 
+    print("Points B")
+    print(B)
+    print("")
     
+    print("Ground truth rotation")
+    print(R)
     
+    print("Recovered rotation")
+    print(ret_R)
+    print("")
+    
+    print("Ground truth translation")
+    print(t)
+    
+    print("Recovered translation")
+    print(ret_t)
+    print("")
+    
+    print("RMSE:", rmse)
+    
+    if rmse < 1e-5:
+        print("Everything looks good!")
+    else:
+        print("Hmm something doesn't look right ...")
     
     

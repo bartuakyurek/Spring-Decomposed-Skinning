@@ -43,15 +43,13 @@ V = smpl_verts.detach().cpu().numpy()#[SELECTED_FRAME]
 J = joints.detach().cpu().numpy()#[SELECTED_FRAME]
 n_frames, n_verts, n_dims = target_verts.shape
 
-
-
 SELECTED_FRAME = 10
 
 # Declare two sets P and Q, to compute rigid motion P -> Q
 # and the weights for all points
 #P = t_pose = smpl_model(betas, torch.zeros_like(pose) ,trans)[0][0].detach().cpu().numpy()
 P = V[SELECTED_FRAME]
-Q = deformed_pose = V[SELECTED_FRAME+50]
+Q = deformed_pose = V[SELECTED_FRAME+10]
 W = np.ones(P.shape[0])
 
 err = MSE_np(Q, P)
