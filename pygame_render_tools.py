@@ -209,3 +209,5 @@ def initGL(resX, resY):
     gluPerspective(45, (display[0]/display[1]), 0.5, 50.0)
     
     initShader()
+    
+ 
