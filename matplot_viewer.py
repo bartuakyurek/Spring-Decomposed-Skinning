@@ -34,7 +34,11 @@ class Matplot_Viewer(Viewer):
         self.ax.set_ylim([-1.0, 1.0])
         self.ax.set_zlim([-1.0, 1.0])
         #self.ls = LightSource(270, 45)
-         
+        
+    def launch(self):
+        self._render_scene()
+        # Note that animation update is not available right now.
+        
     def _render_scene(self):
         super()._render_scene()
         self._display()
@@ -79,4 +83,4 @@ if __name__ == "__main__":
     for i in range(10):
         mass_spring_sys_node = Mesh(P, S)
         viewer.add_scene_node(mass_spring_sys_node)
-    viewer.render_scene()
+    viewer.launch()
