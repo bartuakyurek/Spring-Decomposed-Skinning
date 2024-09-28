@@ -26,13 +26,16 @@ class PyGameViewer(Viewer):
         super().__init__()
         self.DISPLAYSURF = pygame.display.set_mode((width,height))
         
-    def render_scene(self):
-        super().render_scene()
-        self.launch()
+    def _render_scene(self):
+       super()._render_scene()
         
-    def render_node(self, verts, faces):
+    def _render_node(self, verts, faces):
         pass
         
+    def time_step(self):
+        self.current_frame += 1
+        return
+    
     def launch(self):
         running = True
         while running:
@@ -48,8 +51,10 @@ class PyGameViewer(Viewer):
             glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
             glClearColor(0.3, 0.3, 0.3, 1.0)
             
-            #timeStep()
-            #render_scene()
+            if self.is_animating:
+                self.time_step()
+                
+            self._render_scene()
             pygame.display.flip()
             
         pygame.quit()

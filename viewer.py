@@ -25,22 +25,9 @@ class Viewer:
         self.seperator    : str = "_"
     
     #========== Public Functions ==============================================
-    def render_scene(self):
-        if self.is_animating:
-            self._next_frame()
-        
-        for node_key in self.nodes:
-            node = self.nodes[node_key]
-            verts = node.vertices
-            faces = node.faces
-            
-            self._render_node(verts, faces)
-
-        
-    def _render_node(self, verts, faces):
+    def launch(self):    
         pass
-    
-    
+        
     def set_time_step_in_seconds(self, step : float):
         if step > 0.1:
             print(f">> WARNING: Time step is too large: {step} seconds.")
@@ -67,7 +54,16 @@ class Viewer:
     
     
     #========== Private Functions =============================================
-    def _next_frame(self):
-        self.current_frame += 1
-        print("INFO: switching to next frame.")
+    def _render_scene(self):
         
+        for node_key in self.nodes:
+            node = self.nodes[node_key]
+            verts = node.vertices
+            faces = node.faces
+            
+            self._render_node(verts, faces)
+
+    def _render_node(self, verts, faces):
+        pass
+    
+  

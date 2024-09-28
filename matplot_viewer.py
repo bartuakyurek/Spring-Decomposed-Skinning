@@ -35,8 +35,8 @@ class Matplot_Viewer(Viewer):
         self.ax.set_zlim([-1.0, 1.0])
         #self.ls = LightSource(270, 45)
          
-    def render_scene(self):
-        super().render_scene()
+    def _render_scene(self):
+        super()._render_scene()
         self._display()
         
     def _render_node(self, verts, faces):
