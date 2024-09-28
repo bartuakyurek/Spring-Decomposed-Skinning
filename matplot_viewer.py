@@ -35,11 +35,11 @@ class Matplot_Viewer(Viewer):
         self.ax.set_zlim([-1.0, 1.0])
         #self.ls = LightSource(270, 45)
          
-    def run(self):
-        super().run()
+    def render_scene(self):
+        super().render_scene()
+        self._display()
         
-        
-    def render_node(self, verts, faces):
+    def _render_node(self, verts, faces):
         
         mesh = Poly3DCollection(verts[faces], alpha=0.2)
         face_color = (141 / 255, 184 / 255, 226 / 255)
@@ -50,7 +50,7 @@ class Matplot_Viewer(Viewer):
         self.ax.add_collection3d(mesh)
         return
     
-    def launch(self):
+    def _display(self):
         plt.show()
       
 if __name__ == "__main__":
@@ -79,4 +79,4 @@ if __name__ == "__main__":
     for i in range(10):
         mass_spring_sys_node = Mesh(P, S)
         viewer.add_scene_node(mass_spring_sys_node)
-    viewer.run()
+    viewer.render_scene()

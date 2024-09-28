@@ -15,6 +15,10 @@ https://coderslegacy.com/python/python-pygame-tutorial/
 import sys
 import pygame
 from pygame import QUIT
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from OpenGL.GL import shaders
+
 from viewer import Viewer
 
 class PyGameViewer(Viewer):
@@ -22,16 +26,31 @@ class PyGameViewer(Viewer):
         super().__init__()
         self.DISPLAYSURF = pygame.display.set_mode((width,height))
         
-    def run(self):
-        super().run()
+    def render_scene(self):
+        super().render_scene()
+        self.launch()
         
     def render_node(self, verts, faces):
         pass
         
     def launch(self):
-        while True:
+        running = True
+        while running:
             for event in pygame.event.get():
-                if event.type == QUIT:
-                    pygame.quit()
-                    sys.exit()
-            pygame.display.update()
+                if event.type == pygame.QUIT:
+                    running = False
+                if event.type == pygame.KEYDOWN:
+                    #if event.key == pygame.K_r:
+                        # reset()
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+            
+            glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+            glClearColor(0.3, 0.3, 0.3, 1.0)
+            
+            #timeStep()
+            #render_scene()
+            pygame.display.flip()
+            
+        pygame.quit()
+        pbd.Timing.printAverageTimes()

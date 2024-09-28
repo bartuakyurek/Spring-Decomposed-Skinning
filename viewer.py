@@ -25,7 +25,7 @@ class Viewer:
         self.seperator    : str = "_"
     
     #========== Public Functions ==============================================
-    def run(self):
+    def render_scene(self):
         if self.is_animating:
             self._next_frame()
         
@@ -34,15 +34,12 @@ class Viewer:
             verts = node.vertices
             faces = node.faces
             
-            self.render_node(verts, faces)
+            self._render_node(verts, faces)
 
-        self.launch()
-            
-    def render_node(self, verts, faces):
+        
+    def _render_node(self, verts, faces):
         pass
     
-    def launch(self):
-        pass
     
     def set_time_step_in_seconds(self, step : float):
         if step > 0.1:

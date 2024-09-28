@@ -23,6 +23,7 @@ from cost import MSE_np
 
 from scene_node import *
 from matplot_viewer import Matplot_Viewer
+from pygame_viewer import PyGameViewer
 
 training_data = torch.load('./data/50004_dataset.pt')
 data_loader = torch.utils.data.DataLoader(training_data, batch_size=1, shuffle=False)
@@ -45,6 +46,7 @@ n_frames, n_verts, n_dims = target_verts.shape
 
 SELECTED_FRAME = 10
 
+"""
 # Declare two sets P and Q, to compute rigid motion P -> Q
 # and the weights for all points
 #P = t_pose = smpl_model(betas, torch.zeros_like(pose) ,trans)[0][0].detach().cpu().numpy()
@@ -64,7 +66,7 @@ err_after = MSE_np(Q, P_star)
 print("Error value after optimization: ", err_after)
 
 # Visualize the results
-viewer = Matplot_Viewer()
+viewer = PyGameViewer()
 
 mesh_T_node = Mesh(P, F)
 mesh_optimized_node = Mesh(P_star, F)
@@ -74,6 +76,6 @@ mesh_target_node = Mesh(Q, F)
 viewer.add_scene_node(mesh_optimized_node)
 viewer.add_scene_node(mesh_target_node)
 
-viewer.run()
-
+viewer.render_scene()
+"""
 
