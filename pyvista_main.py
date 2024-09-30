@@ -43,30 +43,21 @@ n_frames, n_verts, n_dims = target_verts.shape
 import numpy as np
 import pyvista as pv
 
+from pyvista_render_tools import add_skeleton, add_mesh
 
-
-# Create and structured surface
-mesh = mesh = pv.PolyData(V[0], F)
- #pv.StructuredGrid(x, y, z)
 
 # Create a plotter object and set the scalars to the Z height
-plotter = pv.Plotter(notebook=False, off_screen=True)
-plotter.add_mesh(
-    mesh,
-    #scalars=z.ravel(),
-    lighting=False,
-    show_edges=True,
-    scalar_bar_args={"title": "Height"},
-    clim=[-1, 1],
-)
+plotter = pv.Plotter(notebook=False, off_screen=False)
 
+#add_mesh(plotter, verts=V[0].copy(), faces=F)
+add_skeleton(plotter, J[0].copy(), kintree)
+
+plotter.show()
+"""
 # Open a gif
-plotter.open_gif("sample.gif")
+plotter.open_gif("./results/sample.gif")
 
-pts = mesh.points.copy()
-
-# Update Z and write a frame for each updated position
-for frame in range(n_frames-1):
+for frame in range(2):#n_frames-1):
     
     #pts = mesh.points.copy()
     pts = V[frame].copy()
@@ -78,3 +69,4 @@ for frame in range(n_frames-1):
 
 # Closes and finalizes movie
 plotter.close()
+"""
