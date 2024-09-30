@@ -12,8 +12,7 @@ Created on Tue Sep 24 06:36:20 2024
 
 import numpy as np
 from sanity_check import __check_equality, __equate_shapes
-
-_SPACE_DIMS_ = 3
+from global_vars import _SPACE_DIMS_
 
 # ================================================================================================================
 #                            SANITY CHECK FUNCTIONS FOR OPTIMAL RIGID MOTION ALGORITHM
@@ -97,23 +96,43 @@ def get_optimal_rigid_motion(P, Q, W):
     assert X_col_major.shape == (n_dims, n_points)
     assert X_col_major.shape == Y_col_major.shape
     
-    S = X.T @ W_diag @ Y
+    # S is the coveriance matrix
+    S = X.T @ (W_diag @ Y) 
     sanity_check = X_col_major @ W_diag @ Y_col_major.T # Corresponds to matrix dimensions on notes 
     __check_equality(S, sanity_check)
     
     # Step 4: Compute the SVD and the optimal rotation
-    U, Sigma, V = np.linalg.svd(S, full_matrices=True)
+    U, Sigma, Vh = np.linalg.svd(S, full_matrices=True)
+    
     assert U.shape == (n_dims, n_dims)
     assert Sigma.shape == (n_dims, )
-    assert V.shape == (n_dims, n_dims)
+    assert Vh.shape == (n_dims, n_dims)
+    
+    S_sanity = U @ (np.diag(Sigma) @ Vh)
+    assert S_sanity.shape == S.shape, f"Sanity Check Failed! SVD Reconstructed matrix has shape {S_sanity.shape}, expected {S.shape}"
+    __check_equality(S[0], S_sanity[0])
+    __check_equality(S[1], S_sanity[1])
+    __check_equality(S[2], S_sanity[2])
+    
+    
+    # What np.linalg.svd returns, is the transposed of what we need in step 4 in the notes.
+    V = Vh.T
     
     det_vu = np.linalg.det(V @ U.T)
     I = np.eye(n_dims)
+    #I = np.ones((n_dims, n_dims))
     I[-1, -1] = det_vu
-    Rot = V @ I @ U.T
+    Rot = (V @ I) @ U.T
+   
+    #if det_vu < 0:
+        #[U,S,V] = svd(R)
+        #multiply 3rd column of V by -1
+    #    print("INFO: Negative determinant.")
+    #    V[:,-1] *= -1
+    #    R = V @ I @ U.T
     
     # Step 5: Compute the optimal translation
-    trans = Q_centroid - Rot @ P_centroid
+    trans = Q_centroid - (Rot @ P_centroid)
 
     return Rot, trans
 
@@ -123,32 +142,71 @@ def get_optimal_rigid_motion(P, Q, W):
 
 if __name__ == "__main__":
     print(">> Testing ", __file__)
-    P = np.array([
-                    [0.5, 3.0, 0.5],
-                    [2.0, 3.0, 0.0],
-                    [1.0, 2.0, 1.0],
-                    [1.0, 1.0, 0.0],
-                    [0.0, 1.0, 0.0],
-                ])
     
+    # ================================================================================================================
+    #        Testing a small set of points
+    #        WARNING: points sets with 2 elements may not return optimal R and t
+    # ================================================================================================================
     
-    Q = np.array([
-                    [0.67, 2.0, 0.5],
-                    [2.0, 3.0, 0.12],
-                    [1.0, 1.5, 1.0],
-                    [1.1, 1.3, 0.0],
-                    [0.0, 1.0, 0.23],
-                ])
+    # Random rotation and translation
+    R = np.random.rand(3,3)
+    t = np.random.rand(3,1)
     
-    W = np.array([
-                    [0.5],
-                    [0.5],
-                    [1],
-                    [1],
-                    [1],
-                ])
+    # make R a proper rotation matrix, force orthonormal
+    U, S, Vt = np.linalg.svd(R)
+    R = U@Vt
+    
+    # remove reflection
+    if np.linalg.det(R) < 0:
+       Vt[2,:] *= -1
+       R = U@Vt 
+       
+    # number of points
+    n = 10
+    
+    A = np.random.rand(3, n)
+    B = R@A + t
+    
+    # Recover R and t
+    ret_R, ret_t = get_optimal_rigid_motion(A.T, B.T, W=np.ones(A.shape[1]))
 
+    # Compare the recovered R and t with the original
+    B2 = (ret_R @ A).T + ret_t
+    B2 = B2.T
     
-    Rot, trans = get_optimal_rigid_motion(P, Q, W)
+    # Find the root mean squared error
+    err = B2 - B
+    err = err * err
+    err = np.sum(err)
+    rmse = np.sqrt(err/n)
+    
+    print("Points A")
+    print(A)
+    print("")
+    
+    print("Points B")
+    print(B)
+    print("")
+    
+    print("Ground truth rotation")
+    print(R)
+    
+    print("Recovered rotation")
+    print(ret_R)
+    print("")
+    
+    print("Ground truth translation")
+    print(t)
+    
+    print("Recovered translation")
+    print(ret_t)
+    print("")
+    
+    print("RMSE:", rmse)
+    
+    if rmse < 1e-5:
+        print("Everything looks good!")
+    else:
+        print("Hmm something doesn't look right ...")
     
     

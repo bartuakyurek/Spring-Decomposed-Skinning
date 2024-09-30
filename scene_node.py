@@ -5,6 +5,8 @@ Created on Sat Sep 21 12:37:49 2024
 
 @author: bartu
 """
+import numpy as np
+from global_vars import _SPACE_DIMS_, HOMO_COORD
 
 class Scene_Node:
     def __init__(self,  V, F):
@@ -12,6 +14,11 @@ class Scene_Node:
         
         self.vertices = V
         self.faces = F
+        
+        # Rigid Transformations
+        self.Rot, self.trans, self.scale = None, None, None
+        self.reset_transforms()
+        
         self.node_type = None
         
     def get_node_type(self):
@@ -23,7 +30,24 @@ class Scene_Node:
         else:
             return self.node_type
         
+        
+    def reset_transforms(self):
+        self.Rot = np.eye(_SPACE_DIMS_ + HOMO_COORD)
+        self.trans = np.zeros(_SPACE_DIMS_ + HOMO_COORD)
+        self.scale = 1.0
+        
+    def get_transformed_verts(self):
 
+        # tmp_verts = linalg_utils.scale(self.vertices, self.scale)
+        # tmp_verts = linalg_utils.rotate(self.vertices, self.rot)
+        # tmp_verts = linalg_utils.translate(self.vertices, self.trans)
+        pass
+    
+    
+    def bake_transforms(self):
+        self.vertices = self.get_transformed_verts()
+        return
+        
 class Mesh(Scene_Node):
     def __init__(self, V, F):
         super().__init__(V, F)
