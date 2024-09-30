@@ -63,33 +63,14 @@ plotter.open_gif("./results/sample.gif")
 n_frames = 200 
 n_repeats = 5
 for _ in range(n_repeats):
-    
-    ## TODO: Add springs
-
-    spring_coords = np.array([
-                                [0.5, 1.0, 0.5],
-                                ])
-
-    # This is the same as adding another mass and connecting it to the first
-    # mass with a spring vector. 
-    # TODO: maybe we can change the implementation
-    # for a more intuitive mass-spring lattice creation
-    spring_rest_vectors = np.array([
-                                    [1.0, 0.0, 0.0],
-                                    ])
-
-    # TODO: could we create a shallow copy array, to combine SMPL joints plus spring coordinates? 
-    spring_instances = []
-    spring_coords_bake = []
-
-    # Loop create springs 
-    n_springs = 1
-    for i in range(n_springs):
-       pass
-    ## TODO: Simulate springs w.r.t. rigid motion (and save simulation)
-    
+    # TODO: Reset plotter objects
+    # TODO: Initialize particle (i.e. mass-spring) system
+    # TODO: Add sphere objects to plotter 
     for frame in range(n_frames-1):
         
+        # TODO: update particle system
+        
+        # TODO: update sphere positions
         pts = J[frame].copy()
         plotter.update_coordinates(pts, render=False)
         #plotter.update_scalars(z.ravel(), render=False) # updates colors
