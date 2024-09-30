@@ -37,24 +37,17 @@ class Spring:
         self.delta_x = self.mass_coord - self.mass_rest_coord
         
         
-    def update_connection(self, new_connection_coord):
-        
-        #if np.sum(np.square(new_connection_coord - self.connection_coord)) > 1e-10:
-        #    self.delta_x = new_connection_coord - self.connection_coord
-        #    return
-        
-        #self.delta_x = new_connection_coord - self.connection_coord
-        
+    def update_connection_coord(self, new_connection_coord):
+        # Needs to be called every time the connected mass is changed position
+        # TODO: could we use pointers for connected mass such that we automatically
+        # know the coordinate, that would prevent potential misuse of this function
+        # or the miss of this function call?
         self.connection_coord = new_connection_coord
         self.mass_rest_coord = self.connection_coord + self.rest_vector
-        #self.mass_coord =  self.connection_coord +  self.spring_vector #self.mass_rest_coord #+ self.delta_x
-        
-        #self.delta_x = self.mass_coord - self.mass_rest_coord
-    
-        #print("MASS COORD ", self.mass_coord)
-         
+        return
+       
     def simulate(self):
-    
+        
         self.delta_x = self.mass_coord - self.mass_rest_coord
         
         spring_force = self.k * self.delta_x 
