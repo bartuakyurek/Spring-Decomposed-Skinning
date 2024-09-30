@@ -45,28 +45,38 @@ import pyvista as pv
 
 from pyvista_render_tools import add_skeleton, add_mesh
 
+## TODO: Add springs
 
+
+
+## TODO: Simulate springs w.r.t. rigid motion (and save simulation)
+
+
+
+## TODO: Render the baked simulation using Pyvista
+## ----------------------------------------------------------------------------
 # Create a plotter object and set the scalars to the Z height
 plotter = pv.Plotter(notebook=False, off_screen=False)
+plotter.camera_position = 'zy'
+plotter.camera.azimuth = -90
 
 #add_mesh(plotter, verts=V[0].copy(), faces=F)
 add_skeleton(plotter, J[0].copy(), kintree)
 
-plotter.show()
-"""
 # Open a gif
 plotter.open_gif("./results/sample.gif")
 
-for frame in range(2):#n_frames-1):
+n_frames = 200 
+n_repeats = 5
+for _ in range(n_repeats):
+    for frame in range(n_frames-1):
+        
+        pts = J[frame].copy()
+        plotter.update_coordinates(pts, render=False)
+        #plotter.update_scalars(z.ravel(), render=False) # updates colors
     
-    #pts = mesh.points.copy()
-    pts = V[frame].copy()
-    plotter.update_coordinates(pts, render=False)
-    #plotter.update_scalars(z.ravel(), render=False)
-
-    # Write a frame. This triggers a render.
-    plotter.write_frame()
+        # Write a frame. This triggers a render.
+        plotter.write_frame()
 
 # Closes and finalizes movie
 plotter.close()
-"""
