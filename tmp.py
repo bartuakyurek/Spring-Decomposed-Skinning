@@ -23,16 +23,28 @@ class Particle:
         self.center = np.array(coordinate)
                 
     def relocate(self, coordinate):
+        coordinate = np.array(coordinate)
         assert coordinate.shape == (_SPACE_DIMS_,) or coordinate.shape == (_SPACE_DIMS_,1), f"Mass coordinate must be in shape ({_SPACE_DIMS_},1) or ({_SPACE_DIMS_},). Got {coordinate.shape}"
         self.center = coordinate
         return
+    
+    def translate(self, translate_vec):
+        translate_vec  = np.array(translate_vec)
+        # TODO: convert these asserts to check dims in sanity.py
+        assert translate_vec.shape == (_SPACE_DIMS_,) or translate_vec.shape == (_SPACE_DIMS_,1), f"Mass coordinate must be in shape ({_SPACE_DIMS_},1) or ({_SPACE_DIMS_},). Got {translate_vec.shape}"        
+        self.center += translate_vec
+        
     
 class MassSpringSystem:
     def __init__(self):
         print(">> Initiated empty mass-spring system")
         self.masses = []
         self.connections = []
-
+        
+    def simulate(self):
+        # TODO: run spring simulation... 
+        pass
+    
     def add_mass(self, mass):
         if type(mass) is Particle:
             print(f">> Added mass at {mass.center}")
@@ -44,10 +56,22 @@ class MassSpringSystem:
         # TODO: remove mass dictionary entry
         pass
     
+    def translate_mass(self, mass_idx, translate_vec):
+        # TODO: why don't you write a typecheck function in sanity.py?
+        assert type(mass_idx) is int, f"Expected mass_idx to be int, got {type(mass_idx)}"
+        assert mass_idx < len(self.masses), f"Provided mass index is out of bounds."
+        
+        prev_location = self.masses[mass_idx].center 
+        self.masses[mass_idx].translate(translate_vec)
+        #self.masses[mass_idx].center += translate_vec
+        print(prev_location - self.masses[mass_idx].center )
+        return
+    
     def update_mass_location(self, mass_idx, new_location):
         if type(mass_idx) is int:
             # TODO: assert mass exists
-            self.masses[mass_idx].center = new_location 
+            self.masses[mass_idx].relocate(new_location)
+    
         else:
             print(">> Please provide a valid mass index as type int.")
     
@@ -109,6 +133,7 @@ for i in range(n_masses):
     
     if i > 0:
         mass_spring_system.connect_masses(i-1, i)
+    
 
 particle_meshes = mass_spring_system.get_particle_meshes()
 spring_meshes = mass_spring_system.get_spring_meshes()
@@ -121,14 +146,21 @@ for particle_mesh in particle_meshes:
     actor = plotter.add_mesh(particle_mesh)
     particle_actors.append(actor)
  
-plotter.enable_mesh_picking()
-
 def callback(step):
     #actor.position = [step / 100.0, step / 100.0, 0]
-    pass
+    SELECTED_MASS = 0
+    mass_spring_system.translate_mass(SELECTED_MASS, [4.0,0,0])
+    
+    mass_spring_system.simulate()
+    
+    for i, mass in enumerate(mass_spring_system.masses):
+        particle_actors[i].position = mass.center
+    
 
-plotter.add_timer_event(max_steps=50, duration=100, callback=callback)
+plotter.add_timer_event(max_steps=100, duration=100, callback=callback)
 cpos = [(0.0, 0.0, 10.0), (0.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+
+plotter.enable_mesh_picking()
 plotter.show(cpos=cpos)
 
 """
