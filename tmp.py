@@ -23,6 +23,7 @@ class Particle:
         self.center = np.array(coordinate)
                 
     def relocate(self, coordinate):
+        print(">> Relocate called.")
         coordinate = np.array(coordinate)
         assert coordinate.shape == (_SPACE_DIMS_,) or coordinate.shape == (_SPACE_DIMS_,1), f"Mass coordinate must be in shape ({_SPACE_DIMS_},1) or ({_SPACE_DIMS_},). Got {coordinate.shape}"
         self.center = coordinate
@@ -61,10 +62,7 @@ class MassSpringSystem:
         assert type(mass_idx) is int, f"Expected mass_idx to be int, got {type(mass_idx)}"
         assert mass_idx < len(self.masses), f"Provided mass index is out of bounds."
         
-        prev_location = self.masses[mass_idx].center 
         self.masses[mass_idx].translate(translate_vec)
-        #self.masses[mass_idx].center += translate_vec
-        print(prev_location - self.masses[mass_idx].center )
         return
     
     def update_mass_location(self, mass_idx, new_location):
@@ -102,7 +100,9 @@ class MassSpringSystem:
         meshes = []
         for mass_particle in self.masses:
             
-            sphere = pv.Sphere(radius=mass_particle.radius,center=mass_particle.center, direction=mass_particle.direction)
+            sphere = pv.Sphere(radius=mass_particle.radius,
+                               center=mass_particle.center, 
+                               direction=mass_particle.direction)
             meshes.append(sphere)
             
         return meshes
@@ -144,24 +144,36 @@ for spring_mesh in spring_meshes:
 particle_actors = []
 for particle_mesh in particle_meshes:
     actor = plotter.add_mesh(particle_mesh)
+    actor.position = particle_mesh.center
     particle_actors.append(actor)
+   
  
+    
+
 def callback(step):
     #actor.position = [step / 100.0, step / 100.0, 0]
     SELECTED_MASS = 0
-    mass_spring_system.translate_mass(SELECTED_MASS, [4.0,0,0])
-    
+
+    mass_spring_system.translate_mass(SELECTED_MASS, [0.01,0,0])
     mass_spring_system.simulate()
     
-    for i, mass in enumerate(mass_spring_system.masses):
-        particle_actors[i].position = mass.center
+    mass_locations = mass_spring_system.get_mass_locations()
+    n_masses = len(mass_spring_system.masses)
+    for i in range(n_masses):
+        particle_actors[i].position = mass_locations[i]
+        
     
+    
+    # TODO: Why doesn't this work??
+    #for i, mass in enumerate(mass_spring_system.masses):
+    #    particle_actors[i].position = mass.center
+
 
 plotter.add_timer_event(max_steps=100, duration=100, callback=callback)
-cpos = [(0.0, 0.0, 10.0), (0.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+cam_pos = [(0.0, 0.0, 10.0), (0.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
 
 plotter.enable_mesh_picking()
-plotter.show(cpos=cpos)
+plotter.show(cpos=cam_pos)
 
 """
 plotter.show()
