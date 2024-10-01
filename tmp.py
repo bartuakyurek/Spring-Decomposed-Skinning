@@ -9,32 +9,20 @@ import numpy as np
 import pyvista as pv
 from global_vars import _SPACE_DIMS_
 
-MAX_ALLOWED_MASS = 99
+
 class Particle:
     def __init__(self, coordinate, direction=[0., 1., 0.], mass=0.5, radius=0.05):
         
+        MAX_ALLOWED_MASS = 99
         assert np.any(direction), f"Particle direction must have nonzero length. Provided direction is {direction}."
         assert mass < MAX_ALLOWED_MASS, f"Provided mass {mass} is greater than maximum allowed mass {MAX_ALLOWED_MASS}"
         
-        self.id_str = str(id(self))
         self.mass = mass
         self.radius = radius
-        self.direction = np.array(direction)
         self.center = np.array(coordinate)
-                
-    def relocate(self, coordinate):
-        print(">> Relocate called.")
-        coordinate = np.array(coordinate)
-        assert coordinate.shape == (_SPACE_DIMS_,) or coordinate.shape == (_SPACE_DIMS_,1), f"Mass coordinate must be in shape ({_SPACE_DIMS_},1) or ({_SPACE_DIMS_},). Got {coordinate.shape}"
-        self.center = coordinate
-        return
-    
-    def translate(self, translate_vec):
-        translate_vec  = np.array(translate_vec)
-        # TODO: convert these asserts to check dims in sanity.py
-        assert translate_vec.shape == (_SPACE_DIMS_,) or translate_vec.shape == (_SPACE_DIMS_,1), f"Mass coordinate must be in shape ({_SPACE_DIMS_},1) or ({_SPACE_DIMS_},). Got {translate_vec.shape}"        
-        self.center += translate_vec
         
+        self.direction = np.array(direction) # Direction of mass vector, relative to its center.
+    
     
 class MassSpringSystem:
     def __init__(self):
@@ -46,14 +34,16 @@ class MassSpringSystem:
         # TODO: run spring simulation... 
         pass
     
-    def add_mass(self, mass):
+    def add_mass(self, mass_coordinate):
+        mass = Particle(mass_coordinate)
+        
         if type(mass) is Particle:
             print(f">> Added mass at {mass.center}")
             self.masses.append(mass)
         else:
             print(f"Expected Particle class, got {type(mass)}")
         
-    def remove_mass(self, mass):
+    def remove_mass(self, mass_idx):
         # TODO: remove mass dictionary entry
         pass
     
@@ -62,14 +52,13 @@ class MassSpringSystem:
         assert type(mass_idx) is int, f"Expected mass_idx to be int, got {type(mass_idx)}"
         assert mass_idx < len(self.masses), f"Provided mass index is out of bounds."
         
-        self.masses[mass_idx].translate(translate_vec)
+        self.masses[mass_idx].center += translate_vec
         return
     
     def update_mass_location(self, mass_idx, new_location):
         if type(mass_idx) is int:
-            # TODO: assert mass exists
-            self.masses[mass_idx].relocate(new_location)
-    
+            assert mass_idx < len(self.masses)
+            self.masses[mass_idx].center = new_location
         else:
             print(">> Please provide a valid mass index as type int.")
     
@@ -87,9 +76,9 @@ class MassSpringSystem:
     
     def get_mass_locations(self):
         # TODO: could we store it dynamically rather than gathering them every time?
-        mass_locations = []
-        for mass_particle in self.masses:
-            mass_locations.append(mass_particle.center)   
+        mass_locations = np.zeros((len(self.masses),_SPACE_DIMS_))
+        for i, mass_particle in enumerate(self.masses):
+            mass_locations[i] = mass_particle.center
         return mass_locations
     
     def get_particle_meshes(self):
@@ -119,98 +108,65 @@ class MassSpringSystem:
         return meshes
         
 
-# -------------------------------- MAIN --------------------------------------
-# ----------------------------------------------------------------------------
+# -------------------------------- MAIN ---------------------------------------
+# -----------------------------------------------------------------------------
 plotter = pv.Plotter(notebook=False, off_screen=False)
 plotter.camera_position = 'zy'
 plotter.camera.azimuth = -90
 
 mass_spring_system = MassSpringSystem()
-n_masses =  5
+n_masses =  10
 for i in range(n_masses):
-    mass_particle = Particle(coordinate=np.random.rand(3))
-    mass_spring_system.add_mass(mass_particle)
+    mass_spring_system.add_mass(mass_coordinate=np.random.rand(3))
     
     if i > 0:
         mass_spring_system.connect_masses(i-1, i)
     
-
-particle_meshes = mass_spring_system.get_particle_meshes()
+"""
 spring_meshes = mass_spring_system.get_spring_meshes()
 
 for spring_mesh in spring_meshes:
     spring_actor = plotter.add_mesh(spring_mesh)
+"""
 
+particle_meshes = mass_spring_system.get_particle_meshes()
 particle_actors = []
 for particle_mesh in particle_meshes:
     actor = plotter.add_mesh(particle_mesh)
     actor.position = particle_mesh.center
     particle_actors.append(actor)
    
- 
-    
 
 def callback(step):
     #actor.position = [step / 100.0, step / 100.0, 0]
     SELECTED_MASS = 0
 
-    mass_spring_system.translate_mass(SELECTED_MASS, [0.01,0,0])
+    prev_mass_locations = mass_spring_system.get_mass_locations()
+    
+    mass_spring_system.translate_mass(SELECTED_MASS, np.random.rand(3) * 0.01)
     mass_spring_system.simulate()
     
-    mass_locations = mass_spring_system.get_mass_locations()
+    cur_mass_locations = mass_spring_system.get_mass_locations()
+    
     n_masses = len(mass_spring_system.masses)
     for i in range(n_masses):
-        particle_actors[i].position = mass_locations[i]
+
+        #actor_relative_location = cur_mass_locations[i] - prev_mass_locations[i]
+        #particle_actors[i].position = actor_relative_location
+        particle_actors[i].position = cur_mass_locations[i]  
         
+        # TODO: update lines in between
     
-    
-    # TODO: Why doesn't this work??
-    #for i, mass in enumerate(mass_spring_system.masses):
-    #    particle_actors[i].position = mass.center
-
-
-plotter.add_timer_event(max_steps=100, duration=100, callback=callback)
-cam_pos = [(0.0, 0.0, 10.0), (0.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+plotter.add_timer_event(max_steps=200, duration=500, callback=callback)
+cam_pos = [(0.0, 0.0, 10.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
 
 plotter.enable_mesh_picking()
 plotter.show(cpos=cam_pos)
 
-"""
-plotter.show()
 
-RENDER=True
-n_frames = 200 
-for frame in range(n_frames-1):
-        force = np.array([0.1, 0, 0])
-        # TODO: update particle system
-        for mass_id in mass_spring_system.masses:
-            mass_tmp = mass_spring_system.masses[mass_id]
-            mass_spring_system.update_mass_location(mass_id, mass_tmp.center + force)
-            
-        pts = mass_spring_system.get_mass_locations()
-        for actor in system_actors:
-            print(actor)
-            
-        break
-"""
-        
 
-# ---------------------------------------------------------------------------
-"""
-# Define pyramid centre ---> To visualize bones...
-bottom_center = sphere.center + (mass_direction * mass_radius)
-# Define square points given centre
-def _get_square_points(center, normal, diagonal_length):
-    half_diagonal = diagonal_length / 2.0
-     
-    pointa = center + ...
-    pointb = center + ...
-    pointc = center + ...
-    pointd = center + ...
-    
-# Define pyramid end point(center + spring vector)
-pointe = [0.0, 0.0, 1.608]
 
-pyramid = pv.Pyramid([pointa, pointb, pointc, pointd, pointe])
-plotter.add_mesh(pyramid)
-"""
+
+
+
+
