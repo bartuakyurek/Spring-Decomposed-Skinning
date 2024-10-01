@@ -70,7 +70,7 @@ class MassSpringSystem:
             mass_locations.append(mass_particle.center)   
         return mass_locations
     
-    def get_system_meshes(self):
+    def get_particle_meshes(self):
         # TODO: We can't afford to create separate mesh every time the system is updated
         # so write a function that updates system mesh coordinates as well
         # or store meshes and update the stored mesh every time something is added,
@@ -80,15 +80,20 @@ class MassSpringSystem:
             
             sphere = pv.Sphere(radius=mass_particle.radius,center=mass_particle.center, direction=mass_particle.direction)
             meshes.append(sphere)
-             
+            
+        return meshes
+    
+    def get_spring_meshes(self):
+        # TODO: return a zigzag mesh instead of a straight line
+        meshes = []
         for line in self.connections:
             mass_first = self.masses[line[0]]
             mass_second = self.masses[line[1]]
             
             connection_mesh =  pv.Line(mass_first.center, mass_second.center)
             meshes.append(connection_mesh)
-            
         return meshes
+        
 
 # -------------------------------- MAIN --------------------------------------
 # ----------------------------------------------------------------------------
@@ -97,7 +102,7 @@ plotter.camera_position = 'zy'
 plotter.camera.azimuth = -90
 
 mass_spring_system = MassSpringSystem()
-n_masses = 10
+n_masses =  5
 for i in range(n_masses):
     mass_particle = Particle(coordinate=np.random.rand(3))
     mass_spring_system.add_mass(mass_particle)
@@ -105,19 +110,22 @@ for i in range(n_masses):
     if i > 0:
         mass_spring_system.connect_masses(i-1, i)
 
-system_meshes = mass_spring_system.get_system_meshes()
-system_actors = []
-for mesh in system_meshes:
-    actor = plotter.add_mesh(mesh)
-    system_actors.append(actor)
-    # TODO separate mass and connection meshes, to make springs not pickable etc.
-    # TODO: Allow render lines as tube
-    # TODO: for the connections, we can implement a zigzag mesh but that's more complicated
-    
+particle_meshes = mass_spring_system.get_particle_meshes()
+spring_meshes = mass_spring_system.get_spring_meshes()
+
+for spring_mesh in spring_meshes:
+    spring_actor = plotter.add_mesh(spring_mesh)
+
+particle_actors = []
+for particle_mesh in particle_meshes:
+    actor = plotter.add_mesh(particle_mesh)
+    particle_actors.append(actor)
+ 
 plotter.enable_mesh_picking()
 
 def callback(step):
-    actor.position = [step / 100.0, step / 100.0, 0]
+    #actor.position = [step / 100.0, step / 100.0, 0]
+    pass
 
 plotter.add_timer_event(max_steps=50, duration=100, callback=callback)
 cpos = [(0.0, 0.0, 10.0), (0.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
