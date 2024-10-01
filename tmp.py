@@ -22,7 +22,7 @@ class Particle:
         self.center = np.array(coordinate)
         
         self.direction = np.array(direction) # Direction of mass vector, relative to its center.
-    
+        self.previous_location = self.center
     
 class MassSpringSystem:
     def __init__(self):
@@ -32,9 +32,11 @@ class MassSpringSystem:
         self.connection_rest_lengths = []
         
     def simulate(self):
-        # TODO: run spring simulation... 
+        # TODO: run spring simulation...
+        # TODO: get particle velocity
+        # TODO: update particle's previous location
         pass
-    
+            
     def add_mass(self, mass_coordinate):
         mass = Particle(mass_coordinate)
         
@@ -51,7 +53,7 @@ class MassSpringSystem:
     def translate_mass(self, mass_idx, translate_vec):
         # TODO: why don't you write a typecheck function in sanity.py?
         assert type(mass_idx) is int, f"Expected mass_idx to be int, got {type(mass_idx)}"
-        assert mass_idx < len(self.masses), f"Provided mass index is out of bounds."
+        assert mass_idx < len(self.masses), "Provided mass index is out of bounds."
         
         self.masses[mass_idx].center += translate_vec
         return
@@ -127,7 +129,6 @@ for i in range(n_masses):
     if i > 0:
         mass_spring_system.connect_masses(i-1, i)
     
-
 # Add masses withh their initial locations to PyVista Plotter
 initial_mass_locations = mass_spring_system.get_mass_locations()
 mass_point_cloud = pv.PolyData(initial_mass_locations)
@@ -154,7 +155,7 @@ def callback(step):
         spring_meshes[i].points[1] = cur_mass_locations[mass_idx_tuple[1]]
 
     
-plotter.add_timer_event(max_steps=100, duration=200, callback=callback)
+plotter.add_timer_event(max_steps=200, duration=200, callback=callback)
 cam_pos = [(0.0, 0.0, 10.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
 
 plotter.enable_mesh_picking()
