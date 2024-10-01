@@ -80,3 +80,4 @@ for _ in range(n_repeats):
 
 # Closes and finalizes movie
 plotter.close()
+plotter.deep_clean()
