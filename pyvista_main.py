@@ -50,7 +50,10 @@ from pyvista_render_tools import add_skeleton, add_mesh
 ## TODO: Render the baked simulation using Pyvista
 ## ----------------------------------------------------------------------------
 # Create a plotter object and set the scalars to the Z height
-plotter = pv.Plotter(notebook=False, off_screen=False)
+
+RENDER = True
+
+plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
 plotter.camera_position = 'zy'
 plotter.camera.azimuth = -90
 
@@ -72,7 +75,7 @@ for _ in range(n_repeats):
         
         # TODO: update sphere positions
         pts = J[frame].copy()
-        plotter.update_coordinates(pts, render=False)
+        plotter.update_coordinates(pts, render=RENDER)
         #plotter.update_scalars(z.ravel(), render=False) # updates colors
     
         # Write a frame. This triggers a render.
