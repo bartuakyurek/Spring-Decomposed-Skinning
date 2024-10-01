@@ -29,6 +29,7 @@ class MassSpringSystem:
         print(">> Initiated empty mass-spring system")
         self.masses = []
         self.connections = []
+        self.connection_rest_lengths = []
         
     def simulate(self):
         # TODO: run spring simulation... 
@@ -63,12 +64,16 @@ class MassSpringSystem:
             print(">> Please provide a valid mass index as type int.")
     
     def connect_masses(self, first_mass_idx : int, second_mass_idx : int):
-        # TODO: check if both masses are in the system
         assert type(first_mass_idx) == int and type(second_mass_idx) == int
         assert first_mass_idx != second_mass_idx, f"Cannot connect particle to itself."
-        # TODO: check if connection already exist (m1,m2) or (m2,m1)
         
         self.connections.append([first_mass_idx, second_mass_idx])
+        
+        first_mass_location = self.masses[first_mass_idx]
+        second_mass_location = self.masses[second_mass_idx]
+        difference_vec = first_mass_location.center - second_mass_location.center
+        difference_length = np.linalg.norm(difference_vec)
+        self.connection_rest_lengths.append(difference_length)
         return
     
     def disconnect_masses(self, mass_first : Particle, mass_second : Particle):
