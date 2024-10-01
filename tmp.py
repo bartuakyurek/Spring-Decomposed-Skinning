@@ -138,24 +138,19 @@ for particle_mesh in particle_meshes:
    
 
 def callback(step):
-    #actor.position = [step / 100.0, step / 100.0, 0]
-    SELECTED_MASS = 0
-
-    prev_mass_locations = mass_spring_system.get_mass_locations()
-    
+    # Apply forces (if any) and simulate
+    SELECTED_MASS = 0    
     mass_spring_system.translate_mass(SELECTED_MASS, np.random.rand(3) * 0.01)
     mass_spring_system.simulate()
     
+    # Get current mass positions and update rendered particles
     cur_mass_locations = mass_spring_system.get_mass_locations()
-    
     n_masses = len(mass_spring_system.masses)
     for i in range(n_masses):
-
-        #actor_relative_location = cur_mass_locations[i] - prev_mass_locations[i]
-        #particle_actors[i].position = actor_relative_location
         particle_actors[i].position = cur_mass_locations[i]  
-        
-        # TODO: update lines in between
+
+    # Update the renderd connections based on new locations
+    # TODO: update lines in between
     
 plotter.add_timer_event(max_steps=200, duration=500, callback=callback)
 cam_pos = [(0.0, 0.0, 10.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
