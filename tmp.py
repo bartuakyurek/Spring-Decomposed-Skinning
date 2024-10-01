@@ -68,7 +68,7 @@ class MassSpringSystem:
         assert first_mass_idx != second_mass_idx, f"Cannot connect particle to itself."
         # TODO: check if connection already exist (m1,m2) or (m2,m1)
         
-        self.connections.append((first_mass_idx, second_mass_idx))
+        self.connections.append([first_mass_idx, second_mass_idx])
         return
     
     def disconnect_masses(self, mass_first : Particle, mass_second : Particle):
@@ -93,7 +93,7 @@ class MassSpringSystem:
                                center=mass_particle.center, 
                                direction=mass_particle.direction)
             meshes.append(sphere)
-            
+        
         return meshes
     
     def get_spring_meshes(self):
@@ -122,37 +122,34 @@ for i in range(n_masses):
     if i > 0:
         mass_spring_system.connect_masses(i-1, i)
     
-"""
+
+# Add masses withh their initial locations to PyVista Plotter
+initial_mass_locations = mass_spring_system.get_mass_locations()
+mass_point_cloud = pv.PolyData(initial_mass_locations)
+plotter.add_mesh(mass_point_cloud)
+
+# Add springs connections actors in between to PyVista Plotter
 spring_meshes = mass_spring_system.get_spring_meshes()
-
 for spring_mesh in spring_meshes:
-    spring_actor = plotter.add_mesh(spring_mesh)
-"""
-
-particle_meshes = mass_spring_system.get_particle_meshes()
-particle_actors = []
-for particle_mesh in particle_meshes:
-    actor = plotter.add_mesh(particle_mesh)
-    actor.position = particle_mesh.center
-    particle_actors.append(actor)
-   
+    plotter.add_mesh(spring_mesh)
 
 def callback(step):
-    # Apply forces (if any) and simulate
+    # Step 1 - Apply forces (if any) and simulate
     SELECTED_MASS = 0    
     mass_spring_system.translate_mass(SELECTED_MASS, np.random.rand(3) * 0.01)
     mass_spring_system.simulate()
     
-    # Get current mass positions and update rendered particles
+    # Step 2 - Get current mass positions and update rendered particles
     cur_mass_locations = mass_spring_system.get_mass_locations()
-    n_masses = len(mass_spring_system.masses)
-    for i in range(n_masses):
-        particle_actors[i].position = cur_mass_locations[i]  
+    mass_point_cloud.points = cur_mass_locations
+       
+    # Step 3 - Update the renderd connections based on new locations
+    for i, mass_idx_tuple in enumerate(mass_spring_system.connections):
+        spring_meshes[i].points[0] = cur_mass_locations[mass_idx_tuple[0]]
+        spring_meshes[i].points[1] = cur_mass_locations[mass_idx_tuple[1]]
 
-    # Update the renderd connections based on new locations
-    # TODO: update lines in between
     
-plotter.add_timer_event(max_steps=200, duration=500, callback=callback)
+plotter.add_timer_event(max_steps=100, duration=200, callback=callback)
 cam_pos = [(0.0, 0.0, 10.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
 
 plotter.enable_mesh_picking()
