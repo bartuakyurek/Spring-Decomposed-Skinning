@@ -57,6 +57,9 @@ class Spring:
         self.kd = damping
         self.rest_length = np.linalg.norm(beginning_mass.center - ending_mass.center)
         
+        assert self.rest_length > 1e-16, ">> Spring cannot be initialized to zero length!"
+            
+        
         self.m1 = beginning_mass
         self.m2 = ending_mass
         
@@ -169,6 +172,8 @@ class MassSpringSystem:
             mass_locations[i] = mass_particle.center
         return mass_locations
     
+    # TODO: this might be unused, also PyVista functions could be at another file
+    # to not clutter this module's responsibilities.
     def get_particle_meshes(self):
         meshes = []
         for mass_particle in self.masses:

@@ -21,20 +21,18 @@ plotter.camera.azimuth = -90
 dt = 1. / 24
 mass_spring_system = MassSpringSystem(dt)
 
-# Add masses to container and connect them
+# Add masses to container and connect them, and fix some of them.
 n_masses =  2
 mass_spring_system.add_mass(mass_coordinate=np.array([0,0,0]))
-mass_spring_system.add_mass(mass_coordinate=np.array([0,1,0]))
-
+mass_spring_system.add_mass(mass_coordinate=np.array([0,0,1]))
 mass_spring_system.connect_masses(0, 1)
-    
-# Fix selected masses
 mass_spring_system.fix_mass(0)
     
 # Add masses with their initial locations to PyVista Plotter
 initial_mass_locations = mass_spring_system.get_mass_locations()
 mass_point_cloud = pv.PolyData(initial_mass_locations)
-plotter.add_mesh(mass_point_cloud)
+plotter.add_mesh(mass_point_cloud, render_points_as_spheres=True,
+                 show_vertices=True)
 
 # Add springs connections actors in between to PyVista Plotter
 spring_meshes = mass_spring_system.get_spring_meshes()
@@ -45,8 +43,9 @@ def callback(step):
     
     # Step 1 - Apply forces (if any) and simulate
     if(step < 2):
+        print(">> Force applied.")
         SELECTED_MASS = 1 
-        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.0,0.5]))
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.0,0.1]))
         
     mass_spring_system.simulate()
     
@@ -63,11 +62,11 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(dt * 1000)
-n_simulation_steps = 5000
+n_simulation_steps = 2000
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 plotter.enable_mesh_picking()
 
-cam_pos = [(0.0, 0.0, 5.0), (0.0, 0.5, 0.0), (0.0, 0.0, 0.0)]
+cam_pos = [(0.0, 0.0, 2.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
 plotter.show(cpos=cam_pos)
 
 
