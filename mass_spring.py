@@ -69,15 +69,15 @@ class Spring:
         if distance < 1e-16:
             distance = 1e-6 # For numerical stability
             
-        scaled_distance = (distance - self.rest_length) * self.k
+        spring_force = (distance - self.rest_length) * self.k
         
         # Find speed of contraction/expansion for damping force
         normalized_dir = (self.m1.center - self.m2.center) / distance
         s1 = np.dot(self.m1.velocity, normalized_dir)
         s2 = np.dot(self.m2.velocity, normalized_dir)
-        scaled_damping = -self.kd * (s1 + s2)
+        damping_force = -self.kd * (s1 + s2)
         
-        tot_force = scaled_distance + scaled_damping
+        tot_force = spring_force + damping_force
         if self.m1 == mass:
             return tot_force
         elif self.m2 == mass:
