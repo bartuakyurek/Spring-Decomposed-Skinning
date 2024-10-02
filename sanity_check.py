@@ -130,8 +130,22 @@ if __name__ == '__main__':
             print(">> ERROR: Expected failure case failed to fail!")
         except:
             print(f">> Caught expected failure at {non_vec3.shape} shape vector.")
+    
+    def test_is_equal():
+        a = np.random.rand(30)
+        b = np.random.rand(30)
+        c = b
+        
+        if __is_equal(a, b):
+            print(">> ERROR: Expected failure case failed to fail!")
+        else:
+            print(">> Caught expected failure when a != b")
+         
+        if not __is_equal(b, c):
+            print(">> ERROR: Expected b=c to be True, got False")
             
     n_tests = 10
     for i in range(n_tests):
         test_assert_vec3()
+        test_is_equal()
 
