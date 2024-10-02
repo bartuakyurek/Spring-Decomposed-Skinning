@@ -8,9 +8,10 @@ Created on Tue Oct  1 07:31:12 2024
 import numpy as np
 import pyvista as pv
 
-from sanity_check import __assert_vec3, __is_equal
+from sanity_check import _is_equal
 from global_vars import _SPACE_DIMS_
 
+_DEFAULT_STIFFNESS = 0.5
 
 class Particle:
     def __init__(self, coordinate, orientation=[0., 1., 0.], mass=0.5, radius=0.05):
@@ -22,14 +23,30 @@ class Particle:
         self.mass = mass
         self.radius = radius
         self.center = np.array(coordinate)
-        
         self.orientation = np.array(orientation) # Used for rendering the mass sphere
         
-        self.previous_location = self.center
+        self.velocity = np.zeros_like(coordinate)
+        self.springs = []
+        
+    def add_spring(self, s):
+        self.springs.append(s)
+        return
+    
+    def get_total_spring_forces(self):
+        # No gravity or other external forces exist in the current system.
+        f_spring = np.zeros_like(self.velocity)
+        
+        for spring in self.springs:
+            f_spring += spring.get_force_on_mass(self)
+            
+        return f_spring
         
 class Spring:
-    def __init__(self, stiffness, beginning_mass : Particle, ending_mass : Particle):
-        assert not __is_equal(beginning_mass.center, ending_mass.center), "Expected spring length to be nonzero, provided masses should be located on different coordinates."
+    def __init__(self, 
+                 stiffness : float, 
+                 beginning_mass : Particle, 
+                 ending_mass : Particle):
+        assert not _is_equal(beginning_mass.center, ending_mass.center), "Expected spring length to be nonzero, provided masses should be located on different coordinates."
         
         # TODO: Are you going to implement squared norms for optimized performance?
         self.k = stiffness
@@ -57,15 +74,22 @@ class MassSpringSystem:
         self.connections = []
         self.springs = []
         
-    def simulate(self):
-        # TODO: run spring simulation...
-        # TODO: get particle velocity
-        # TODO: update particle's previous location
+    def simulate(self, dt):
         
+        n_masses = len(self.masses)
+        for i in range(n_masses):
+            # Constraint: If a mass is zero, don't exert any force (f=ma=0)
+            # that makes the mass fixed in space (world position still can be changed globally)
+            if self.masses[i].mass < 1e-12:
+                continue
+            
+            force = self.masses[i].get_total_spring_forces()
+            
+            # F = m*a -> a = F / m
+            acc = force / self.masses[i].mass;
+            self.masses[i].velocity += acc * dt;
+            self.masses[i].center += self.masses[i].velocity * dt
         
-        # Constraint: If a mass is zero, don't exert any force (f=ma=0)
-        # that makes the mass fixed in space (world position still can be changed globally)
-        pass
             
     def add_mass(self, mass_coordinate):
         mass = Particle(mass_coordinate)
@@ -95,11 +119,13 @@ class MassSpringSystem:
         else:
             print(">> Please provide a valid mass index as type int.")
     
-    def connect_masses(self, first_mass_idx : int, second_mass_idx : int):
+    def connect_masses(self, first_mass_idx : int, second_mass_idx : int, stiffness : float = _DEFAULT_STIFFNESS):
         assert type(first_mass_idx) == int and type(second_mass_idx) == int
         assert first_mass_idx != second_mass_idx, "Cannot connect particle to itself."
         
+        spring = Spring(stiffness,self.masses[first_mass_idx], self.masses[second_mass_idx])
         self.connections.append([first_mass_idx, second_mass_idx])
+        self.springs.append(spring)
         return
     
     def disconnect_masses(self, mass_first : Particle, mass_second : Particle):
@@ -113,10 +139,6 @@ class MassSpringSystem:
         return mass_locations
     
     def get_particle_meshes(self):
-        # TODO: We can't afford to create separate mesh every time the system is updated
-        # so write a function that updates system mesh coordinates as well
-        # or store meshes and update the stored mesh every time something is added,
-        # and update mesh in every update in particles...
         meshes = []
         for mass_particle in self.masses:
             
@@ -165,9 +187,10 @@ for spring_mesh in spring_meshes:
 
 def callback(step):
     # Step 1 - Apply forces (if any) and simulate
+    dt = 1 / 24
     SELECTED_MASS = 0    
     mass_spring_system.translate_mass(SELECTED_MASS, np.random.rand(3) * 0.01)
-    mass_spring_system.simulate()
+    mass_spring_system.simulate(dt)
     
     # Step 2 - Get current mass positions and update rendered particles
     cur_mass_locations = mass_spring_system.get_mass_locations()
