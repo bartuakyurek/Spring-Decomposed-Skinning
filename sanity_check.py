@@ -11,6 +11,19 @@ import numpy as np
 _DEBUG_ = True
 _TOLERANCE_ = 1e-8
 
+def __assert_vec3(arr):
+    # Verify that a given array has (3,1) or (3,) shape as a 3D vector.
+    shape_len = __check_1D(arr)
+    if shape_len == 1:
+        assert arr.shape[0] == 3, f"Expected shape (3, ) got {arr.shape}"
+    elif shape_len == 2:
+        assert arr.shape[0] == 3, f"Expected shape (3, 1) got {arr.shape}"
+    else:
+        assert False, ">> Unexpected error occured."
+        
+    return shape_len
+    
+# TODO: rename it to __assert_unbatched() because 1D is confusing
 def __check_1D(arr):
     # Sanity check for an input array of either shape (N, ), (N, 1), or (1, N)
     arr_dims = len(arr.shape)
@@ -82,3 +95,33 @@ def __equate_shapes(first_arr : np.ndarray, second_arr : np.ndarray, verbose=_DE
     
     else:
         raise Exception("Unexpected error occured. Are you sure your dimensionality assertions are correct?")
+        
+if __name__ == '__main__':
+    print(f">> Running debug tests for {__file__}...\n")
+    
+    def test_assert_vec3():
+        shape_3_vec = np.array([2,3,4])
+        __assert_vec3(shape_3_vec)
+        
+        shape_1_3_vec = np.array([shape_3_vec])
+        shape_3_1_vec = shape_1_3_vec.T
+        __assert_vec3(shape_3_1_vec)
+        
+        try:
+            __assert_vec3(shape_1_3_vec)
+            print(">> ERROR: Expected failure case failed to fail!")
+        except:
+            print(">> Caught expected failure at (1,3) shape vector.")
+            
+            
+        non_vec3 = np.empty((np.random.randint(50), np.random.randint(50)))
+        try:
+            __assert_vec3(non_vec3)
+            print(">> ERROR: Expected failure case failed to fail!")
+        except:
+            print(f">> Caught expected failure at {non_vec3.shape} shape vector.")
+            
+    n_tests = 10
+    for i in range(n_tests):
+        test_assert_vec3()
+

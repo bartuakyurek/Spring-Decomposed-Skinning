@@ -7,6 +7,8 @@ Created on Tue Oct  1 07:31:12 2024
 """
 import numpy as np
 import pyvista as pv
+
+from sanity_check import _check
 from global_vars import _SPACE_DIMS_
 
 
@@ -23,6 +25,14 @@ class Particle:
         
         self.direction = np.array(direction) # Direction of mass vector, relative to its center.
         self.previous_location = self.center
+        
+class Spring:
+    def __init__(self, stiffness, beginning_point, ending_point):
+        assert beginning_point.shape == ending_point.shape
+        __check_1D(beginning_point)
+        self.k = stiffness
+        self.rest_length = beginning_point - ending_point
+        
     
 class MassSpringSystem:
     def __init__(self):
@@ -35,6 +45,10 @@ class MassSpringSystem:
         # TODO: run spring simulation...
         # TODO: get particle velocity
         # TODO: update particle's previous location
+        
+        
+        # Constraint: If a mass is zero, don't exert any force (f=ma=0)
+        # that makes the mass fixed in space (world position still can be changed globally)
         pass
             
     def add_mass(self, mass_coordinate):
