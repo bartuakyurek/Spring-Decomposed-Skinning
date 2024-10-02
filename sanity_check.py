@@ -11,9 +11,9 @@ import numpy as np
 _DEBUG_ = True
 _TOLERANCE_ = 1e-8
 
-def __assert_vec3(arr):
+def _assert_vec3(arr):
     # Verify that a given array has (3,1) or (3,) shape as a 3D vector.
-    shape_len = __assert_unbatched(arr)
+    shape_len = _assert_unbatched(arr)
     if shape_len == 1:
         assert arr.shape[0] == 3, f"Expected shape (3, ) got {arr.shape}"
     elif shape_len == 2:
@@ -23,8 +23,7 @@ def __assert_vec3(arr):
         
     return shape_len
     
-# TODO: rename it to __assert_unbatched() because 1D is confusing
-def __assert_unbatched(arr):
+def _assert_unbatched(arr):
     # Sanity check for an input array of either shape (N, ), (N, 1), or (1, N)
     arr_dims = len(arr.shape)
     is_2d = arr_dims == 2
@@ -36,7 +35,7 @@ def __assert_unbatched(arr):
         assert arr.shape[0] == 1 or arr.shape[1] == 1, f"Array must be 1D. Provided has shape {arr.shape} "
     return arr_dims
 
-def __is_equal(first_vec, second_vec, tolerance=_TOLERANCE_):
+def _is_equal(first_vec, second_vec, tolerance=_TOLERANCE_):
     # Robust implementation of X == Y check that could fail due to numerical
     # reasons even if X and Y are virtually the same. 
     assert first_vec.shape == second_vec.shape, f"Two sets must have equal shapes. Provided are {first_vec.shape} and {second_vec.shape}"
@@ -46,9 +45,9 @@ def __is_equal(first_vec, second_vec, tolerance=_TOLERANCE_):
     
     return total_diff < tolerance
 
-def __assert_equality(first_set, second_set, tolerance=_TOLERANCE_):
+def _assert_equality(first_set, second_set, tolerance=_TOLERANCE_):
     # Used as a sanity check for naive vs. fast implementations of the same linear algebra operations.
-    first_set, second_set = __equate_shapes(first_set, second_set)
+    first_set, second_set = _equate_shapes(first_set, second_set)
     assert first_set.shape == second_set.shape, f"Two sets must have equal shapes. Provided are {first_set.shape} and {second_set.shape}"
     
     diff = first_set - second_set
@@ -57,7 +56,7 @@ def __assert_equality(first_set, second_set, tolerance=_TOLERANCE_):
     assert total_diff < tolerance, f"Set equality check failed. Difference between sets are {total_diff} > tolerance"
     return total_diff
 
-def __equate_shapes(first_arr : np.ndarray, second_arr : np.ndarray, verbose=_DEBUG_):
+def _equate_shapes(first_arr : np.ndarray, second_arr : np.ndarray, verbose=_DEBUG_):
     # Given two arrays that are supposedly in the same shape but
     # due to matrix manipulation on of their shape has gotten different,
     # this function aims to make them in the same shape.
@@ -73,8 +72,8 @@ def __equate_shapes(first_arr : np.ndarray, second_arr : np.ndarray, verbose=_DE
         if verbose : print("INFO: No modification on array shapes had done.")  
         return first_arr, second_arr
     
-    first_arr_dims = __assert_unbatched(first_arr)
-    second_arr_dims = __assert_unbatched(second_arr)
+    first_arr_dims = _assert_unbatched(first_arr)
+    second_arr_dims = _assert_unbatched(second_arr)
     
     if first_arr_dims == 1 and second_arr_dims == 2:
         # Case 1: (N, ) vs. (N, 1)
@@ -111,14 +110,14 @@ if __name__ == '__main__':
     
     def test_assert_vec3():
         shape_3_vec = np.array([2,3,4])
-        __assert_vec3(shape_3_vec)
+        _assert_vec3(shape_3_vec)
         
         shape_1_3_vec = np.array([shape_3_vec])
         shape_3_1_vec = shape_1_3_vec.T
-        __assert_vec3(shape_3_1_vec)
+        _assert_vec3(shape_3_1_vec)
         
         try:
-            __assert_vec3(shape_1_3_vec)
+            _assert_vec3(shape_1_3_vec)
             print(">> ERROR: Expected failure case failed to fail!")
         except:
             print(">> Caught expected failure at (1,3) shape vector.")
@@ -126,7 +125,7 @@ if __name__ == '__main__':
             
         non_vec3 = np.empty((np.random.randint(50), np.random.randint(50)))
         try:
-            __assert_vec3(non_vec3)
+            _assert_vec3(non_vec3)
             print(">> ERROR: Expected failure case failed to fail!")
         except:
             print(f">> Caught expected failure at {non_vec3.shape} shape vector.")
@@ -136,12 +135,12 @@ if __name__ == '__main__':
         b = np.random.rand(30)
         c = b
         
-        if __is_equal(a, b):
+        if _is_equal(a, b):
             print(">> ERROR: Expected failure case failed to fail!")
         else:
             print(">> Caught expected failure when a != b")
          
-        if not __is_equal(b, c):
+        if not _is_equal(b, c):
             print(">> ERROR: Expected b=c to be True, got False")
             
     n_tests = 10
