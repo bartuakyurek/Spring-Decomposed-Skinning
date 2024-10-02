@@ -72,7 +72,6 @@ class MassSpringSystem:
         print(">> Initiated empty mass-spring system")
         self.masses = []
         self.connections = []
-        self.springs = []
         self.dt =  dt
         
     def simulate(self, dt=None):
@@ -127,8 +126,9 @@ class MassSpringSystem:
         assert first_mass_idx != second_mass_idx, "Cannot connect particle to itself."
         
         spring = Spring(stiffness,self.masses[first_mass_idx], self.masses[second_mass_idx])
+        self.masses[first_mass_idx].add_spring(spring)
+        self.masses[second_mass_idx].add_spring(spring)
         self.connections.append([first_mass_idx, second_mass_idx])
-        self.springs.append(spring)
         return
     
     def disconnect_masses(self, mass_first : Particle, mass_second : Particle):
