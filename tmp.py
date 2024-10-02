@@ -68,14 +68,17 @@ class Spring:
         return tot_force
         
 class MassSpringSystem:
-    def __init__(self):
+    def __init__(self, dt):
         print(">> Initiated empty mass-spring system")
         self.masses = []
         self.connections = []
         self.springs = []
+        self.dt =  dt
         
-    def simulate(self, dt):
-        
+    def simulate(self, dt=None):
+        if dt is None:
+            dt = self.dt
+            
         n_masses = len(self.masses)
         for i in range(n_masses):
             # Constraint: If a mass is zero, don't exert any force (f=ma=0)
@@ -167,8 +170,10 @@ plotter = pv.Plotter(notebook=False, off_screen=False)
 plotter.camera_position = 'zy'
 plotter.camera.azimuth = -90
 
-mass_spring_system = MassSpringSystem()
-n_masses =  10
+dt = 1. / 24
+mass_spring_system = MassSpringSystem(dt)
+
+n_masses =  20
 for i in range(n_masses):
     mass_spring_system.add_mass(mass_coordinate=np.random.rand(3))
     
@@ -186,11 +191,17 @@ for spring_mesh in spring_meshes:
     plotter.add_mesh(spring_mesh)
 
 def callback(step):
+    
     # Step 1 - Apply forces (if any) and simulate
-    dt = 1 / 24
-    SELECTED_MASS = 0    
-    mass_spring_system.translate_mass(SELECTED_MASS, np.random.rand(3) * 0.01)
-    mass_spring_system.simulate(dt)
+    
+    # At random moments with probability X, apply a random force on a randomly selected mass
+    X = 0.05
+    if np.random.rand(1) < X:
+        SELECTED_MASS = np.random.randint(0, n_masses)   
+        mass_spring_system.translate_mass(SELECTED_MASS, np.random.rand(3) * 0.05)
+    
+   
+    mass_spring_system.simulate()
     
     # Step 2 - Get current mass positions and update rendered particles
     cur_mass_locations = mass_spring_system.get_mass_locations()
@@ -201,11 +212,15 @@ def callback(step):
         spring_meshes[i].points[0] = cur_mass_locations[mass_idx_tuple[0]]
         spring_meshes[i].points[1] = cur_mass_locations[mass_idx_tuple[1]]
 
-    
-plotter.add_timer_event(max_steps=200, duration=200, callback=callback)
-cam_pos = [(0.0, 0.0, 10.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
 
+# Note that "duration" might be misleading, it is not the duration of callback but 
+# rather duration of timer that waits before calling the callback function.
+dt_milliseconds = int(dt * 1000)
+n_simulation_steps = 100
+plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 plotter.enable_mesh_picking()
+
+cam_pos = [(0.0, 0.0, 10.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
 plotter.show(cpos=cam_pos)
 
 
