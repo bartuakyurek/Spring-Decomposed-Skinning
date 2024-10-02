@@ -8,7 +8,7 @@ Created on Tue Oct  1 07:31:12 2024
 import numpy as np
 import pyvista as pv
 
-from sanity_check import __assert_vec3
+from sanity_check import __assert_vec3, __is_equal
 from global_vars import _SPACE_DIMS_
 
 
@@ -28,26 +28,34 @@ class Particle:
         self.previous_location = self.center
         
 class Spring:
-    def __init__(self, stiffness, beginning_point, ending_point):
-        assert beginning_point.shape == ending_point.shape
-        __assert_vec3(beginning_point)
+    def __init__(self, stiffness, beginning_mass : Particle, ending_mass : Particle):
+        assert not __is_equal(beginning_mass.center, ending_mass.center), "Expected spring length to be nonzero, provided masses should be located on different coordinates."
         
+        # TODO: Are you going to implement squared norms for optimized performance?
         self.k = stiffness
-        self.rest_length = beginning_point - ending_point
+        self.rest_length = np.linalg.norm(beginning_mass.center - ending_mass.center)
         
-        self.m1 = beginning_point
-        self.m2 = ending_point
+        self.m1 = beginning_mass
+        self.m2 = ending_mass
         
-    def get_force_on_mass(self, mass_location):
-        if mass_location != self.m1 and mass_location != self.m2:
-            
+    def get_force_on_mass(self, mass : Particle):
+        tot_force = np.zeros_like(mass.center)
+        if self.m1 == mass:
+            pass
+        elif self.m2 == mass:
+            pass
+        else:
+            print(">> WARNING: Unexpected case occured, given mass location does not exist for this spring. No force is exerted.")
+            return None 
+        
+        return tot_force
         
 class MassSpringSystem:
     def __init__(self):
         print(">> Initiated empty mass-spring system")
         self.masses = []
         self.connections = []
-        self.connection_rest_lengths = []
+        self.springs = []
         
     def simulate(self):
         # TODO: run spring simulation...
@@ -89,15 +97,9 @@ class MassSpringSystem:
     
     def connect_masses(self, first_mass_idx : int, second_mass_idx : int):
         assert type(first_mass_idx) == int and type(second_mass_idx) == int
-        assert first_mass_idx != second_mass_idx, f"Cannot connect particle to itself."
+        assert first_mass_idx != second_mass_idx, "Cannot connect particle to itself."
         
         self.connections.append([first_mass_idx, second_mass_idx])
-        
-        first_mass_location = self.masses[first_mass_idx]
-        second_mass_location = self.masses[second_mass_idx]
-        difference_vec = first_mass_location.center - second_mass_location.center
-        difference_length = np.linalg.norm(difference_vec)
-        self.connection_rest_lengths.append(difference_length)
         return
     
     def disconnect_masses(self, mass_first : Particle, mass_second : Particle):

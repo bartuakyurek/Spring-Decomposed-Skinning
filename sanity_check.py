@@ -37,6 +37,8 @@ def __assert_unbatched(arr):
     return arr_dims
 
 def __is_equal(first_vec, second_vec, tolerance=_TOLERANCE_):
+    # Robust implementation of X == Y check that could fail due to numerical
+    # reasons even if X and Y are virtually the same. 
     assert first_vec.shape == second_vec.shape, f"Two sets must have equal shapes. Provided are {first_vec.shape} and {second_vec.shape}"
     
     diff = first_vec - second_vec
