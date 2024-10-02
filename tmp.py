@@ -8,28 +8,29 @@ Created on Tue Oct  1 07:31:12 2024
 import numpy as np
 import pyvista as pv
 
-from sanity_check import _check
+from sanity_check import __assert_vec3
 from global_vars import _SPACE_DIMS_
 
 
 class Particle:
-    def __init__(self, coordinate, direction=[0., 1., 0.], mass=0.5, radius=0.05):
+    def __init__(self, coordinate, orientation=[0., 1., 0.], mass=0.5, radius=0.05):
         
         MAX_ALLOWED_MASS = 99
-        assert np.any(direction), f"Particle direction must have nonzero length. Provided direction is {direction}."
+        assert np.any(orientation), f"Particle orientation vector must have nonzero length. Provided direction is {orientation}."
         assert mass < MAX_ALLOWED_MASS, f"Provided mass {mass} is greater than maximum allowed mass {MAX_ALLOWED_MASS}"
         
         self.mass = mass
         self.radius = radius
         self.center = np.array(coordinate)
         
-        self.direction = np.array(direction) # Direction of mass vector, relative to its center.
+        self.orientation = np.array(orientation) # Used for rendering the mass sphere
+        
         self.previous_location = self.center
         
 class Spring:
     def __init__(self, stiffness, beginning_point, ending_point):
         assert beginning_point.shape == ending_point.shape
-        __check_1D(beginning_point)
+        __assert_vec3(beginning_point)
         self.k = stiffness
         self.rest_length = beginning_point - ending_point
         
@@ -112,7 +113,7 @@ class MassSpringSystem:
             
             sphere = pv.Sphere(radius=mass_particle.radius,
                                center=mass_particle.center, 
-                               direction=mass_particle.direction)
+                               direction=mass_particle.orientation)
             meshes.append(sphere)
         
         return meshes
