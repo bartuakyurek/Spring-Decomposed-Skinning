@@ -14,8 +14,6 @@ from mass_spring import MassSpringSystem
 # -------------------------------- MAIN ---------------------------------------
 # -----------------------------------------------------------------------------
 plotter = pv.Plotter(notebook=False, off_screen=False)
-plotter.camera_position = 'zy'
-plotter.camera.azimuth = -90
 
 # Initiate a mass spring system container
 dt = 1. / 24
@@ -42,7 +40,7 @@ for spring_mesh in spring_meshes:
 def callback(step):
     
     # Step 1 - Apply forces (if any) and simulate
-    if(step < 2):
+    if(step < 1):
         print(">> Force applied.")
         SELECTED_MASS = 1 
         mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.0,0.1]))
@@ -62,12 +60,14 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(dt * 1000)
-n_simulation_steps = 2000
+n_simulation_steps = 500
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 plotter.enable_mesh_picking()
 
-cam_pos = [(0.0, 0.0, 2.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
-plotter.show(cpos=cam_pos)
+plotter.camera_position = 'zy'
+#plotter.camera.azimuth = -90
+#cam_pos = [(0.0, 0.0, 1.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
+plotter.show()#(cpos=cam_pos)
 
 
 

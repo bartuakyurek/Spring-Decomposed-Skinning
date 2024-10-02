@@ -13,11 +13,11 @@ import pyvista as pv
 from sanity_check import _is_equal
 from global_vars import _SPACE_DIMS_
 
-_DEFAULT_STIFFNESS = 0.1
-_DEFAULT_DAMPING = 0.1
-
+_DEFAULT_STIFFNESS = 0.05
+_DEFAULT_DAMPING = 0.01
+_DEFAULT_MASS = 2.5
 class Particle:
-    def __init__(self, coordinate, orientation=[0., 1., 0.], mass=0.5, radius=0.05):
+    def __init__(self, coordinate, orientation=[0., 1., 0.], mass=_DEFAULT_MASS, radius=0.05):
         
         MAX_ALLOWED_MASS = 99
         assert np.any(orientation), f"Particle orientation vector must have nonzero length. Provided direction is {orientation}."
@@ -59,7 +59,6 @@ class Spring:
         
         assert self.rest_length > 1e-16, ">> Spring cannot be initialized to zero length!"
             
-        
         self.m1 = beginning_mass
         self.m2 = ending_mass
         
