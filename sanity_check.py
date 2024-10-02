@@ -13,7 +13,7 @@ _TOLERANCE_ = 1e-8
 
 def __assert_vec3(arr):
     # Verify that a given array has (3,1) or (3,) shape as a 3D vector.
-    shape_len = __check_1D(arr)
+    shape_len = __assert_unbatched(arr)
     if shape_len == 1:
         assert arr.shape[0] == 3, f"Expected shape (3, ) got {arr.shape}"
     elif shape_len == 2:
@@ -24,7 +24,7 @@ def __assert_vec3(arr):
     return shape_len
     
 # TODO: rename it to __assert_unbatched() because 1D is confusing
-def __check_1D(arr):
+def __assert_unbatched(arr):
     # Sanity check for an input array of either shape (N, ), (N, 1), or (1, N)
     arr_dims = len(arr.shape)
     is_2d = arr_dims == 2
@@ -36,7 +36,15 @@ def __check_1D(arr):
         assert arr.shape[0] == 1 or arr.shape[1] == 1, f"Array must be 1D. Provided has shape {arr.shape} "
     return arr_dims
 
-def __check_equality(first_set, second_set, tolerance=_TOLERANCE_):
+def __is_equal(first_vec, second_vec, tolerance=_TOLERANCE_):
+    assert first_vec.shape == second_vec.shape, f"Two sets must have equal shapes. Provided are {first_vec.shape} and {second_vec.shape}"
+    
+    diff = first_vec - second_vec
+    total_diff = np.sum(np.abs(diff))
+    
+    return total_diff < tolerance
+
+def __assert_equality(first_set, second_set, tolerance=_TOLERANCE_):
     # Used as a sanity check for naive vs. fast implementations of the same linear algebra operations.
     first_set, second_set = __equate_shapes(first_set, second_set)
     assert first_set.shape == second_set.shape, f"Two sets must have equal shapes. Provided are {first_set.shape} and {second_set.shape}"
@@ -63,8 +71,8 @@ def __equate_shapes(first_arr : np.ndarray, second_arr : np.ndarray, verbose=_DE
         if verbose : print("INFO: No modification on array shapes had done.")  
         return first_arr, second_arr
     
-    first_arr_dims = __check_1D(first_arr)
-    second_arr_dims = __check_1D(second_arr)
+    first_arr_dims = __assert_unbatched(first_arr)
+    second_arr_dims = __assert_unbatched(second_arr)
     
     if first_arr_dims == 1 and second_arr_dims == 2:
         # Case 1: (N, ) vs. (N, 1)
