@@ -11,7 +11,7 @@ import pyvista as pv
 from sanity_check import _is_equal
 from global_vars import _SPACE_DIMS_
 
-_DEFAULT_STIFFNESS = 0.5
+_DEFAULT_STIFFNESS = 0.1
 _DEFAULT_DAMPING = 0.1
 
 class Particle:
@@ -62,6 +62,9 @@ class Spring:
         tot_force = np.zeros_like(mass.center)
         
         distance = np.linalg.norm(self.m1.center - self.m2.center)
+        if distance < 1e-16:
+            distance = 1e-6 # For numerical stability
+            
         scaled_distance = distance * self.k
         
         # Find speed of contraction/expansion for damping force
@@ -102,14 +105,14 @@ class MassSpringSystem:
             force = self.masses[i].get_total_spring_forces()
             acc = force / self.masses[i].mass;
             
-            self.masses[i].velocity += acc * dt;
-            self.masses[i].center += self.masses[i].velocity * dt
+            #self.masses[i].velocity += acc * dt;
+            #self.masses[i].center += self.masses[i].velocity * dt
           
-            #velocity = self.masses[i].velocity + acc * dt;
-            #previous_position = self.masses[i].center
+            velocity = self.masses[i].velocity + acc * dt;
+            previous_position = self.masses[i].center
             
-            #self.masses[i].center += velocity * dt
-            #self.masses[i].velocity = self.masses[i].center - previous_position
+            self.masses[i].center += velocity * dt
+            self.masses[i].velocity = self.masses[i].center - previous_position
             
     def add_mass(self, mass_coordinate):
         mass = Particle(mass_coordinate)
@@ -213,11 +216,12 @@ def callback(step):
     # Step 1 - Apply forces (if any) and simulate
     
     # At random moments with probability X, apply a random force on a randomly selected mass
-    X = 0.01
-    if np.random.rand(1) < X:
-        SELECTED_MASS = np.random.randint(0, n_masses)   
-        mass_spring_system.translate_mass(SELECTED_MASS, np.random.rand(3) * 0.05)
-    
+    if(step < 250):
+        X = 0.1
+        if np.random.rand(1) < X:
+            SELECTED_MASS = np.random.randint(0, n_masses)   
+            mass_spring_system.translate_mass(SELECTED_MASS, np.random.rand(3) * 0.05)
+        
    
     mass_spring_system.simulate()
     
