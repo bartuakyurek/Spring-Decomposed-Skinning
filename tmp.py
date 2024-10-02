@@ -12,6 +12,7 @@ from sanity_check import _is_equal
 from global_vars import _SPACE_DIMS_
 
 _DEFAULT_STIFFNESS = 0.5
+_DEFAULT_DAMPING = 0.1
 
 class Particle:
     def __init__(self, coordinate, orientation=[0., 1., 0.], mass=0.5, radius=0.05):
@@ -44,12 +45,14 @@ class Particle:
 class Spring:
     def __init__(self, 
                  stiffness : float, 
+                 damping : float,
                  beginning_mass : Particle, 
                  ending_mass : Particle):
         assert not _is_equal(beginning_mass.center, ending_mass.center), "Expected spring length to be nonzero, provided masses should be located on different coordinates."
         
         # TODO: Are you going to implement squared norms for optimized performance?
         self.k = stiffness
+        self.kd = damping
         self.rest_length = np.linalg.norm(beginning_mass.center - ending_mass.center)
         
         self.m1 = beginning_mass
@@ -57,15 +60,25 @@ class Spring:
         
     def get_force_on_mass(self, mass : Particle):
         tot_force = np.zeros_like(mass.center)
+        
+        distance = np.linalg.norm(self.m1.center - self.m2.center)
+        scaled_distance = distance * self.k
+        
+        # Find speed of contraction/expansion for damping force
+        normalized_dir = (self.m1.center - self.m2.center) / distance
+        s1 = np.dot(self.m1.velocity, normalized_dir)
+        s2 = np.dot(self.m2.velocity, normalized_dir)
+        scaled_damping = -self.kd * (s1 + s2)
+        
+        tot_force = scaled_distance + scaled_damping
         if self.m1 == mass:
-            pass
+            return tot_force
         elif self.m2 == mass:
-            pass
+            return -tot_force
         else:
             print(">> WARNING: Unexpected case occured, given mass location does not exist for this spring. No force is exerted.")
             return None 
         
-        return tot_force
         
 class MassSpringSystem:
     def __init__(self, dt):
@@ -82,16 +95,21 @@ class MassSpringSystem:
         for i in range(n_masses):
             # Constraint: If a mass is zero, don't exert any force (f=ma=0)
             # that makes the mass fixed in space (world position still can be changed globally)
+            # Also this allows us to not divide by zero in the acceleration computation.
             if self.masses[i].mass < 1e-12:
                 continue
             
             force = self.masses[i].get_total_spring_forces()
-            
-            # F = m*a -> a = F / m
             acc = force / self.masses[i].mass;
+            
             self.masses[i].velocity += acc * dt;
             self.masses[i].center += self.masses[i].velocity * dt
-        
+          
+            #velocity = self.masses[i].velocity + acc * dt;
+            #previous_position = self.masses[i].center
+            
+            #self.masses[i].center += velocity * dt
+            #self.masses[i].velocity = self.masses[i].center - previous_position
             
     def add_mass(self, mass_coordinate):
         mass = Particle(mass_coordinate)
@@ -121,11 +139,11 @@ class MassSpringSystem:
         else:
             print(">> Please provide a valid mass index as type int.")
     
-    def connect_masses(self, first_mass_idx : int, second_mass_idx : int, stiffness : float = _DEFAULT_STIFFNESS):
+    def connect_masses(self, first_mass_idx : int, second_mass_idx : int, stiffness : float = _DEFAULT_STIFFNESS, damping : float = _DEFAULT_DAMPING):
         assert type(first_mass_idx) == int and type(second_mass_idx) == int
         assert first_mass_idx != second_mass_idx, "Cannot connect particle to itself."
         
-        spring = Spring(stiffness,self.masses[first_mass_idx], self.masses[second_mass_idx])
+        spring = Spring(stiffness, damping, self.masses[first_mass_idx], self.masses[second_mass_idx])
         self.masses[first_mass_idx].add_spring(spring)
         self.masses[second_mass_idx].add_spring(spring)
         self.connections.append([first_mass_idx, second_mass_idx])
@@ -195,7 +213,7 @@ def callback(step):
     # Step 1 - Apply forces (if any) and simulate
     
     # At random moments with probability X, apply a random force on a randomly selected mass
-    X = 0.05
+    X = 0.01
     if np.random.rand(1) < X:
         SELECTED_MASS = np.random.randint(0, n_masses)   
         mass_spring_system.translate_mass(SELECTED_MASS, np.random.rand(3) * 0.05)
@@ -216,11 +234,11 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(dt * 1000)
-n_simulation_steps = 100
+n_simulation_steps = 500
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 plotter.enable_mesh_picking()
 
-cam_pos = [(0.0, 0.0, 10.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0)]
+cam_pos = [(0.0, 0.0, 5.0), (0.0, 0.5, 0.0), (0.0, 0.0, 0.0)]
 plotter.show(cpos=cam_pos)
 
 
