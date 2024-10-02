@@ -43,7 +43,7 @@ def callback(step):
     if(step < 1):
         print(">> Force applied.")
         SELECTED_MASS = 1 
-        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.0,0.1]))
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.3,0.0]))
         
     mass_spring_system.simulate()
     
