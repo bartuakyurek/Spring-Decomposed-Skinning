@@ -23,8 +23,8 @@ class Particle:
         
         self.mass = mass
         self.radius = radius
-        self.center = np.array(coordinate)
-        self.orientation = np.array(orientation) # Used for rendering the mass sphere
+        self.center = np.array(coordinate, dtype=float)
+        self.orientation = np.array(orientation, dtype=float) # Used for rendering the mass sphere
         
         self.velocity = np.zeros_like(coordinate)
         self.springs = []
@@ -35,7 +35,7 @@ class Particle:
     
     def get_total_spring_forces(self):
         # No gravity or other external forces exist in the current system.
-        f_spring = np.zeros_like(self.velocity)
+        f_spring = np.zeros_like(self.velocity, dtype=float)
         
         for spring in self.springs:
             f_spring += spring.get_force_on_mass(self)
@@ -122,6 +122,11 @@ class MassSpringSystem:
             self.masses.append(mass)
         else:
             print(f"Expected Particle class, got {type(mass)}")
+            
+    def fix_mass(self, mass_idx):
+        self.masses[mass_idx].mass = 0.0
+        print(f">> Fixed mass at location {self.masses[mass_idx].center}")
+        return
         
     def remove_mass(self, mass_idx):
         # TODO: remove mass dictionary entry
@@ -191,17 +196,21 @@ plotter = pv.Plotter(notebook=False, off_screen=False)
 plotter.camera_position = 'zy'
 plotter.camera.azimuth = -90
 
+# Initiate a mass spring system container
 dt = 1. / 24
 mass_spring_system = MassSpringSystem(dt)
 
-n_masses =  20
-for i in range(n_masses):
-    mass_spring_system.add_mass(mass_coordinate=np.random.rand(3))
+# Add masses to container and connect them
+n_masses =  2
+mass_spring_system.add_mass(mass_coordinate=np.array([0,0,0]))
+mass_spring_system.add_mass(mass_coordinate=np.array([0,1,0]))
+
+mass_spring_system.connect_masses(0, 1)
     
-    if i > 0:
-        mass_spring_system.connect_masses(i-1, i)
+# Fix selected masses
+mass_spring_system.fix_mass(0)
     
-# Add masses withh their initial locations to PyVista Plotter
+# Add masses with their initial locations to PyVista Plotter
 initial_mass_locations = mass_spring_system.get_mass_locations()
 mass_point_cloud = pv.PolyData(initial_mass_locations)
 plotter.add_mesh(mass_point_cloud)
@@ -214,15 +223,10 @@ for spring_mesh in spring_meshes:
 def callback(step):
     
     # Step 1 - Apply forces (if any) and simulate
-    
-    # At random moments with probability X, apply a random force on a randomly selected mass
-    if(step < 250):
-        X = 0.1
-        if np.random.rand(1) < X:
-            SELECTED_MASS = np.random.randint(0, n_masses)   
-            mass_spring_system.translate_mass(SELECTED_MASS, np.random.rand(3) * 0.05)
+    if(step < 2):
+        SELECTED_MASS = 1 
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.0,0.5]))
         
-   
     mass_spring_system.simulate()
     
     # Step 2 - Get current mass positions and update rendered particles
@@ -238,7 +242,7 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(dt * 1000)
-n_simulation_steps = 500
+n_simulation_steps = 5000
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 plotter.enable_mesh_picking()
 
