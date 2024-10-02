@@ -31,10 +31,17 @@ class Spring:
     def __init__(self, stiffness, beginning_point, ending_point):
         assert beginning_point.shape == ending_point.shape
         __assert_vec3(beginning_point)
+        
         self.k = stiffness
         self.rest_length = beginning_point - ending_point
         
-    
+        self.m1 = beginning_point
+        self.m2 = ending_point
+        
+    def get_force_on_mass(self, mass_location):
+        if mass_location != self.m1 and mass_location != self.m2:
+            
+        
 class MassSpringSystem:
     def __init__(self):
         print(">> Initiated empty mass-spring system")
