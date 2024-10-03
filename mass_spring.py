@@ -77,7 +77,9 @@ class Spring:
         spring_force_amount  = (distance - self.rest_length) * self.k * self.distance_scale
         
         # Find speed of contraction/expansion for damping force
-        normalized_dir = (self.m1.center - self.m2.center) / distance
+        normalized_dir = (self.m2.center - self.m1.center) / distance
+        #assert normalized_dir == np.linalg.norm(self.m2.center - self.m1.center)
+        
         s1 = np.dot(self.m1.velocity, normalized_dir)
         s2 = np.dot(self.m2.velocity, normalized_dir)
         damping_force_amount = -self.kd * (s1 + s2)

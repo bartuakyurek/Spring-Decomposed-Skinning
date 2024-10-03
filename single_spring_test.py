@@ -75,7 +75,7 @@ def callback(step):
     
     # Step 1 - Apply forces (if any) and simulate
     if(step < 1):
-        print(">> Force applied.")
+        print(f">> {step} Force applied.")
         SELECTED_MASS = 1 
         mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.0,0.4]))
         
