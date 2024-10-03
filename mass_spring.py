@@ -5,6 +5,11 @@ Created on Thu May 23 10:07:32 2024
 
 Spring simulation based on Position Based Dynamics.
 
+
+DISCLAIMER: The simulation code is heavily based on these sources:
+- https://github.com/rlguy/mass_spring_system
+- https://rodolphe-vaillant.fr/entry/138/introduction-jiggle-physics-mesh-deformer
+
 @author: bartu
 """
 import numpy as np
@@ -16,7 +21,7 @@ from global_vars import _SPACE_DIMS_
 _DEFAULT_STIFFNESS = 0.05
 _DEFAULT_DAMPING = 0.01
 _DEFAULT_MASS = 2.5
-_DEFAULT_DSCALE = 10
+_DEFAULT_DSCALE = 1 # Let's not add this parameter that scales forces right now.
 class Particle:
     def __init__(self, coordinate, orientation=[0., 1., 0.], mass=_DEFAULT_MASS, radius=0.05):
         
@@ -73,7 +78,11 @@ class Spring:
         distance = np.linalg.norm(self.m1.center - self.m2.center)
         if distance < 1e-16:
             distance = 1e-6 # For numerical stability
-            
+        
+        if np.abs(distance - self.rest_length) < 1e-16:
+            # TODO: remove this conditional 
+            print(">>> Balance reached.", distance, self.rest_length)
+        
         spring_force_amount  = (distance - self.rest_length) * self.k * self.distance_scale
         
         # Find speed of contraction/expansion for damping force
@@ -121,7 +130,7 @@ class MassSpringSystem:
             previous_position = self.masses[i].center.copy()
             
             self.masses[i].center += velocity * dt
-            self.masses[i].velocity = self.masses[i].center - previous_position
+            self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
             
     def add_mass(self, mass_coordinate):
         mass = Particle(mass_coordinate)
