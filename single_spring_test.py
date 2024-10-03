@@ -45,6 +45,9 @@ def callback(step):
         SELECTED_MASS = 1 
         mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.3,0.0]))
         
+    if ((step+1) % 50) == 0:
+        print(">> Step ", step)
+        
     mass_spring_system.simulate()
     
     # Step 2 - Get current mass positions and update rendered particles

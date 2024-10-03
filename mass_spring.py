@@ -113,7 +113,7 @@ class MassSpringSystem:
             #self.masses[i].center += self.masses[i].velocity * dt
           
             velocity = self.masses[i].velocity + acc * dt;
-            previous_position = self.masses[i].center
+            previous_position = self.masses[i].center.copy()
             
             self.masses[i].center += velocity * dt
             self.masses[i].velocity = self.masses[i].center - previous_position
