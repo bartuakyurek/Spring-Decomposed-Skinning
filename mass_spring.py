@@ -38,14 +38,14 @@ class Particle:
     
     def get_total_spring_forces(self):
         # No gravity or other external forces exist in the current system.
-        f_spring = np.zeros_like(self.velocity, dtype=float)
+        tot_force = np.zeros_like(self.velocity, dtype=float)
         
         for spring in self.springs:
-            tmp_force =  spring.get_force_on_mass(self)
-            assert tmp_force.shape == f_spring.shape, f"Calculated force must be a 3D vector, provided {tmp_force.shape}."
-            f_spring += tmp_force
+            f_spring =  spring.get_force_on_mass(self)
+            assert f_spring.shape == tot_force.shape, f"Calculated force must be a 3D vector, provided {f_spring.shape}."
+            tot_force += f_spring
             
-        return f_spring
+        return tot_force
         
 class Spring:
     def __init__(self, 
