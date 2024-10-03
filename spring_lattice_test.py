@@ -26,11 +26,13 @@ mass_spring_system = MassSpringSystem(dt)
 n_masses =  20
 mass_weight = 10
 for i in range(n_masses):
-    #mass_spring_system.add_mass(mass_coordinate=np.array([0,0,0]), mass=mass_weight)
-    #mass_spring_system.add_mass(mass_coordinate=np.array([0,0,1.0]), mass=mass_weight)
-    #mass_spring_system.connect_masses(0, 1)
-    #mass_spring_system.fix_mass(0)
-    pass
+    # Add masses at random locations
+    mass_spring_system.add_mass(mass_coordinate=np.random.rand(3), mass=mass_weight)
+
+# TODO: connect masses (maybe you could read a json?)
+#mass_spring_system.connect_masses(0, 1)
+#mass_spring_system.fix_mass(0)
+pass
 
 # -----------------------------------------------------------------------------
 # Add masses initially to PyVista Plotter.
