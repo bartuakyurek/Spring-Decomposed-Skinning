@@ -16,6 +16,7 @@ from global_vars import _SPACE_DIMS_
 _DEFAULT_STIFFNESS = 0.05
 _DEFAULT_DAMPING = 0.01
 _DEFAULT_MASS = 2.5
+_DEFAULT_DSCALE = 10
 class Particle:
     def __init__(self, coordinate, orientation=[0., 1., 0.], mass=_DEFAULT_MASS, radius=0.05):
         
@@ -48,15 +49,18 @@ class Particle:
         
 class Spring:
     def __init__(self, 
+                 beginning_mass : Particle, 
+                 ending_mass : Particle,
                  stiffness : float, 
                  damping : float,
-                 beginning_mass : Particle, 
-                 ending_mass : Particle):
+                 dscale : float = _DEFAULT_DSCALE
+                 ):
         assert not _is_equal(beginning_mass.center, ending_mass.center), "Expected spring length to be nonzero, provided masses should be located on different coordinates."
         
         # TODO: Are you going to implement squared norms for optimized performance?
         self.k = stiffness
         self.kd = damping
+        self.distance_scale = dscale
         self.rest_length = np.linalg.norm(beginning_mass.center - ending_mass.center)
         
         assert self.rest_length > 1e-16, ">> Spring cannot be initialized to zero length!"
@@ -65,13 +69,12 @@ class Spring:
         self.m2 = ending_mass
         
     def get_force_on_mass(self, mass : Particle):
-        tot_force = np.zeros_like(mass.center)
         
         distance = np.linalg.norm(self.m1.center - self.m2.center)
         if distance < 1e-16:
             distance = 1e-6 # For numerical stability
             
-        spring_force_amount  = (distance - self.rest_length) * self.k
+        spring_force_amount  = (distance - self.rest_length) * self.k * self.distance_scale
         
         # Find speed of contraction/expansion for damping force
         normalized_dir = (self.m1.center - self.m2.center) / distance
@@ -156,7 +159,7 @@ class MassSpringSystem:
         assert type(first_mass_idx) == int and type(second_mass_idx) == int
         assert first_mass_idx != second_mass_idx, "Cannot connect particle to itself."
         
-        spring = Spring(stiffness, damping, self.masses[first_mass_idx], self.masses[second_mass_idx])
+        spring = Spring(self.masses[first_mass_idx], self.masses[second_mass_idx], stiffness, damping)
         self.masses[first_mass_idx].add_spring(spring)
         self.masses[second_mass_idx].add_spring(spring)
         self.connections.append([first_mass_idx, second_mass_idx])
