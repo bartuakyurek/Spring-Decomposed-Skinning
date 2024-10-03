@@ -21,9 +21,11 @@ from global_vars import _SPACE_DIMS_
 _DEFAULT_STIFFNESS = 0.05
 _DEFAULT_DAMPING = 0.1
 _DEFAULT_MASS = 2.5
-_DEFAULT_DSCALE = 1 # Let's not add this parameter that scales forces right now.
+_DEFAULT_SPRING_SCALE = 100 
+_DEFAULT_MASS_SCALE = 1 # Default is 0.1 but the simulation doesn't work at 0.1...
 class Particle:
-    def __init__(self, coordinate, orientation=[0., 1., 0.], mass=_DEFAULT_MASS, radius=0.05):
+    def __init__(self, coordinate, orientation=[0., 1., 0.], 
+                 mass=_DEFAULT_MASS, dscale=_DEFAULT_MASS_SCALE,radius=0.05):
         
         MAX_ALLOWED_MASS = 99
         assert np.any(orientation), f"Particle orientation vector must have nonzero length. Provided direction is {orientation}."
@@ -31,6 +33,7 @@ class Particle:
         
         self.mass = mass
         self.radius = radius
+        self.dscale = dscale
         self.center = np.array(coordinate, dtype=float)
         self.orientation = np.array(orientation, dtype=float) # Used for rendering the mass sphere
         
@@ -58,7 +61,7 @@ class Spring:
                  ending_mass : Particle,
                  stiffness : float, 
                  damping : float,
-                 dscale : float = _DEFAULT_DSCALE
+                 dscale : float = _DEFAULT_SPRING_SCALE
                  ):
         assert not _is_equal(beginning_mass.center, ending_mass.center), "Expected spring length to be nonzero, provided masses should be located on different coordinates."
         
@@ -126,7 +129,7 @@ class MassSpringSystem:
             velocity = self.masses[i].velocity + acc * dt
             previous_position = self.masses[i].center.copy()
             
-            self.masses[i].center += velocity * dt
+            self.masses[i].center += velocity * dt * self.masses[i].dscale
             self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
             
     def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS):
