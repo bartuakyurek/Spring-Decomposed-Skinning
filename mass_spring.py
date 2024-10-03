@@ -19,7 +19,7 @@ from sanity_check import _is_equal
 from global_vars import _SPACE_DIMS_
 
 _DEFAULT_STIFFNESS = 0.05
-_DEFAULT_DAMPING = 0.01
+_DEFAULT_DAMPING = 0.1
 _DEFAULT_MASS = 2.5
 _DEFAULT_DSCALE = 1 # Let's not add this parameter that scales forces right now.
 class Particle:
@@ -121,19 +121,16 @@ class MassSpringSystem:
                 continue
             
             force = self.masses[i].get_total_spring_forces()
-            acc = force / self.masses[i].mass;
-            
-            #self.masses[i].velocity += acc * dt;
-            #self.masses[i].center += self.masses[i].velocity * dt
-          
-            velocity = self.masses[i].velocity + acc * dt;
+            acc = force / self.masses[i].mass
+        
+            velocity = self.masses[i].velocity + acc * dt
             previous_position = self.masses[i].center.copy()
             
             self.masses[i].center += velocity * dt
             self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
             
-    def add_mass(self, mass_coordinate):
-        mass = Particle(mass_coordinate)
+    def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS):
+        mass = Particle(mass_coordinate, mass=mass)
         
         if type(mass) is Particle:
             print(f">> Added mass at {mass.center}")
