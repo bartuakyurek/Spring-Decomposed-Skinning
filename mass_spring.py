@@ -78,7 +78,6 @@ class Spring:
         
         # Find speed of contraction/expansion for damping force
         normalized_dir = (self.m2.center - self.m1.center) / distance
-        #assert normalized_dir == np.linalg.norm(self.m2.center - self.m1.center)
         
         s1 = np.dot(self.m1.velocity, normalized_dir)
         s2 = np.dot(self.m2.velocity, normalized_dir)
