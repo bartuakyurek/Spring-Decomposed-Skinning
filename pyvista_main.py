@@ -56,6 +56,11 @@ mass_spring_system = MassSpringSystem(dt)
 # Add masses to container and connect them, and fixate some of them.
 n_masses =  2
 mass = 10
+# ---------------------------------------------------------------------
+# TODO: Fix the masses to the bones...
+# !!!!   !!!!   !!!!!!!   !!!!   !!!!!!!   !!!!   !!!!!!!   !!!!   !!!
+#
+# --------------------------------------------------------------------
 mass_spring_system.add_mass(mass_coordinate=np.array([0,0,0]), mass=mass)
 mass_spring_system.add_mass(mass_coordinate=np.array([0,0,1.0]), mass=mass)
 mass_spring_system.connect_masses(0, 1)
@@ -77,7 +82,11 @@ for spring_mesh in spring_meshes:
 # -----------------------------------------------------------------------------
 n_frames = 200 
 for frame in range(n_frames):
-    pass
+    # ---------------------------------------------------------------------
+    # Step 1 - TODO: Translate the masses that are connected to a bone 
+    # !!!!   !!!!   !!!!!!!   !!!!   !!!!!!!   !!!!   !!!!!!!   !!!!   !!!
+    #
+    # ---------------------------------------------------------------------
     mass_spring_system.simulate()
     
     # Step 2 - Get current mass positions and update rendered particles
