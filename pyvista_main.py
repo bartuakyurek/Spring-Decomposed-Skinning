@@ -52,7 +52,6 @@ from pyvista_render_tools import add_skeleton, add_mesh
 # Create a plotter object and set the scalars to the Z height
 
 RENDER = True
-
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
 plotter.camera_position = 'zy'
 plotter.camera.azimuth = -90
