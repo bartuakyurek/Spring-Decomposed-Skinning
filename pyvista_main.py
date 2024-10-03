@@ -41,6 +41,11 @@ import pyvista as pv
 from pyvista_render_tools import add_skeleton, add_mesh
 
 
+## TODO: Run spring simulation here and save the mass locations for rendering later
+
+
+
+
 ## TODO: Render the baked simulation using Pyvista
 ## ----------------------------------------------------------------------------
 # Create a plotter object and set the scalars to the Z height
@@ -59,7 +64,7 @@ n_frames = 200
 n_repeats = 10
 for _ in range(n_repeats):
     for frame in range(n_frames-1):
-        # TODO: Resest particle system
+        # TODO: Reset particle system
         
         # TODO: Update particle system
         
