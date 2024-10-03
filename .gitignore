@@ -10,3 +10,5 @@
 /legacy
 /data
 /body_models
+.DS_Store
+/results

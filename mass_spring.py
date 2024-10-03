@@ -40,7 +40,9 @@ class Particle:
         f_spring = np.zeros_like(self.velocity, dtype=float)
         
         for spring in self.springs:
-            f_spring += spring.get_force_on_mass(self)
+            tmp_force =  spring.get_force_on_mass(self)
+            assert tmp_force.shape == f_spring.shape, f"Calculated force must be a 3D vector, provided {tmp_force.shape}."
+            f_spring += tmp_force
             
         return f_spring
         
@@ -69,19 +71,18 @@ class Spring:
         if distance < 1e-16:
             distance = 1e-6 # For numerical stability
             
-        spring_force = (distance - self.rest_length) * self.k
+        spring_force_amount  = (distance - self.rest_length) * self.k
         
         # Find speed of contraction/expansion for damping force
         normalized_dir = (self.m1.center - self.m2.center) / distance
         s1 = np.dot(self.m1.velocity, normalized_dir)
         s2 = np.dot(self.m2.velocity, normalized_dir)
-        damping_force = -self.kd * (s1 + s2)
+        damping_force_amount = -self.kd * (s1 + s2)
         
-        tot_force = spring_force + damping_force
         if self.m1 == mass:
-            return tot_force
+            return (spring_force_amount + damping_force_amount) * normalized_dir
         elif self.m2 == mass:
-            return -tot_force
+            return (-spring_force_amount + damping_force_amount) * normalized_dir
         else:
             print(">> WARNING: Unexpected case occured, given mass location does not exist for this spring. No force is exerted.")
             return None 
