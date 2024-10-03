@@ -51,4 +51,4 @@ def add_skeleton(plotter, joint_locations, edges, colors=None):
                     cmap='jet',
                     show_scalar_bar=False)
     
-    return
+    return skel_mesh

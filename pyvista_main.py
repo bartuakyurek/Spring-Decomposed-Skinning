@@ -14,10 +14,6 @@ import torch
 
 from smpl_torch_batch import SMPLModel
 from skeleton_data import get_smpl_skeleton
-from optimal_rigid_motion import get_optimal_rigid_motion
-from cost import MSE_np
-
-
 
 training_data = torch.load('./data/50004_dataset.pt')
 data_loader = torch.utils.data.DataLoader(training_data, batch_size=1, shuffle=False)
@@ -38,12 +34,10 @@ V = smpl_verts.detach().cpu().numpy()
 J = joints.detach().cpu().numpy()
 n_frames, n_verts, n_dims = target_verts.shape
 
-
 # ---------------------------------------------------------------------------- 
 import numpy as np
 import pyvista as pv
 
-from spring import Spring
 from pyvista_render_tools import add_skeleton, add_mesh
 
 
@@ -56,27 +50,22 @@ plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
 plotter.camera_position = 'zy'
 plotter.camera.azimuth = -90
 
-#add_mesh(plotter, verts=V[0].copy(), faces=F)
-add_skeleton(plotter, J[0].copy(), kintree)
+skel_mesh = add_skeleton(plotter, J[0], kintree)
 
 # Open a gif
-plotter.open_gif("./results/sample.gif")
+plotter.open_movie("./results/smpl-skeleton.mp4")
 
 n_frames = 200 
-n_repeats = 5
+n_repeats = 10
 for _ in range(n_repeats):
-    # TODO: Reset plotter objects
-    # TODO: Initialize particle (i.e. mass-spring) system
-    # TODO: Add sphere objects to plotter 
     for frame in range(n_frames-1):
+        # TODO: Resest particle system
         
-        # TODO: update particle system
+        # TODO: Update particle system
         
-        # TODO: update sphere positions
-        pts = J[frame].copy()
-        plotter.update_coordinates(pts, render=RENDER)
-        #plotter.update_scalars(z.ravel(), render=False) # updates colors
-    
+        # TODO: Update mesh points
+        skel_mesh.points = J[frame]
+        
         # Write a frame. This triggers a render.
         plotter.write_frame()
 
