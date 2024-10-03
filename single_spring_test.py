@@ -29,8 +29,10 @@ mass_spring_system.fix_mass(0)
 # Add masses with their initial locations to PyVista Plotter
 initial_mass_locations = mass_spring_system.get_mass_locations()
 mass_point_cloud = pv.PolyData(initial_mass_locations)
-plotter.add_mesh(mass_point_cloud, render_points_as_spheres=True,
+_ = plotter.add_mesh(mass_point_cloud, render_points_as_spheres=True,
                  show_vertices=True)
+# Affine transform widget duplicate masses, which is not intentional
+#plotter.add_affine_transform_widget(mass_actor)
 
 # Add springs connections actors in between to PyVista Plotter
 spring_meshes = mass_spring_system.get_spring_meshes()
@@ -49,7 +51,7 @@ def callback(step):
         print(">> Step ", step)
         
     mass_spring_system.simulate()
-    
+
     # Step 2 - Get current mass positions and update rendered particles
     cur_mass_locations = mass_spring_system.get_mass_locations()
     mass_point_cloud.points = cur_mass_locations
@@ -62,10 +64,10 @@ def callback(step):
 
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
-dt_milliseconds = int(dt * 1000)
-n_simulation_steps = 500
+dt_milliseconds = int(dt * 1000) 
+n_simulation_steps = 150
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
-plotter.enable_mesh_picking()
+plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)
 
 plotter.camera_position = 'zy'
 #plotter.camera.azimuth = -90
