@@ -21,7 +21,7 @@ from global_vars import _SPACE_DIMS_
 _DEFAULT_STIFFNESS = 0.05
 _DEFAULT_DAMPING = 0.1
 _DEFAULT_MASS = 2.5
-_DEFAULT_SPRING_SCALE = 100 
+_DEFAULT_SPRING_SCALE = 1
 _DEFAULT_MASS_SCALE = 1 # Default is 0.1 but the simulation doesn't work at 0.1...
 class Particle:
     def __init__(self, coordinate, orientation=[0., 1., 0.], 
@@ -76,7 +76,7 @@ class Spring:
         self.m1 = beginning_mass
         self.m2 = ending_mass
         
-    def get_force_on_mass(self, mass : Particle, verbose:False):
+    def get_force_on_mass(self, mass : Particle, verbose=False):
         
         distance = np.linalg.norm(self.m1.center - self.m2.center)
         if distance < 1e-16:

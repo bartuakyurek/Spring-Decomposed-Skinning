@@ -50,8 +50,10 @@ for face in lattice_faces:
     for f in range(len(face)-1):
         mass_spring_system.connect_masses(int(face[f]), int(face[f+1]), stiffness=k)
 
-for idx in fixed_pts:
-    mass_spring_system.fix_mass(idx-1)
+# Fix certain masses' motion
+mass_spring_system.fix_mass(num_masses-1)
+#for idx in fixed_pts:
+#    mass_spring_system.fix_mass(idx-1)
 
 # -----------------------------------------------------------------------------
 # Create renderer
@@ -82,8 +84,8 @@ def callback(step):
     if(step < 1):
         print(">> Simulation started.")
         print(f">> {step} Force applied.")
-        SELECTED_MASS = 1 
-        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.3,-0.2]))
+        SELECTED_MASS = 2 
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.1,0.1]))
         
     if ((step+1) % 50) == 0:
         print(">> Step ", step)
@@ -105,11 +107,11 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(dt * 1000) 
-n_simulation_steps = 200
+n_simulation_steps = 100
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 
 plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)
-plotter.camera_position = 'zy'
+plotter.camera_position = 'zx'
 
 plotter.show()
 
