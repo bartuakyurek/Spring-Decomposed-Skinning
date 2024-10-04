@@ -85,7 +85,7 @@ def callback(step):
         print(">> Simulation started.")
         print(f">> {step} Force applied.")
         SELECTED_MASS = 2 
-        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.1,0.1]))
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.01,0.01]))
         
     if ((step+1) % 50) == 0:
         print(">> Step ", step)
@@ -107,7 +107,7 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(dt * 1000) 
-n_simulation_steps = 100
+n_simulation_steps = 400
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 
 plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)

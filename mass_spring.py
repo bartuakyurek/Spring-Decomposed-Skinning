@@ -24,8 +24,13 @@ _DEFAULT_MASS = 2.5
 _DEFAULT_SPRING_SCALE = 1
 _DEFAULT_MASS_SCALE = 1 # Default is 0.1 but the simulation doesn't work at 0.1...
 class Particle:
-    def __init__(self, coordinate, orientation=[0., 1., 0.], 
-                 mass=_DEFAULT_MASS, dscale=_DEFAULT_MASS_SCALE,radius=0.05):
+    def __init__(self, 
+                 coordinate, 
+                 orientation=[0., 1., 0.], 
+                 mass=_DEFAULT_MASS, 
+                 dscale=_DEFAULT_MASS_SCALE,
+                 radius=0.05,
+                 gravity=True):
         
         MAX_ALLOWED_MASS = 99
         assert np.any(orientation), f"Particle orientation vector must have nonzero length. Provided direction is {orientation}."
@@ -33,6 +38,7 @@ class Particle:
         
         self.mass = mass
         self.radius = radius
+        self.gravity = gravity
         self.dscale = dscale
         self.center = np.array(coordinate, dtype=float)
         self.orientation = np.array(orientation, dtype=float) # Used for rendering the mass sphere
@@ -47,11 +53,16 @@ class Particle:
     def get_total_spring_forces(self):
         # No gravity or other external forces exist in the current system.
         tot_force = np.zeros_like(self.velocity, dtype=float)
+        if self.mass < 1e-20:
+            return tot_force # If mass is zero, force is zero by f = ma
         
         for spring in self.springs:
             f_spring =  spring.get_force_on_mass(self)
             assert f_spring.shape == tot_force.shape, f"Calculated force must be a 3D vector, provided {f_spring.shape}."
             tot_force += f_spring
+            
+        if self.gravity:
+            tot_force += self.mass * np.array([0.0, -9.81, 0.0])
             
         return tot_force
         
