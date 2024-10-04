@@ -183,12 +183,15 @@ class MassSpringSystem:
                        first_mass_idx : int, 
                        second_mass_idx : int, 
                        stiffness : float = _DEFAULT_STIFFNESS, 
-                       damping : float = _DEFAULT_DAMPING):
+                       damping : float = _DEFAULT_DAMPING,
+                       dscale : float = _DEFAULT_SPRING_SCALE):
         
         assert type(first_mass_idx) == int and type(second_mass_idx) == int, f"Expected type int, got {type(first_mass_idx)}."
         assert first_mass_idx != second_mass_idx, "Cannot connect particle to itself."
         
-        spring = Spring(self.masses[first_mass_idx], self.masses[second_mass_idx], stiffness, damping)
+        spring = Spring(self.masses[first_mass_idx], 
+                        self.masses[second_mass_idx], 
+                        stiffness=stiffness, damping=damping, dscale=dscale)
         self.masses[first_mass_idx].add_spring(spring)
         self.masses[second_mass_idx].add_spring(spring)
         self.connections.append([first_mass_idx, second_mass_idx])
