@@ -48,7 +48,7 @@ for i in range(num_masses):
 # Add springs at the edges
 for face in lattice_faces:
     for f in range(len(face)-1):
-        spring_scale = 0.25 
+        spring_scale = 0.25
         # For stability, either increase it to 10~ if the system is not moving, 
         # or decrease it < 1.0 if the system is overflowing
         # In this test, try setting it 0.25, you'll see how system overflows slowly 
