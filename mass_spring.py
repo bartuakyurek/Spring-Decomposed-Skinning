@@ -76,15 +76,15 @@ class Spring:
         self.m1 = beginning_mass
         self.m2 = ending_mass
         
-    def get_force_on_mass(self, mass : Particle):
+    def get_force_on_mass(self, mass : Particle, verbose:False):
         
         distance = np.linalg.norm(self.m1.center - self.m2.center)
         if distance < 1e-16:
             distance = 1e-6 # For numerical stability
         
-        if np.abs(distance - self.rest_length) < 1e-16:
-            # TODO: remove this conditional 
-            print(">>> Balance reached.", distance, self.rest_length)
+        if verbose:
+            if np.abs(distance - self.rest_length) < 1e-16:
+                print(">>> Balance reached.", distance, self.rest_length)
         
         spring_force_amount  = (distance - self.rest_length) * self.k * self.distance_scale
         

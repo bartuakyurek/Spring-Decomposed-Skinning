@@ -5,6 +5,7 @@ Created on Thu Oct  3 13:24:36 2024
 
 @author: bartu
 """
+import igl
 import json
 import numpy as np
 import pyvista as pv
@@ -17,12 +18,9 @@ from mass_spring import MassSpringSystem
 # -----------------------------------------------------------------------------
 
 data_path = "./data/Mass-Spring/"
-filename = "flag"
+filename = "horizontal-chain"
 obj_path = data_path + filename + ".obj"
 json_path = data_path + filename +".json"
-
-reader = pv.get_reader(obj_path)
-lattice_mesh = reader.read()
 
 # Open and read the JSON file
 with open(json_path, 'r') as file:
@@ -37,9 +35,10 @@ with open(json_path, 'r') as file:
 dt = 1. / 24
 mass_spring_system = MassSpringSystem(dt)
 
-lattice_verts = lattice_mesh.points
+lattice_mesh = igl.read_obj(obj_path)
+lattice_verts = lattice_mesh[0]
+lattice_faces = lattice_mesh[3]
 num_masses = lattice_verts.shape[0]
-lattice_faces = lattice_mesh.regular_faces 
 
 # Add masses at vertex locations
 for i in range(num_masses):
@@ -52,7 +51,7 @@ for face in lattice_faces:
         mass_spring_system.connect_masses(int(face[f]), int(face[f+1]), stiffness=k)
 
 for idx in fixed_pts:
-    mass_spring_system.fix_mass(idx)
+    mass_spring_system.fix_mass(idx-1)
 
 # -----------------------------------------------------------------------------
 # Create renderer
