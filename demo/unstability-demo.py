@@ -5,19 +5,27 @@ Created on Thu Oct  3 13:24:36 2024
 
 @author: bartu
 """
+import os
+import sys
 import igl
 import json
 import numpy as np
 import pyvista as pv
 
+module_path = os.path.abspath(os.path.join('..'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
+
 from mass_spring import MassSpringSystem
         
+# TODO: Add *args to set n_simulation steps on console?
+
 # -------------------------------- MAIN ---------------------------------------
 # -----------------------------------------------------------------------------
 # Load mass-spring data from .json and .obj files
 # -----------------------------------------------------------------------------
 
-data_path = "./data/Mass-Spring/"
+data_path = "../data/Mass-Spring/"
 filename = "horizontal-chain"
 obj_path = data_path + filename + ".obj"
 json_path = data_path + filename +".json"
@@ -43,7 +51,9 @@ num_masses = lattice_verts.shape[0]
 # Add masses at vertex locations
 for i in range(num_masses):
     mass_weight = 1
-    mass_spring_system.add_mass(mass_coordinate=lattice_verts[i], mass=mass_weight)
+    mass_spring_system.add_mass(mass_coordinate=lattice_verts[i], 
+                                mass=mass_weight, 
+                                gravity=True)
 
 # Add springs at the edges
 for face in lattice_faces:
@@ -87,12 +97,15 @@ def callback(step):
     # Step 1 - Apply forces (if any) and simulate
     if(step < 1):
         print(">> Simulation started.")
-        print(f">> {step} Force applied.")
+        print(f">> Step {step} - Force applied.")
         SELECTED_MASS = 2 
         mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.01,0.01]))
-        
+    
     if ((step+1) % 50) == 0:
-        print(">> Step ", step)
+        print(">> Step ", step+1)
+    
+    if (step+1) >= n_simulation_steps:
+        print(">> Simulation ended.")
         
     mass_spring_system.simulate()
 
@@ -104,6 +117,7 @@ def callback(step):
     for i, mass_idx_tuple in enumerate(mass_spring_system.connections):
         spring_meshes[i].points[0] = cur_mass_locations[mass_idx_tuple[0]]
         spring_meshes[i].points[1] = cur_mass_locations[mass_idx_tuple[1]]
+
 
 # -----------------------------------------------------------------------------
 # Add timer event and set options for plotter before show().
