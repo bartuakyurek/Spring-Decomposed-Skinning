@@ -18,11 +18,12 @@ import pyvista as pv
 from sanity_check import _is_equal
 from global_vars import _SPACE_DIMS_
 
-_DEFAULT_STIFFNESS = 0.05
-_DEFAULT_DAMPING = 0.1
+_DEFAULT_STIFFNESS = 0.5
+_DEFAULT_DAMPING = 1.0
 _DEFAULT_MASS = 2.5
 _DEFAULT_SPRING_SCALE = 1
 _DEFAULT_MASS_SCALE = 1 # Default is 0.1 but the simulation doesn't work at 0.1...
+_VERBOSE = False
 class Particle:
     def __init__(self, 
                  coordinate, 
@@ -30,7 +31,7 @@ class Particle:
                  mass=_DEFAULT_MASS, 
                  dscale=_DEFAULT_MASS_SCALE,
                  radius=0.05,
-                 gravity=True):
+                 gravity=False):
         
         MAX_ALLOWED_MASS = 99
         assert np.any(orientation), f"Particle orientation vector must have nonzero length. Provided direction is {orientation}."
@@ -72,7 +73,8 @@ class Spring:
                  ending_mass : Particle,
                  stiffness : float, 
                  damping : float,
-                 dscale : float = _DEFAULT_SPRING_SCALE
+                 dscale : float = _DEFAULT_SPRING_SCALE,
+                 verbose : bool = _VERBOSE
                  ):
         assert not _is_equal(beginning_mass.center, ending_mass.center), "Expected spring length to be nonzero, provided masses should be located on different coordinates."
         
@@ -82,12 +84,14 @@ class Spring:
         self.distance_scale = dscale
         self.rest_length = np.linalg.norm(beginning_mass.center - ending_mass.center)
         
-        assert self.rest_length > 1e-16, ">> Spring cannot be initialized to zero length!"
-            
+        if verbose:
+            if self.rest_length < 1e-20:
+                print(">> WARNING: Spring initialized at length zero.")
+
         self.m1 = beginning_mass
         self.m2 = ending_mass
         
-    def get_force_on_mass(self, mass : Particle, verbose=False):
+    def get_force_on_mass(self, mass : Particle, verbose=_VERBOSE):
         
         distance = np.linalg.norm(self.m1.center - self.m2.center)
         if distance < 1e-16:
@@ -143,7 +147,7 @@ class MassSpringSystem:
             self.masses[i].center += velocity * dt * self.masses[i].dscale
             self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
             
-    def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS, verbose=False):
+    def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS, verbose=_VERBOSE):
         mass = Particle(mass_coordinate, mass=mass)
         
         if type(mass) is Particle:
