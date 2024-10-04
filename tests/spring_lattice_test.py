@@ -10,6 +10,7 @@ import json
 import numpy as np
 import pyvista as pv
 
+import __init__
 from mass_spring import MassSpringSystem
         
 # -------------------------------- MAIN ---------------------------------------
@@ -17,7 +18,7 @@ from mass_spring import MassSpringSystem
 # Load mass-spring data from .json and .obj files
 # -----------------------------------------------------------------------------
 
-data_path = "./data/Mass-Spring/"
+data_path = "../data/Mass-Spring/"
 filename = "horizontal-chain"
 obj_path = data_path + filename + ".obj"
 json_path = data_path + filename +".json"

@@ -8,6 +8,7 @@ Created on Tue Oct  1 07:31:12 2024
 import numpy as np
 import pyvista as pv
 
+import __init__
 from mass_spring import MassSpringSystem
         
 # -------------------------------- MAIN ---------------------------------------
