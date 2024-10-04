@@ -5,7 +5,7 @@ Created on Thu Oct  3 13:24:36 2024
 
 @author: bartu
 """
-
+import json
 import numpy as np
 import pyvista as pv
 
@@ -13,29 +13,55 @@ from mass_spring import MassSpringSystem
         
 # -------------------------------- MAIN ---------------------------------------
 # -----------------------------------------------------------------------------
-RENDER = True
-plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
+# Load mass-spring data from .json and .obj files
+# -----------------------------------------------------------------------------
 
+data_path = "./data/Mass-Spring/"
+filename = "flag"
+obj_path = data_path + filename + ".obj"
+json_path = data_path + filename +".json"
+
+reader = pv.get_reader(obj_path)
+lattice_mesh = reader.read()
+
+# Open and read the JSON file
+with open(json_path, 'r') as file:
+    data = json.load(file)
+    fixed_pts = data['b']
+    k = data['k']
+    
+# -----------------------------------------------------------------------------
+# Create masses. Connect masses together. Fixate some of the masses
+# -----------------------------------------------------------------------------
 # Initiate a mass spring system container
 dt = 1. / 24
 mass_spring_system = MassSpringSystem(dt)
 
-# -----------------------------------------------------------------------------
-# Create masses. Connect masses together. Fixate some of the masses
-# -----------------------------------------------------------------------------
-n_masses =  20
-mass_weight = 10
-for i in range(n_masses):
-    # Add masses at random locations
-    mass_spring_system.add_mass(mass_coordinate=np.random.rand(3), mass=mass_weight)
+lattice_verts = lattice_mesh.points
+num_masses = lattice_verts.shape[0]
+lattice_faces = lattice_mesh.regular_faces 
 
-# TODO: connect masses (maybe you could read a json?)
-#mass_spring_system.connect_masses(0, 1)
-#mass_spring_system.fix_mass(0)
-pass
+# Add masses at vertex locations
+for i in range(num_masses):
+    mass_weight = 1
+    mass_spring_system.add_mass(mass_coordinate=lattice_verts[i], mass=mass_weight)
+
+# Add springs at the edges
+for face in lattice_faces:
+    for f in range(len(face)-1):
+        mass_spring_system.connect_masses(int(face[f]), int(face[f+1]), stiffness=k)
+
+for idx in fixed_pts:
+    mass_spring_system.fix_mass(idx)
 
 # -----------------------------------------------------------------------------
-# Add masses initially to PyVista Plotter.
+# Create renderer
+# -----------------------------------------------------------------------------
+RENDER = True
+plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
+
+# -----------------------------------------------------------------------------
+# Add mass and spring PolyData to PyVista Plotter.
 # -----------------------------------------------------------------------------
 initial_mass_locations = mass_spring_system.get_mass_locations()
 mass_point_cloud = pv.PolyData(initial_mass_locations)
@@ -80,7 +106,7 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(dt * 1000) 
-n_simulation_steps = 500
+n_simulation_steps = 200
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 
 plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)

@@ -132,18 +132,18 @@ class MassSpringSystem:
             self.masses[i].center += velocity * dt * self.masses[i].dscale
             self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
             
-    def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS):
+    def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS, verbose=False):
         mass = Particle(mass_coordinate, mass=mass)
         
         if type(mass) is Particle:
-            print(f">> Added mass at {mass.center}")
+            if verbose: print(f">> Added mass at {mass.center}")
             self.masses.append(mass)
         else:
             print(f"Expected Particle class, got {type(mass)}")
             
-    def fix_mass(self, mass_idx):
+    def fix_mass(self, mass_idx, verbose=False):
         self.masses[mass_idx].mass = 0.0
-        print(f">> Fixed mass at location {self.masses[mass_idx].center}")
+        if verbose: print(f">> Fixed mass at location {self.masses[mass_idx].center}")
         return
         
     def remove_mass(self, mass_idx):
@@ -165,8 +165,13 @@ class MassSpringSystem:
         else:
             print(">> Please provide a valid mass index as type int.")
     
-    def connect_masses(self, first_mass_idx : int, second_mass_idx : int, stiffness : float = _DEFAULT_STIFFNESS, damping : float = _DEFAULT_DAMPING):
-        assert type(first_mass_idx) == int and type(second_mass_idx) == int
+    def connect_masses(self, 
+                       first_mass_idx : int, 
+                       second_mass_idx : int, 
+                       stiffness : float = _DEFAULT_STIFFNESS, 
+                       damping : float = _DEFAULT_DAMPING):
+        
+        assert type(first_mass_idx) == int and type(second_mass_idx) == int, f"Expected type int, got {type(first_mass_idx)}."
         assert first_mass_idx != second_mass_idx, "Cannot connect particle to itself."
         
         spring = Spring(self.masses[first_mass_idx], self.masses[second_mass_idx], stiffness, damping)
