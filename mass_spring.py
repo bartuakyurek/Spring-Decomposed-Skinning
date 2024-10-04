@@ -76,7 +76,6 @@ class Spring:
                  dscale : float = _DEFAULT_SPRING_SCALE,
                  verbose : bool = _VERBOSE
                  ):
-        assert not _is_equal(beginning_mass.center, ending_mass.center), "Expected spring length to be nonzero, provided masses should be located on different coordinates."
         
         # TODO: Are you going to implement squared norms for optimized performance?
         self.k = stiffness
