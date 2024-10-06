@@ -229,9 +229,9 @@ class Canvas(scene.SceneCanvas):
 
         self.unfreeze()
 
-        self.view = self.central_widget.add_view()
-        self.view.camera = scene.PanZoomCamera(rect=(-100, -100, 200, 200), aspect=1.0)
-        #self.view.camera = scene.ArcballCamera()
+        self.view = self.central_widget.add_view(bgcolor='#efefef')
+        self.view.camera = scene.ArcballCamera()
+        self.view.camera.set_range(x=[-20, 20])
         
         # the left mouse button pan has to be disabled in the camera, as it
         # interferes with dragging line points
@@ -241,7 +241,7 @@ class Canvas(scene.SceneCanvas):
 
         scene.visuals.Text("Click and drag to add objects, " +
                            "right-click to delete.",
-                           color='w',
+                           color='black',
                            anchor_x='left',
                            parent=self.view,
                            pos=(20, 30))
@@ -255,8 +255,8 @@ class Canvas(scene.SceneCanvas):
                                     arrows=np.array([[60, 70, 50, 60]]),
                                     width=5, arrow_size=15.0,
                                     arrow_type="angle_60",
-                                    color="w",
-                                    arrow_color="w",
+                                    color="black",
+                                    arrow_color="black",
                                     method="agg"
                                     )
         self.select_arrow.add_subvisual(arrow)
@@ -279,8 +279,9 @@ class Canvas(scene.SceneCanvas):
         self.selected_point = None
         self.selected_object = None
         self.creation_mode = EditRectVisual
-        self.mouse_start_pos = [0, 0]
-        #scene.visuals.GridLines(parent=self.view.scene)
+        self.mouse_start_pos = [0, 0]  
+        scene.visuals.GridLines(parent=self.view.scene, color='w')
+        
         self.freeze()
 
     def set_creation_mode(self, object_kind):
