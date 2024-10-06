@@ -305,7 +305,7 @@ class Canvas(scene.SceneCanvas):
         self.selected_object = None
 
     def on_mouse_press(self, event):
-
+        
         tr = self.scene.node_transform(self.view.scene)
         pos = tr.map(event.pos)
         self.view.interactive = False
@@ -353,19 +353,7 @@ class Canvas(scene.SceneCanvas):
             None
 
 def configure_canvas(canvas):
-    mass_coords = np.array([
-                            [0.0, 0.1, 0.0],   # 0
-                            [0.0, 0.2, 0.0],   # 1
-                            [0.3, 0.1, 0.0],   # 2
-                            [0.2, 0.3, 0.0],   # 3
-                            ]) * 100 # Scale for canvas
-    
-    spring_connections = np.array([
-                                    [0, 1],
-                                    [1, 2],
-                                    [0, 3],
-                                    [2, 3],
-                                ])
+    from demo_data import mass_coords, spring_connections
     
     canvas.set_creation_mode(EditEllipseVisual)
     for mass in mass_coords:
