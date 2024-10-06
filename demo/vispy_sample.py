@@ -230,8 +230,9 @@ class Canvas(scene.SceneCanvas):
         self.unfreeze()
 
         self.view = self.central_widget.add_view()
-        self.view.camera = scene.PanZoomCamera(rect=(-100, -100, 200, 200),
-                                               aspect=1.0)
+        self.view.camera = scene.PanZoomCamera(rect=(-100, -100, 200, 200), aspect=1.0)
+        #self.view.camera = scene.ArcballCamera()
+        
         # the left mouse button pan has to be disabled in the camera, as it
         # interferes with dragging line points
         # Proposed change in camera: make mouse buttons configurable
@@ -279,7 +280,7 @@ class Canvas(scene.SceneCanvas):
         self.selected_object = None
         self.creation_mode = EditRectVisual
         self.mouse_start_pos = [0, 0]
-        scene.visuals.GridLines(parent=self.view.scene)
+        #scene.visuals.GridLines(parent=self.view.scene)
         self.freeze()
 
     def set_creation_mode(self, object_kind):
@@ -358,6 +359,10 @@ def configure_canvas(canvas):
     canvas.set_creation_mode(EditEllipseVisual)
     for mass in mass_coords:
         canvas.create_object(mass[0:2], select=False)
+        
+    for edge in spring_connections:
+        assert len(edge) == 2, f"Spring connections are expected to have shape 2. Got {len(edge)}"
+        first_mass, second_mass = edge
     
     return
     
