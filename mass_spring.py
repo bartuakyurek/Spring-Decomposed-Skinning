@@ -207,19 +207,6 @@ class MassSpringSystem:
             mass_locations[i] = mass_particle.center
         return mass_locations
     
-    # TODO: this might be unused, also PyVista functions could be at another file
-    # to not clutter this module's responsibilities.
-    def get_particle_meshes(self):
-        meshes = []
-        for mass_particle in self.masses:
-            
-            sphere = pv.Sphere(radius=mass_particle.radius,
-                               center=mass_particle.center, 
-                               direction=mass_particle.orientation)
-            meshes.append(sphere)
-        
-        return meshes
-    
     def get_spring_meshes(self):
         # TODO: return a zigzag mesh instead of a straight line
         meshes = []
