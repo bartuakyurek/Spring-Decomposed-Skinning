@@ -222,9 +222,10 @@ class EditEllipseVisual(EditVisual):
 class Canvas(scene.SceneCanvas):
     """ A simple test canvas for drawing demo """
 
-    def __init__(self):
+    def __init__(self, width=800, height=800):
+       
         scene.SceneCanvas.__init__(self, keys='interactive',
-                                   size=(800, 800))
+                                   size=(width, height))
 
         self.unfreeze()
 
@@ -284,13 +285,19 @@ class Canvas(scene.SceneCanvas):
     def set_creation_mode(self, object_kind):
         self.creation_mode = object_kind
 
-    def create_new_object(self, position):
+    def create_object(self, position, select=True):
         # TODO: what can position be 3D too? here we assume it's 2D mouse position
         new_object = self.creation_mode(parent=self.view.scene)
         self.objects.append(new_object)
-        new_object.select_creation_controlpoint()
         new_object.set_center(position) 
-        self.selected_object = new_object.control_points
+        
+        if select:
+            # automatically select created object 
+            new_object.select_creation_controlpoint()
+            self.selected_object = new_object.control_points 
+
+        return new_object
+            
 
     def delete_scene_object(self, selected):
         self.objects.remove(selected.parent)
@@ -322,7 +329,7 @@ class Canvas(scene.SceneCanvas):
             # create new object:
             if self.selected_object is None and self.creation_mode is not None:
                 mouse_pos = tr.map(event.pos)
-                self.create_new_object(mouse_pos[0:2]) # xy coordinates
+                new_object = self.create_object(mouse_pos[0:2]) # xy coordinates
                 
         if event.button == 2:  # right button deletes object
             if selected is not None and selected.parent in self.objects:
@@ -345,7 +352,29 @@ class Canvas(scene.SceneCanvas):
         else:
             None
 
+def configure_canvas(canvas):
+    mass_coords = np.array([
+                            [0.0, 0.1, 0.0],   # 0
+                            [0.0, 0.2, 0.0],   # 1
+                            [0.3, 0.1, 0.0],   # 2
+                            [0.2, 0.3, 0.0],   # 3
+                            ]) * 100 # Scale for canvas
+    
+    spring_connections = np.array([
+                                    [0, 1],
+                                    [1, 2],
+                                    [0, 3],
+                                    [2, 3],
+                                ])
+    
+    canvas.set_creation_mode(EditEllipseVisual)
+    for mass in mass_coords:
+        canvas.create_object(mass[0:2], select=False)
+    
+    return
+    
 
 if __name__ == '__main__':
     canvas = Canvas()
+    configure_canvas(canvas)
     app.run()
