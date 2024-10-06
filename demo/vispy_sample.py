@@ -364,6 +364,8 @@ def configure_canvas(canvas):
         assert len(edge) == 2, f"Spring connections are expected to have shape 2. Got {len(edge)}"
         first_mass, second_mass = edge
     
+    
+    canvas.set_creation_mode(None) # Deselect creation mode before the launch
     return
     
 
