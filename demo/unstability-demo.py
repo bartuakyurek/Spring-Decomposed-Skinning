@@ -50,7 +50,7 @@ for i in range(num_masses):
     mass_weight = 1
     mass_spring_system.add_mass(mass_coordinate=lattice_verts[i], 
                                 mass=mass_weight, 
-                                gravity=True)
+                                gravity=False)
 
 # Add springs at the edges
 for face in lattice_faces:
