@@ -147,7 +147,7 @@ class MassSpringSystem:
             self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
             
     def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS,  gravity=False, verbose=_VERBOSE):
-        mass = Particle(mass_coordinate, mass=mass)
+        mass = Particle(mass_coordinate, mass=mass, gravity=gravity)
         
         if type(mass) is Particle:
             if verbose: print(f">> Added mass at {mass.center}")
