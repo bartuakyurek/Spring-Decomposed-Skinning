@@ -50,7 +50,7 @@ for i in range(num_masses):
     mass_weight = 1
     mass_spring_system.add_mass(mass_coordinate=lattice_verts[i], 
                                 mass=mass_weight, 
-                                gravity=True)
+                                gravity=False)
 
 # Add springs at the edges
 for face in lattice_faces:
@@ -98,7 +98,7 @@ def callback(step):
         print(">> Simulation started.")
         print(f">> Step {step} - Force applied.")
         SELECTED_MASS = 1 
-        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.3,0.0,0.02]))
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.03,0.0,0.0]))
     
     if ((step+1) % 50) == 0:
         print(">> Step ", step+1)
