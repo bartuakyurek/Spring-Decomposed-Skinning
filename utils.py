@@ -23,21 +23,28 @@ def batch_axsang_to_quats(rot):
         quaternions representing the provided axis-angle rotations.
 
     """
-    assert rot.shape[1] == 3
-    assert type(rot) == np.ndarray
+    assert len(rot.shape) <= 2, f"Expected rotation vector to have (3, ) or (batch, 3) shape, got {rot.shape}."
     
-    roll = rot[:, 0] / 2.
-    pitch = rot[:, 1] / 2.
-    yaw = rot[:, 2] / 2.
-    
-    sin = np.sin
-    cos = np.cos
-    stack = np.stack
-   
-    qx = sin(roll) * cos(pitch) * cos(yaw)
-    qy = cos(roll) * sin(pitch) * cos(yaw)
-    qz = cos(roll) * cos(pitch) * sin(yaw)
-    qw = cos(roll) * cos(pitch) * cos(yaw)
-    
-    return stack((qx, qy, qz, qw)).transpose()
-
+    if len(rot.shape) == 1:
+        assert rot.shape == (3, ), f"Expected rotation vector to have (3, ) or (batch, 3) shape, got {rot.shape}."
+        rot = np.expand_dims(rot, 0)
+        
+    else:
+        assert rot.shape[1] == 3, f"Expected rotation vector to have (3, ) or (batch, 3) shape, got {rot.shape}."
+        assert type(rot) == np.ndarray
+        
+        roll = rot[:, 0] / 2.
+        pitch = rot[:, 1] / 2.
+        yaw = rot[:, 2] / 2.
+        
+        sin = np.sin
+        cos = np.cos
+        stack = np.stack
+       
+        qx = sin(roll) * cos(pitch) * cos(yaw)
+        qy = cos(roll) * sin(pitch) * cos(yaw)
+        qz = cos(roll) * cos(pitch) * sin(yaw)
+        qw = cos(roll) * cos(pitch) * cos(yaw)
+        
+        return stack((qx, qy, qz, qw)).transpose()
+  
