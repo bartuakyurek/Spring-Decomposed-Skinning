@@ -210,7 +210,7 @@ class Skeleton():
         assert bone_idx < len(self.bones), f">> Invalid bone index {bone_idx}. Please select an index less than {len(self.bones)}"
         return self.bones[bone_idx]
     
-    def get_bone_tuple_locations(self, exclude_root=True):
+    def get_rest_bone_locations(self, exclude_root=True):
         """
         Get the bone joint locations for the entire skeleton. Note that this is
         not the same as SMPL joint locations. In this skeleton, every bone has
@@ -269,26 +269,28 @@ if __name__ == "__main__":
     rest_verts, rest_joints = smpl_model(betas, torch.zeros_like(pose), trans)
     J_rest = rest_joints.numpy()[0]
     
+    # ---------------------------------------------------------------------------- 
     # Create skeleton based on rest pose SMPL data
+    # ---------------------------------------------------------------------------- 
     smpl_skeleton = Skeleton(root_vec = J_rest[0])
     for edge in kintree:
         parent_idx, bone_idx = edge
         smpl_skeleton.insert_bone(endpoint_location = J_rest[bone_idx], 
                                   parent_node_idx = parent_idx)
-    """
-    # Print skeleton contents
-    for i, bone in enumerate(smpl_skeleton.bones):
-        print(f"Bone {i} at {bone.start_location} - {bone.end_location}")
-        if bone.parent:
-            print("Bone parent endpoint: ", bone.parent.end_location)
-        print("----------------------------------")
-    """
-    
+        
+    # ---------------------------------------------------------------------------- 
+    # Create plotter 
+    # ---------------------------------------------------------------------------- 
     RENDER = True
     plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
     plotter.camera_position = 'zy'
     plotter.camera.azimuth = -90
 
+    
+    
+    # ---------------------------------------------------------------------------- 
+    # Add skeleton mesh based on T-pose locations
+    # ---------------------------------------------------------------------------- 
     n_bones = len(smpl_skeleton.bones)
     bone_locations = smpl_skeleton.get_bone_tuple_locations(exclude_root = True)
     line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
