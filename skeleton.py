@@ -160,15 +160,20 @@ class Skeleton():
             # Apply rotations (note that bone.rotate automatically converts to 
             # bone space and then it gets back to world space)
             parent_bone = bone.parent
-            if parent_bone is None:
-                pass
-            else:
+            
+            # At the root node, there's no parent whose transformations should be
+            # inherited, so skip that part
+            if parent_bone:
                 # Apply parent bone's rotation first
+                bone.rotate(theta[parent_bone.idx])
+            # Apply bone's own relative rotation
+            bone_rotated_location = bone.rotate(theta[i])
+            
+            if parent_bone:
+                # Apply the parent bone's translation first
                 pass
-                # Apply bone's own relative rotation
-                bone_rotated_location = bone.rotate(theta[i])
-                
-            # Apply translations
+    
+            # Apply bone's own relative translation
             pass
             
             # Append the final joint location information
@@ -204,16 +209,46 @@ class Skeleton():
     def get_bone(self, bone_idx):
         assert bone_idx < len(self.bones), f">> Invalid bone index {bone_idx}. Please select an index less than {len(self.bones)}"
         return self.bones[bone_idx]
-        
+    
+    def get_bone_tuple_locations(self, exclude_root=True):
+        """
+        Get the bone joint locations for the entire skeleton. Note that this is
+        not the same as SMPL joint locations. In this skeleton, every bone has
+        two endpoints that may or may not coincide with its children and parent
+        bones endpoints (allows offset between bones).
+
+        Parameters
+        ----------
+        exclude_root : bool, optional
+            Exclude the root node locations from the returned list.
+            This can be useful in order not to display root bone if it's 
+            directly connected to the descendant bone. The default is True.
+            
+        Returns
+        -------
+        bone_endpoints : list
+            list of joint locations that are both endpoints of each bone. 
+            so there are #n_bones * 2 endpoints in the returned list
+        """
+        bone_endpoints = []
+        for bone in self.bones:
+            if exclude_root and bone.parent is None:
+                continue # Skip the root node
+                
+            bone_endpoints.append(bone.start_location)
+            bone_endpoints.append(bone.end_location)
+            
+        return bone_endpoints
+    
 if __name__ == "__main__":
     print(">> Testing skeleton.py...")
       
     import torch
+    import pyvista as pv
+    
     from smpl_torch_batch import SMPLModel
     from skeleton_data import get_smpl_skeleton
-
-    from mass_spring import MassSpringSystem
-    from pyvista_render_tools import add_skeleton, add_mesh
+    from pyvista_render_tools import add_skeleton
     # ---------------------------------------------------------------------------- 
     # Load SMPL animation file and get the mesh and associated rig data
     # ---------------------------------------------------------------------------- 
@@ -240,12 +275,41 @@ if __name__ == "__main__":
         parent_idx, bone_idx = edge
         smpl_skeleton.insert_bone(endpoint_location = J_rest[bone_idx], 
                                   parent_node_idx = parent_idx)
-        
+    """
     # Print skeleton contents
     for i, bone in enumerate(smpl_skeleton.bones):
         print(f"Bone {i} at {bone.start_location} - {bone.end_location}")
         if bone.parent:
             print("Bone parent endpoint: ", bone.parent.end_location)
         print("----------------------------------")
+    """
+    
+    RENDER = True
+    plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
+    plotter.camera_position = 'zy'
+    plotter.camera.azimuth = -90
+
+    n_bones = len(smpl_skeleton.bones)
+    bone_locations = smpl_skeleton.get_bone_tuple_locations(exclude_root = True)
+    line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
+    
+    skel_mesh = add_skeleton(plotter, bone_locations, line_segments)
+    plotter.open_movie("./results/smpl-skeleton.mp4")
+
+    n_repeats = 1
+    n_frames = len(J)
+    for _ in range(n_repeats):
+        for frame in range(n_frames-1):
+            
+            # TODO: Update mesh points
+            skel_mesh.points = bone_locations #J[frame]
+            
+            # Write a frame. This triggers a render.
+            plotter.write_frame()
+
+    # Closes and finalizes movie
+    plotter.close()
+    plotter.deep_clean()
+
     
         
