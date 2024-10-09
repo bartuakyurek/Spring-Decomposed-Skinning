@@ -62,7 +62,6 @@ class Bone():
             Has shape (3, ), it is the translated ending point of the bone line segment.
         """
         assert offset_vec.shape == self.t.shape, f"Expected translation vector to have shape {self.t.shape}, got {offset_vec.shape}"
-        self.t += offset_vec
         
         start_translated = self.start_location + offset_vec
         end_translated = self.end_location + offset_vec
@@ -70,6 +69,9 @@ class Bone():
             print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
             self.start_location = start_translated
             self.end_location = end_translated
+            
+        else:
+            self.t += offset_vec
         
         return (start_translated, end_translated)
     
@@ -133,26 +135,42 @@ class Skeleton():
 
         Parameters
         ----------
-        theta : TYPE
+        theta : np.ndarray 
             DESCRIPTION.
 
         Returns
         -------
-        None.
+        Final joint locations of the posed skeleton.
 
         """
+        assert type(theta) == np.ndarray, f"Expected pose type np.ndarray, got {type(theta)}"
         # Get the bones as a copy from skeleton (do not directly apply these to skeleton)
         # otherwise the bone information will be distorted. We want to keep the rest pose
         # information as is, and apply forward kinematics separately.
         bones = self.bones.copy()
         
-        # go to bone space
-        # rotate the bone w.r.t parent's rotation first
-        # then apply bone's relative rotation
-        # apply translation (if any)
-        # go back to world space
-        
-        return
+        final_joint_locations = []
+        for i, bone in enumerate(bones):
+            # go to bone space
+            bone_space_vec = bone.end_location - bone.start_location
+            
+            # rotate the bone w.r.t parent's rotation first
+            # then apply bone's relative rotation
+            # apply translation (if any)
+            # go back to world space
+            
+            # append the final joint location information
+            if i == 0:
+                # For root bone, append two of the joints
+                pass
+              
+            # TODO: This application assumes all bones are connected via vertex-edge manner
+            # So currently it doesn't allow bones to have their own offsets, that'd change the 
+            # joint locations (every bone would have 2 joints due to their start_pos and end_pos)
+            # this limitation could be extended, but for the brevity it's used as is.
+            pass
+            
+        return final_joint_locations
         
     def insert_bone(self, endpoint_location, parent_node_idx):
         assert parent_node_idx < len(self.bones), f">> Invalid parent index {parent_node_idx}. Please select an index less than {len(self.bones)}"
