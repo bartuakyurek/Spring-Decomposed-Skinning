@@ -36,12 +36,17 @@ class Bone():
         self.children.append(child_node)
         
     def translate(self, offset_vec, override=True):
-        assert len(offset_vec) == 3
-        self.t = offset_vec
+        assert offset_vec.shape == self.t.shape, f"Expected translation vector to have shape {self.t.shape}, got {offset_vec.shape}"
+        self.t += offset_vec
+        
+        start_translated = self.start_location + offset_vec
+        end_translated = self.end_location + offset_vec
         if override:
             print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
-            self.start_location += offset_vec
-            self.end_location += offset_vec
+            self.start_location = start_translated
+            self.end_location = end_translated
+        
+        return (start_translated, end_translated)
     
     def rotate(self, axsang, override=True):
         """
