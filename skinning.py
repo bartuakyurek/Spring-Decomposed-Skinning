@@ -92,9 +92,8 @@ def batch_axsang_to_quats(rot):
     return stack((qx, qy, qz, qw)).transpose()
 
 def batch_axsang_to_quats2(axisang):
-    # TODO: HEPSINI TORCH'DA YAP YAPACAKSAN....
-    #axisang = torch.from_numpy(axisang)
-    
+    # TODO: assert axisang is type torch array
+   
     axisang_norm = torch.norm(axisang + 1e-8, p=2, dim=1)
     angle = torch.unsqueeze(axisang_norm, -1)
     axisang_normalized = torch.div(axisang, angle)
@@ -103,7 +102,6 @@ def batch_axsang_to_quats2(axisang):
     v_sin = torch.sin(angle)
     quat = torch.cat([v_cos, v_sin * axisang_normalized], dim=1)
     
-   # quat = np.array(quat)
     return quat
 
 def forward_kin(joint_pos, 
@@ -167,7 +165,8 @@ def LBS(V, W, J, JE, theta):
             # tmp = W[vertex, bone] * np.matmul(V[vertex], R_mat[bone]) + abs_t[bone]
             # TODO: remove for loop!
             V_posed[vertex] += W[vertex, bone] * np.matmul(V[vertex], R_mat[bone]) + abs_t[bone]
-    
+            
+    # TODO: where's the T you promised in return?...
     return V_posed
 
 def inverse_LBS(V_posed, W, J, JE, theta):
@@ -178,9 +177,35 @@ def inverse_LBS(V_posed, W, J, JE, theta):
 
 if __name__ == "__main__":
     print(">> Testing skinning.py...")
+   
+    from smpl_torch_batch import SMPLModel
+    from skeleton_data import get_smpl_skeleton
+
+    training_data = torch.load('./data/50004_dataset.pt')
+    data_loader = torch.utils.data.DataLoader(training_data, batch_size=1, shuffle=False)
+
+    device = "cpu"
+    smpl_model = SMPLModel(device=device, model_path='./body_models/smpl/female/model.pkl')
+    kintree = get_smpl_skeleton()
+    F = smpl_model.faces
+
+    for data in data_loader:
+       beta_pose_trans_seq = data[0].squeeze().type(torch.float64)
+       betas, pose, trans = beta_pose_trans_seq[:,:10], beta_pose_trans_seq[:,10:82], beta_pose_trans_seq[:,82:] 
+       target_verts = data[1].squeeze()
+       smpl_verts, joints = smpl_model(betas, pose, trans)
+       break
+       
+    V = smpl_verts.detach().cpu().numpy()
+    J = joints.detach().cpu().numpy()
+    n_frames, n_verts, n_dims = target_verts.shape
     
-    # Load the mesh data
-    with np.load("./results/skinning_sample_data.npz") as data:
+    
+    
+    
+    """
+    # Load the mesh data ------------------------------------------------------
+    with np.load("./data/dfaust_sample_data.npz") as data:
         V = data['arr_0'] # Vertices, V x 3
         F = data['arr_1'] # Faces, F x 3
         J = data['arr_2'] # Joint locations J x 3
@@ -188,10 +213,9 @@ if __name__ == "__main__":
         kintree = data['arr_4'] # Skeleton joint hierarchy (J-1) x 2
         W = data['arr_5']
         
-    
-    ## UNPOSE FUNCTION -------------------------------------------
+    ## UNPOSE FUNCTION -------------------------------------------------------
     if np.sum(theta[0]) > 1e-8:
-        print(">>>> WARNING ROOT ROTATION IS NON-ZERO! You need to adjust your code...")
+        print(">>>> WARNING ROOT ROTATION IS NON-ZERO! It might not be implemented in the skinning code yet...")
         
     theta = theta[1:] # Discrad the root bone's rotation (it is zero)
     theta = np.array(theta) # TODO: stick to either torch or numpy, dont juggle two
@@ -205,8 +229,7 @@ if __name__ == "__main__":
     igl.write_obj("V_unposed_SMPL.obj", V_unposed, F)
     igl.write_obj("V_cycle_SMPL.obj", V_cycle, F)
 
-    ## END OF UNPOSE FUNCTION ------------------------------------
-    
-    
+    ## END OF UNPOSE FUNCTION -------------------------------------------------
+    """
     
     
