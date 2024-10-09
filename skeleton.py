@@ -42,7 +42,7 @@ class Bone():
     def add_child(self, child_node):
         self.children.append(child_node)
         
-    def translate(self, offset_vec, override=True):
+    def translate(self, offset_vec, override=True, keep_trans=True):
         """
         Translate the bone line segment given the translation vector.
 
@@ -72,13 +72,14 @@ class Bone():
             print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
             self.start_location = start_translated
             self.end_location = end_translated
-            
+            if keep_trans:
+                self.t += offset_vec
         else:
             self.t += offset_vec
         
         return (start_translated, end_translated)
     
-    def rotate(self, axsang, override=True):
+    def rotate(self, axsang, override=True, keep_trans=True):
         """
         Sets the bone rotation and adjust the endpoint location of the bone.
 
@@ -111,8 +112,9 @@ class Bone():
         # location of the tip of the bone.
         if override:
             print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
-            self.rotation = Rotation.from_euler('xyz', [0, 0, 0])
             self.end_location = final_bone_pos
+            if not keep_trans: # If we're not keeping the transformation, reset
+                self.rotation = Rotation.from_euler('xyz', [0, 0, 0])
             
         return final_bone_pos
         
@@ -144,40 +146,50 @@ class Skeleton():
 
         Returns
         -------
-        Final joint locations of the posed skeleton.
+        final_bone_locations : list
+        Joint locations of the posed skeleton, that is 2 joints per bone, for 
+        the both endpoints of the bone. Has shape (#n_bones * 2, 3)
 
         """
         assert type(theta) == np.ndarray, f"Expected pose type np.ndarray, got {type(theta)}"
+        assert len(trans) == 3, f"Expected shape (3, ) translation vector, got {trans.shape}."
         # Get the bones as a copy from skeleton (do not directly apply these to skeleton)
         # otherwise the bone information will be distorted. We want to keep the rest pose
         # information as is, and apply forward kinematics separately.
         bones = self.bones.copy()
         
         final_bone_locations = []
-        
         for i, bone in enumerate(bones):
-            final_bone_location = (None, None)      
             # Apply rotations (note that bone.rotate automatically converts to 
             # bone space and then it gets back to world space)
+            start_point, end_point = bone.start_location, bone.end_location
             parent_bone = bone.parent
             
             # At the root node, there's no parent whose transformations should be
             # inherited, so skip that part
             if parent_bone:
                 # Apply parent bone's rotation first
-                bone.rotate(theta[parent_bone.idx])
+                bone.rotate(theta[parent_bone.idx], override=False)
             # Apply bone's own relative rotation
-            bone_rotated_location = bone.rotate(theta[i])
+            end_point = bone.rotate(theta[i], override=False)
             
             if parent_bone:
                 # Apply the parent bone's translation first
-                pass
-    
+                # TODO: we cannot translate the vector when we don't apply rotation
+                # so you may consider changing your design?
+                # bone.translate(bone.parent.t, override=False)
+                end_point += bone.parent.t
+                start_point += bone.parent.t
+                bone.t += bone.parent.t
+        
             # Apply bone's own relative translation
-            pass
+            # bone.translate(trans, override=False)
+            end_point += trans
+            start_point += trans
+            bone.t += trans
             
             # Append the final joint location information
-            final_bone_locations.append(final_bone_location)
+            final_bone_locations.append([start_point, end_point])
             
         return final_bone_locations
         
@@ -286,25 +298,28 @@ if __name__ == "__main__":
     plotter.camera_position = 'zy'
     plotter.camera.azimuth = -90
 
-    
-    
     # ---------------------------------------------------------------------------- 
     # Add skeleton mesh based on T-pose locations
     # ---------------------------------------------------------------------------- 
     n_bones = len(smpl_skeleton.bones)
-    bone_locations = smpl_skeleton.get_bone_tuple_locations(exclude_root = True)
+    rest_bone_locations = smpl_skeleton.get_rest_bone_locations(exclude_root = True)
     line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
     
-    skel_mesh = add_skeleton(plotter, bone_locations, line_segments)
+    skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
     plotter.open_movie("./results/smpl-skeleton.mp4")
-
+    
     n_repeats = 1
     n_frames = len(J)
     for _ in range(n_repeats):
         for frame in range(n_frames-1):
             
             # TODO: Update mesh points
-            skel_mesh.points = bone_locations #J[frame]
+            theta = np.reshape(pose[frame].numpy(), newshape=(-1, 3))
+            t = trans[frame].numpy()
+            posed_bone_locations = smpl_skeleton.pose_bones(theta, t)
+           
+            current_skel_data = np.reshape(posed_bone_locations[1:], (2*(n_bones-1), 3))
+            skel_mesh.points = current_skel_data
             
             # Write a frame. This triggers a render.
             plotter.write_frame()
