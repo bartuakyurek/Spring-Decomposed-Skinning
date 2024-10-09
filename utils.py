@@ -6,38 +6,42 @@ Created on Fri Sep 27 13:15:07 2024
 @author: bartu
 """
 import torch
+import numpy as np
 
+def batch_axsang_to_quats(rot):
+    """
+    Convert axis-angle rotation representations to quaternions.
+    
+    Parameters
+    ----------
+    rot : torch.Tensor or np.ndarray
+        axis-angle rotation vector of shape (batch, 3).
 
-@staticmethod
-def rodrigues_torch(r):
-  """
-  DISCLAIMER: This code is taken from https://github.com/CalciferZh/SMPL/blob/master/smpl_tf.py
-  
-  Rodrigues' rotation formula that turns axis-angle tensor into rotation
-  matrix in a batch-ed manner.
+    Returns
+    -------
+    torch.Tensor or np.ndarray
+        quaternions representing the provided axis-angle rotations.
 
-  Parameter:
-  ----------
-  r: Axis-angle rotation tensor of shape [batch_size * angle_num, 1, 3].
+    """
+    assert rot.shape[1] == 3
 
-  Return:
-  -------
-  Rotation matrix of shape [batch_size * angle_num, 3, 3].
+    roll = rot[:, 0] / 2.
+    pitch = rot[:, 1] / 2.
+    yaw = rot[:, 2] / 2.
+    
+    if type(rot) == np.ndarray:
+        sin = np.sin
+        cos = np.cos
+        stack = np.stack
+    else: 
+        sin = torch.sin
+        cos = torch.cos
+        stack = torch.stack
+        
+    qx = sin(roll) * cos(pitch) * cos(yaw)
+    qy = cos(roll) * sin(pitch) * cos(yaw)
+    qz = cos(roll) * cos(pitch) * sin(yaw)
+    qw = cos(roll) * cos(pitch) * cos(yaw)
+    
+    return stack((qx, qy, qz, qw)).transpose()
 
-  """
-  eps = r.clone().normal_(std=1e-8)
-  theta = torch.norm(r + eps, dim=(1, 2), keepdim=True)  # dim cannot be tuple
-  theta_dim = theta.shape[0]
-  r_hat = r / theta
-  cos = torch.cos(theta)
-  z_stick = torch.zeros(theta_dim, dtype=torch.float64).to(r.device)
-  m = torch.stack(
-    (z_stick, -r_hat[:, 0, 2], r_hat[:, 0, 1], r_hat[:, 0, 2], z_stick,
-     -r_hat[:, 0, 0], -r_hat[:, 0, 1], r_hat[:, 0, 0], z_stick), dim=1)
-  m = torch.reshape(m, (-1, 3, 3))
-  i_cube = (torch.eye(3, dtype=torch.float64).unsqueeze(dim=0) \
-           + torch.zeros((theta_dim, 3, 3), dtype=torch.float64)).to(r.device)
-  A = r_hat.permute(0, 2, 1)
-  dot = torch.matmul(A, r_hat)
-  R = cos * i_cube + (1 - cos) * dot + torch.sin(theta) * m
-  return R
