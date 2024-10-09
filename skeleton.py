@@ -65,6 +65,22 @@ class Skeleton():
         
         self.bones.append(new_bone)
         self.bones[parent_node_idx].add_child(new_bone)
+    
+    def remove_bone(self, bone_idx):
+        bone_to_be_removed = self.bones[bone_idx]
+        parent = bone_to_be_removed.parent
+        
+        if parent:
+            for child in bone_to_be_removed.children:
+                child.parent = parent    
+        else:
+            print(">> WARNING: Cannot remove root bone.")
+            return
+        
+        # Remove the bone from the skeleton bones list
+        bone_to_be_removed.children = None    # It's unnecessary probably.
+        self.bones.remove(bone_to_be_removed)
+        return
         
     def get_bone(self, bone_idx):
         assert bone_idx < len(self.bones), f">> Invalid bone index {bone_idx}. Please select an index less than {len(self.bones)}"
