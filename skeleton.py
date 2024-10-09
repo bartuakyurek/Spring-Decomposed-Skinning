@@ -108,6 +108,7 @@ class Bone():
         # location of the tip of the bone.
         if override:
             print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
+            self.rotation = Rotation.from_euler('xyz', [0, 0, 0])
             self.end_location = final_bone_pos
             
         return final_bone_pos
