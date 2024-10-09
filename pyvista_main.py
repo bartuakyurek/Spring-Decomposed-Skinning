@@ -103,7 +103,7 @@ for frame in range(n_frames):
 # -----------------------------------------------------------------------------
 plotter.open_movie("./results/smpl-skeleton.mp4")
 
-n_repeats = 10
+n_repeats = 3
 for _ in range(n_repeats):
     for frame in range(n_frames-1):
         

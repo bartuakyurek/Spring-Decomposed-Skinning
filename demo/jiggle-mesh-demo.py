@@ -30,14 +30,17 @@ for i in range(len(vertices)):
     mass_weight = 1
     mass_spring_system.add_mass(mass_coordinate=vertices[i], mass=mass_weight)
     
+    
 for i in range(len(vertices)):
     mass_spring_system.add_mass(mass_coordinate=vertices[i], mass=mass_weight) 
+    #mass_spring_system.fix_mass(i)
     # These masses should be invisible 
     # TODO: add invisibility option to second mass 
 
 # Connect every vertex to zero length spring
 for i in range(len(vertices)):
     mass_spring_system.connect_masses(int(i), int(len(vertices)+i), stiffness=100)
+    
     
 
 # Apply rigid transformation (rotation, translation) to the whole mesh

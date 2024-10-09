@@ -87,7 +87,6 @@ spring_meshes = mass_spring_system.get_spring_meshes()
 for spring_mesh in spring_meshes:
     plotter.add_mesh(spring_mesh)
      
-    
 # -----------------------------------------------------------------------------
 # Define simulation loop every time PyVista timer calls this callback.
 # -----------------------------------------------------------------------------
@@ -98,14 +97,15 @@ def callback(step):
         print(">> Simulation started.")
         print(f">> Step {step} - Force applied.")
         SELECTED_MASS = 1 
-        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.03,0.0,0.0]))
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.5,0.0,0.0]))
     
     if ((step+1) % 50) == 0:
         print(">> Step ", step+1)
     
     if (step+1) >= n_simulation_steps:
         print(">> Simulation ended.")
-        
+    
+  
     mass_spring_system.simulate()
 
     # Step 2 - Get current mass positions and update rendered particles
@@ -124,7 +124,7 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(dt * 1000) 
-n_simulation_steps = 800
+n_simulation_steps = 600
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 
 plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)
