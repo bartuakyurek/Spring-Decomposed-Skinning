@@ -5,6 +5,7 @@ Created on Tue Oct  8 09:17:14 2024
 
 @author: bartu
 """
+from scipy.spatial.transform import Rotation
 import numpy as np
 
 class Bone():
@@ -13,18 +14,23 @@ class Bone():
             assert type(parent) == Bone, f"parent parameter is expected to be type Bone, got {type(parent)}"
         if theta:
             assert len(theta) == 3, f"theta parameter is expected to be a 3d vector of xyz rotation angles, got shape {theta.shape}"
-        
+        else:
+            theta = [0, 0, 0]
+            
         self.end_location = np.array(endpoint_location)
         if parent is None:
             self.start_location = np.zeros(3)
             self.visible = False # Root bone is an invisible one, determining global transformation
-            # TODO: set 
+      
         else:
             self.start_location = parent.end_location
             self.visible = True
-            
+        
+        
+        r = Rotation.from_euler('xyz', theta)
+        self.rot_quat = r.as_quat()
         self.t = np.zeros(3)
-        self.rot = theta
+
         if theta is None:
             print(">> WARNING: Please find the rotation based on endpoint first.")
             self.rot = None # TODO: compute rotation based on endpoint location
@@ -39,10 +45,41 @@ class Bone():
     def add_child(self, child_node):
         self.children.append(child_node)
         
-    def set_offset(self, offset_vec):
+    def translate(self, offset_vec):
+        assert len(offset_vec) == 3
         self.start_location += offset_vec
         self.end_location += offset_vec
     
+    def rotate(self, axsang):
+        """
+        Sets the bone rotation and adjust the endpoint location of the bone.
+
+        Parameters
+        ----------
+        axsang : np.ndarray or torch.Tensor
+            Axis-angle representation of shape (3,).
+
+        Returns
+        -------
+        None.
+
+        """
+        # Translate the bone to bone space (i.e. bone beginning is the origin now)
+        bone_space_vec = (self.end_location - self.start_location)  
+        
+        # TODO: rotate the bone vec
+        r = Rotation.from_euler('xyz', axsang)
+        quat = r.as_quat()
+        
+        self.rot_quat *= quat # TODO: are you using it? if not, remove.
+        bone_space_rotated = r.apply(self.end_location)
+        final_bone_pos = bone_space_rotated + self.start_location
+        
+        # Since this is a rotation, bone origin does not move, so only change the
+        # location of the tip of the bone.
+        self.end_location = final_bone_pos
+        return
+        
 class Skeleton():
     def __init__(self, root_vec=[0., 0., 1.]):
         """
@@ -86,8 +123,6 @@ class Skeleton():
         assert bone_idx < len(self.bones), f">> Invalid bone index {bone_idx}. Please select an index less than {len(self.bones)}"
         return self.bones[bone_idx]
         
-    # TODO: implement and test remove_bone()...
-
 if __name__ == "__main__":
     print(">> Testing skeleton.py...")
       
@@ -111,7 +146,8 @@ if __name__ == "__main__":
        break
     V = smpl_verts.detach().cpu().numpy()
     J = joints.detach().cpu().numpy()
-    
+    n_frames, n_verts, n_dims = target_verts.shape
+
     # Get rest pose SMPL data
     rest_verts, rest_joints = smpl_model(betas, torch.zeros_like(pose), trans)
     J_rest = rest_joints.numpy()[0]
@@ -129,5 +165,5 @@ if __name__ == "__main__":
         if bone.parent:
             print("Bone parent endpoint: ", bone.parent.end_location)
         print("----------------------------------")
-        
+    
         
