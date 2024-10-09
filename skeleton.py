@@ -9,7 +9,10 @@ from scipy.spatial.transform import Rotation
 import numpy as np
 
 class Bone():
-    def __init__(self, endpoint_location, parent=None):
+    def __init__(self, endpoint_location, idx, parent=None):
+        assert type(idx) == int, f"Expected bone index to be type int, got {type(idx)}"
+        self.idx = idx  # To couple with loaded skeleton matrix data
+        
         if parent:
             assert type(parent) == Bone, f"parent parameter is expected to be type Bone, got {type(parent)}"
             
@@ -124,10 +127,10 @@ class Skeleton():
         
         # Initiate skeleton with a root bone
         assert len(root_vec) == 3, f"Root vector is expected to be a 3D vector, got {root_vec.shape}"
-        root_bone = Bone(root_vec)
+        root_bone = Bone(root_vec, idx=0)
         self.bones.append(root_bone)
         
-    def pose_bones(self, theta): # A.k.a apply forward kinematics given the relative rotations
+    def pose_bones(self, theta, trans): # A.k.a apply forward kinematics given the relative rotations
         """
         Apply the given relative rotations to the bones in the skeleton.
         This is used for deforming the rest pose to the current frame.
@@ -150,34 +153,34 @@ class Skeleton():
         # information as is, and apply forward kinematics separately.
         bones = self.bones.copy()
         
-        final_joint_locations = []
+        final_bone_locations = []
+        
         for i, bone in enumerate(bones):
-            # go to bone space
-            bone_space_vec = bone.end_location - bone.start_location
-            
-            # rotate the bone w.r.t parent's rotation first
-            # then apply bone's relative rotation
-            # apply translation (if any)
-            # go back to world space
-            
-            # append the final joint location information
-            if i == 0:
-                # For root bone, append two of the joints
+            final_bone_location = (None, None)      
+            # Apply rotations (note that bone.rotate automatically converts to 
+            # bone space and then it gets back to world space)
+            parent_bone = bone.parent
+            if parent_bone is None:
                 pass
-              
-            # TODO: This application assumes all bones are connected via vertex-edge manner
-            # So currently it doesn't allow bones to have their own offsets, that'd change the 
-            # joint locations (every bone would have 2 joints due to their start_pos and end_pos)
-            # this limitation could be extended, but for the brevity it's used as is.
+            else:
+                # Apply parent bone's rotation first
+                pass
+                # Apply bone's own relative rotation
+                bone_rotated_location = bone.rotate(theta[i])
+                
+            # Apply translations
             pass
             
-        return final_joint_locations
+            # Append the final joint location information
+            final_bone_locations.append(final_bone_location)
+            
+        return final_bone_locations
         
     def insert_bone(self, endpoint_location, parent_node_idx):
         assert parent_node_idx < len(self.bones), f">> Invalid parent index {parent_node_idx}. Please select an index less than {len(self.bones)}"
         
         parent_bone = self.bones[parent_node_idx]
-        new_bone = Bone(endpoint_location, parent=parent_bone)
+        new_bone = Bone(endpoint_location, idx=len(self.bones), parent=parent_bone)
         
         self.bones.append(new_bone)
         self.bones[parent_node_idx].add_child(new_bone)
