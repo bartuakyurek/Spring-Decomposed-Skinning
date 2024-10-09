@@ -22,10 +22,15 @@ class Bone():
             self.start_location = parent.end_location
             self.visible = True
         
-        r = Rotation.from_euler('xyz', theta = [0, 0, 0])
-        self.rot_quat = r.as_quat()
+        self.rotation = Rotation.from_euler('xyz', angles=[0, 0, 0])
         self.t = np.zeros(3)
-
+        # TODO: is this t for offset vector OR is it the absolute translation of the bone?
+        # I think we also need to store a boneSpaceMatrix to offset the vertices into bone space,
+        # apply self.rotation and self.translation and then use the inverse boneSpaceMatrix to 
+        # locate the vertices.
+        self.BONE_SPACE = None
+        self.INV_BONE_SPACE = None 
+        
         self.parent = parent
         self.children = []
         
@@ -72,8 +77,7 @@ class Bone():
         bone_space_vec = (self.end_location - self.start_location)  
         
         r = Rotation.from_euler('xyz', axsang)
-        quat = r.as_quat()
-        self.rot_quat *= quat # TODO: are you using it? if not, remove.
+        self.rotation = r * self.rotation # (p * q) is q rotation followed by p rotation
         
         bone_space_rotated = r.apply(bone_space_vec)
         final_bone_pos = bone_space_rotated + self.start_location
@@ -100,7 +104,7 @@ class Skeleton():
         root_bone = Bone(root_vec)
         self.bones.append(root_bone)
         
-    def pose_bones(theta): # A.k.a apply forward kinematics given the relative rotations
+    def pose_bones(self, theta): # A.k.a apply forward kinematics given the relative rotations
         """
         Apply the given relative rotations to the bones in the skeleton.
         This is used for deforming the rest pose to the current frame.
@@ -117,6 +121,16 @@ class Skeleton():
         None.
 
         """
+        # Get the bones as a copy from skeleton (do not directly apply these to skeleton)
+        # otherwise the bone information will be distorted. We want to keep the rest pose
+        # information as is, and apply forward kinematics separately.
+        bones = self.bones.copy()
+        
+        # go to bone space
+        # rotate the bone w.r.t parent's rotation first
+        # then apply bone's relative rotation
+        # apply translation (if any)
+        # go back to world space
         
         return
         
