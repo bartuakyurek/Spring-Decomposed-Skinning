@@ -28,8 +28,7 @@ class Bone():
         # I think we also need to store a boneSpaceMatrix to offset the vertices into bone space,
         # apply self.rotation and self.translation and then use the inverse boneSpaceMatrix to 
         # locate the vertices.
-        self.BONE_SPACE = None
-        self.INV_BONE_SPACE = None 
+        # Note: it's the absolute translation that is intended to be used as in libigl's forward_kinematics()
         
         self.parent = parent
         self.children = []
@@ -41,6 +40,27 @@ class Bone():
         self.children.append(child_node)
         
     def translate(self, offset_vec, override=True):
+        """
+        Translate the bone line segment given the translation vector.
+
+        Parameters
+        ----------
+        offset_vec : np.ndarray
+            translation  vector to be applied to the bone points, has shape (3, )
+        override : bool, optional
+            Override the bone locations by applying the offset_vec. When it's False,
+            do not update the bone locations just update the translation information.
+            The intended usage of False is for animation, where the rest pose information
+            should not be updated but we need to update bone transformations for forward
+            kinematics. The default is True.
+
+        Returns
+        -------
+        start_translated : np.ndarray 
+            Has shape (3, ), it is the translated starting point of the bone line segment.
+        end_translated : np.ndarray 
+            Has shape (3, ), it is the translated ending point of the bone line segment.
+        """
         assert offset_vec.shape == self.t.shape, f"Expected translation vector to have shape {self.t.shape}, got {offset_vec.shape}"
         self.t += offset_vec
         
