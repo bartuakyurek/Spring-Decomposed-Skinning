@@ -90,10 +90,41 @@ class Skeleton():
 
 if __name__ == "__main__":
     print(">> Testing skeleton.py...")
+      
+    import torch
+    from smpl_torch_batch import SMPLModel
+    from skeleton_data import get_smpl_skeleton
+
+    from mass_spring import MassSpringSystem
+    from pyvista_render_tools import add_skeleton, add_mesh
+    # ---------------------------------------------------------------------------- 
+    # Load SMPL animation file and get the mesh and associated rig data
+    # ---------------------------------------------------------------------------- 
+    data_loader = torch.utils.data.DataLoader(torch.load('./data/50004_dataset.pt'), batch_size=1, shuffle=False)
+    smpl_model = SMPLModel(device="cpu", model_path='./body_models/smpl/female/model.pkl')
+    kintree = get_smpl_skeleton()
+    for data in data_loader:
+       beta_pose_trans_seq = data[0].squeeze().type(torch.float64)
+       betas, pose, trans = beta_pose_trans_seq[:,:10], beta_pose_trans_seq[:,10:82], beta_pose_trans_seq[:,82:] 
+       target_verts = data[1].squeeze()
+       smpl_verts, joints = smpl_model(betas, pose, trans)
+       break
+    V = smpl_verts.detach().cpu().numpy()
+    J = joints.detach().cpu().numpy()
     
-    test_skeleton = Skeleton()
-    test_skeleton.insert_bone([4.0, 1.0, 0.0], 0)
-    for i, bone in enumerate(test_skeleton.bones):
+    # Get rest pose SMPL data
+    rest_verts, rest_joints = smpl_model(betas, torch.zeros_like(pose), trans)
+    J_rest = rest_joints.numpy()[0]
+    
+    # Create skeleton based on rest pose SMPL data
+    smpl_skeleton = Skeleton(root_vec = J_rest[0])
+    for edge in kintree:
+        parent_idx, bone_idx = edge
+        smpl_skeleton.insert_bone(endpoint_location = J_rest[bone_idx], 
+                                  parent_node_idx = parent_idx)
+        
+    # Print skeleton contents
+    for i, bone in enumerate(smpl_skeleton.bones):
         print(f"Bone {i} at {bone.start_location} - {bone.end_location}")
         if bone.parent:
             print("Bone parent endpoint: ", bone.parent.end_location)
