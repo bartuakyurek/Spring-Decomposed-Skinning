@@ -9,13 +9,9 @@ from scipy.spatial.transform import Rotation
 import numpy as np
 
 class Bone():
-    def __init__(self, endpoint_location, theta=None, parent=None):
+    def __init__(self, endpoint_location, parent=None):
         if parent:
             assert type(parent) == Bone, f"parent parameter is expected to be type Bone, got {type(parent)}"
-        if theta:
-            assert len(theta) == 3, f"theta parameter is expected to be a 3d vector of xyz rotation angles, got shape {theta.shape}"
-        else:
-            theta = [0, 0, 0]
             
         self.end_location = np.array(endpoint_location)
         if parent is None:
@@ -26,16 +22,10 @@ class Bone():
             self.start_location = parent.end_location
             self.visible = True
         
-        
-        r = Rotation.from_euler('xyz', theta)
+        r = Rotation.from_euler('xyz', theta = [0, 0, 0])
         self.rot_quat = r.as_quat()
         self.t = np.zeros(3)
 
-        if theta is None:
-            print(">> WARNING: Please find the rotation based on endpoint first.")
-            self.rot = None # TODO: compute rotation based on endpoint location
-                            # TODO: or provide initialization based on theta 
-                        
         self.parent = parent
         self.children = []
         
@@ -45,12 +35,15 @@ class Bone():
     def add_child(self, child_node):
         self.children.append(child_node)
         
-    def translate(self, offset_vec):
+    def translate(self, offset_vec, override=True):
         assert len(offset_vec) == 3
-        self.start_location += offset_vec
-        self.end_location += offset_vec
+        self.t = offset_vec
+        if override:
+            print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
+            self.start_location += offset_vec
+            self.end_location += offset_vec
     
-    def rotate(self, axsang):
+    def rotate(self, axsang, override=True):
         """
         Sets the bone rotation and adjust the endpoint location of the bone.
 
@@ -58,27 +51,35 @@ class Bone():
         ----------
         axsang : np.ndarray or torch.Tensor
             Axis-angle representation of shape (3,).
+            
+        override: bool
+            If True, it will change the endpoint location of the bone. Otherwise
+            the rotation will not affect the rest location of the bone, that is 
+            to be used in pose mode, i.e. to retrieve bone positions with Forward
+            Kinematics.
 
         Returns
         -------
-        None.
+        final_bone_pos : location of the tip of the bone that is rotated.
 
         """
         # Translate the bone to bone space (i.e. bone beginning is the origin now)
         bone_space_vec = (self.end_location - self.start_location)  
         
-        # TODO: rotate the bone vec
         r = Rotation.from_euler('xyz', axsang)
         quat = r.as_quat()
-        
         self.rot_quat *= quat # TODO: are you using it? if not, remove.
-        bone_space_rotated = r.apply(self.end_location)
+        
+        bone_space_rotated = r.apply(bone_space_vec)
         final_bone_pos = bone_space_rotated + self.start_location
         
         # Since this is a rotation, bone origin does not move, so only change the
         # location of the tip of the bone.
-        self.end_location = final_bone_pos
-        return
+        if override:
+            print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
+            self.end_location = final_bone_pos
+            
+        return final_bone_pos
         
 class Skeleton():
     def __init__(self, root_vec=[0., 0., 1.]):
@@ -93,6 +94,26 @@ class Skeleton():
         assert len(root_vec) == 3, f"Root vector is expected to be a 3D vector, got {root_vec.shape}"
         root_bone = Bone(root_vec)
         self.bones.append(root_bone)
+        
+    def pose_bones(theta): # A.k.a apply forward kinematics given the relative rotations
+        """
+        Apply the given relative rotations to the bones in the skeleton.
+        This is used for deforming the rest pose to the current frame.
+        WARNING: YOU SHOULDN'T USE THIS FUNCTION TO DEFORM SKELETON EVERY FRAME
+        It should be in between the rest pose and the desired frame.
+
+        Parameters
+        ----------
+        theta : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        return
         
     def insert_bone(self, endpoint_location, parent_node_idx):
         assert parent_node_idx < len(self.bones), f">> Invalid parent index {parent_node_idx}. Please select an index less than {len(self.bones)}"
