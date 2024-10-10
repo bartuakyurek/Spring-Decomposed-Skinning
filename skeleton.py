@@ -126,13 +126,47 @@ class Skeleton():
             that is starting from the origin and ends at the provided root_vec.
         """
         self.bones = []
+        self.kintree = []
         
         # Initiate skeleton with a root bone
         assert len(root_vec) == 3, f"Root vector is expected to be a 3D vector, got {root_vec.shape}"
         root_bone = Bone(root_vec, idx=0)
         self.bones.append(root_bone)
         
-    def pose_bones(self, theta, trans): # A.k.a apply forward kinematics given the relative rotations
+    def get_absolute_transformations(self, theta, trans):
+        
+        """
+        n_bones = len(self.bones)
+        joint_pos = self.get_rest_bone_locations(exclude_root=False)
+        joint_edges = np.reshape(np.arange(0, 2*n_bones), (n_bones, 2))
+        joint_parents = self.get_kintree()
+        
+        relative_rot_q = batch_axsang_to_quats(theta)
+        
+        absolute_rot, absolute_trans = igl.forward_kinematics(joint_pos, 
+                                                              joint_edges, 
+                                                              joint_parents, 
+                                                              relative_rot_q,
+                                                              relative_trans)
+            
+        return abs_rot, abs_t
+        """
+        pass
+    
+    def get_kintree(self):
+        kintree = []
+        for bone in self.bones:
+            if bone.parent is None:
+                continue
+            bone_id = bone.idx
+            parent_id = bone.parent.idx
+            kintree.append([parent_id, bone_id])   
+            
+        return kintree
+
+        
+    
+    def pose_bones(self, theta, trans): 
         """
         Apply the given relative rotations to the bones in the skeleton.
         This is used for deforming the rest pose to the current frame.
@@ -201,6 +235,7 @@ class Skeleton():
         
         self.bones.append(new_bone)
         self.bones[parent_node_idx].add_child(new_bone)
+        self.kintree = self.get_kintree() # Update kintree
     
     def remove_bone(self, bone_idx):
         bone_to_be_removed = self.bones[bone_idx]
@@ -216,6 +251,7 @@ class Skeleton():
         # Remove the bone from the skeleton bones list
         bone_to_be_removed.children = None    # It's unnecessary probably.
         self.bones.remove(bone_to_be_removed)
+        self.kintree = self.get_kintree()
         return
         
     def get_bone(self, bone_idx):
