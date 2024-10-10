@@ -152,10 +152,6 @@ class Skeleton():
         assert len(trans) == n_bones, f"Expected trans to have shape (n_bones, 4), got {trans.shape}"
         assert trans.shape[1] == 4, "Please provide homogeneous coordinates."
         
-        #joint_pos = np.array(self.get_rest_bone_locations(exclude_root=False))
-        #joint_edges = np.reshape(np.arange(0, 2*n_bones), (n_bones, 2))
-        #joint_parents = np.array(self.get_kintree())
-        
         relative_trans = np.array(trans)
         relative_rot_q = np.empty((n_bones, 4))
         for i in range(n_bones):
@@ -168,8 +164,8 @@ class Skeleton():
         # Dynamic programming
         def fk_helper(b : int): 
             if not computed[b]:
-                r = np.zeros(4) 
-                r[:3] = self.bones[b].start_location
+                r = np.ones(4) 
+                r[:3] = self.bones[b].start_location 
                 if self.bones[b].parent is None:
                     # Base case for roots
                     vQ[b] = relative_rot_q[b]
@@ -181,8 +177,9 @@ class Skeleton():
                     fk_helper(parent_idx)
             
                     vQ[b] = vQ[parent_idx] * relative_rot_q[b]
-                    vT[b] = vT[parent_idx] - vQ[b]*r + vQ[parent_idx]*(r + relative_trans[b])
-                  
+                    vT[b] = vT[parent_idx] - (vQ[b] * r) + vQ[parent_idx]*(r + relative_trans[b])
+                    #vT[b] = -(vQ[b] * r) + vQ[parent_idx]*(r + relative_trans[b] - vT[parent_idx]) + vT[parent_idx]
+
                 computed[b] = True
                 
         for b in range(n_bones):
@@ -312,7 +309,7 @@ class Skeleton():
     
 if __name__ == "__main__":
     print(">> Testing skeleton.py...")
-      
+     
     import torch
     import pyvista as pv
     
@@ -374,6 +371,7 @@ if __name__ == "__main__":
             # TODO: Update mesh points
             theta = np.reshape(pose[frame].numpy(), newshape=(-1, 3))
             t = trans[frame].numpy()
+            # !!!!!!!!!!!!!!! YOU're not using t  !!!!!!!!!!!!!!!!!!!!!!!!!!!
             posed_bone_locations = smpl_skeleton.pose_bones(theta)
            
             current_skel_data = np.reshape(posed_bone_locations[2:], (2*(n_bones-1), 3))
