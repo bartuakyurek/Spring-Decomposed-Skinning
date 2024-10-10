@@ -155,8 +155,8 @@ class Skeleton():
         relative_trans = np.array(trans)
         relative_rot_q = np.empty((n_bones, 4))
         for i in range(n_bones):
-            r = Rotation.from_euler('xyz', theta[i])
-            relative_rot_q[i] = r.as_quat()
+            rot = Rotation.from_euler('xyz', theta[i])
+            relative_rot_q[i] = rot.as_quat()
         
         computed = np.zeros(n_bones, dtype=bool)
         vQ = np.zeros((n_bones, 4))
@@ -232,15 +232,22 @@ class Skeleton():
         
         for i, bone in enumerate(self.bones):
             rot = Rotation.from_quat(abs_rot_quat[i])
+            rot_mat = rot.as_matrix()
             
-            s_rotated = rot.apply(bone.start_location)
-            e_rotated = rot.apply(bone.end_location )
-
-            s_translated = s_rotated + abs_trans_homo[i][:-1] # omit last coordinate of homogeneous
-            e_translated = e_rotated + abs_trans_homo[i][:-1] # omit last coordinate of homogeneous     
-
+            # Convert absolute rotations and translations into a single transformation matrix
+            M = np.zeros((4,4))
+            M[:3, :3] = rot_mat 
+            M[:, -1] = abs_trans_homo[i] # Homogeneous coordinates have 1.0 at the end
+            
+            s, e = np.ones((4,1)), np.ones((4,1))
+            s[:3, 0] = bone.start_location
+            e[:3, 0] = bone.end_location
+            s_translated = (M @ s)[:3,0]
+            e_translated = (M @ e)[:3,0]
+            
             final_bone_locations[2*i] = s_translated
             final_bone_locations[2*i + 1] = e_translated
+            
 
         if get_transforms:
             return final_bone_locations, abs_rot_quat, abs_trans_homo[:3]
