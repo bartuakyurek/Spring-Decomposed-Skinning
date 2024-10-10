@@ -11,6 +11,47 @@ import igl
 import torch
 import numpy as np
     
+def skinning(verts, abs_rot, abs_trans, weights, skinning_type="LBS"):
+    """
+    Deform the vertices by provided transformations and selected skinning
+    method.
+
+    Parameters
+    ----------
+    verts : np.ndarray
+        Vertices to be deformed by provided transformations.
+    abs_rot : np.ndarray
+        Absolute rotation transformation quaternions of shape (n_bones, 4)
+    abs_trans : np.ndarray
+        Absolute translation vec3 of shape (n_bones, 3)
+    weights : np.ndarray
+        Binding weights between vertices and bone transformation of shape
+        (n_verts, n_bones). Note that to deform the skeleton, set weights of 
+        shape (n_bones * 2, n_bones) with 1.0 weights for every couple rows.
+        e.g. for a two bones it is 
+                                    [[1.0, 0.0],
+                                     [1.0, 0.0],
+                                     [0.0, 1.0],
+                                     [0.0, 1.0]] 
+    skinning_type : str, optional
+        DESCRIPTION. The default is "LBS".
+
+    Returns
+    -------
+    V_deformed : np.ndarray
+        Deformed vertices of shape (n_verts, 3)
+    """
+    
+    V_deformed = None
+    if skinning_type == "LBS" or skinning_type == "lbs":
+        # Deform vertices based on Linear Blend Skinning
+        pass
+    else:
+        print(f">> ERROR: This skinning type \"{skinning_type}\" is not supported yet.")
+    
+    return V_deformed
+
+
 # todo:  taken https://github.com/Dou-Yiming/Pose_to_SMPL/blob/main/smplpytorch/pytorch/rodrigues_layer.py
 def quat2mat(quat):
     """Convert quaternion coefficients to rotation matrix.
@@ -172,7 +213,6 @@ def LBS(V, W, J, JE, theta):
 def inverse_LBS(V_posed, W, J, JE, theta):
     
     unposed_V = LBS(V_posed, W, J, JE, -theta)
-    
     return unposed_V
 
 if __name__ == "__main__":
@@ -200,36 +240,5 @@ if __name__ == "__main__":
     J = joints.detach().cpu().numpy()
     n_frames, n_verts, n_dims = target_verts.shape
     
-    
-    
-    
-    """
-    # Load the mesh data ------------------------------------------------------
-    with np.load("./data/dfaust_sample_data.npz") as data:
-        V = data['arr_0'] # Vertices, V x 3
-        F = data['arr_1'] # Faces, F x 3
-        J = data['arr_2'] # Joint locations J x 3
-        theta = data['arr_3'] # Joint relative rotations J x 3
-        kintree = data['arr_4'] # Skeleton joint hierarchy (J-1) x 2
-        W = data['arr_5']
-        
-    ## UNPOSE FUNCTION -------------------------------------------------------
-    if np.sum(theta[0]) > 1e-8:
-        print(">>>> WARNING ROOT ROTATION IS NON-ZERO! It might not be implemented in the skinning code yet...")
-        
-    theta = theta[1:] # Discrad the root bone's rotation (it is zero)
-    theta = np.array(theta) # TODO: stick to either torch or numpy, dont juggle two
-    
-    V_unposed = inverse_LBS(V, W, J, kintree, theta)
-    V_cycle = LBS(V_unposed, W, J, kintree, theta)
-    
-    print(np.sum(V - V_cycle))
-    #np.savez("./results/V_unposed.npz", V_unposed)
-    F = np.array(F, dtype=int)
-    igl.write_obj("V_unposed_SMPL.obj", V_unposed, F)
-    igl.write_obj("V_cycle_SMPL.obj", V_cycle, F)
-
-    ## END OF UNPOSE FUNCTION -------------------------------------------------
-    """
     
     

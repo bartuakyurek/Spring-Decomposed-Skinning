@@ -7,6 +7,7 @@ Created on Tue Oct  8 09:17:14 2024
 """
 from scipy.spatial.transform import Rotation
 import numpy as np
+import igl
 
 class Bone():
     def __init__(self, endpoint_location, idx, parent=None):
@@ -133,26 +134,6 @@ class Skeleton():
         root_bone = Bone(root_vec, idx=0)
         self.bones.append(root_bone)
         
-    def get_absolute_transformations(self, theta, trans):
-        
-        """
-        n_bones = len(self.bones)
-        joint_pos = self.get_rest_bone_locations(exclude_root=False)
-        joint_edges = np.reshape(np.arange(0, 2*n_bones), (n_bones, 2))
-        joint_parents = self.get_kintree()
-        
-        relative_rot_q = batch_axsang_to_quats(theta)
-        
-        absolute_rot, absolute_trans = igl.forward_kinematics(joint_pos, 
-                                                              joint_edges, 
-                                                              joint_parents, 
-                                                              relative_rot_q,
-                                                              relative_trans)
-            
-        return abs_rot, abs_t
-        """
-        pass
-    
     def get_kintree(self):
         kintree = []
         for bone in self.bones:
@@ -163,68 +144,109 @@ class Skeleton():
             kintree.append([parent_id, bone_id])   
             
         return kintree
-
-        
     
-    def pose_bones(self, theta, trans): 
+    def get_absolute_transformations(self, theta, trans):
+        
+        n_bones = len(self.bones)
+        assert len(theta) == n_bones, f"Expected theta to have shape (n_bones, 3), got {theta.shape}"
+        assert len(trans) == n_bones, f"Expected trans to have shape (n_bones, 4), got {trans.shape}"
+        assert trans.shape[1] == 4, "Please provide homogeneous coordinates."
+        
+        #joint_pos = np.array(self.get_rest_bone_locations(exclude_root=False))
+        #joint_edges = np.reshape(np.arange(0, 2*n_bones), (n_bones, 2))
+        #joint_parents = np.array(self.get_kintree())
+        
+        relative_trans = np.array(trans)
+        relative_rot_q = np.empty((n_bones, 4))
+        for i in range(n_bones):
+            r = Rotation.from_euler('xyz', theta[i])
+            relative_rot_q[i] = r.as_quat()
+        
+        computed = np.zeros(n_bones, dtype=bool)
+        vQ = np.zeros((n_bones, 4))
+        vT = np.zeros((n_bones, 4))
+        # Dynamic programming
+        def fk_helper(b : int): 
+            if not computed[b]:
+                r = np.zeros(4) 
+                r[:3] = self.bones[b].start_location
+                if self.bones[b].parent is None:
+                    # Base case for roots
+                    vQ[b] = relative_rot_q[b]
+                    vT[b] = r - (relative_rot_q[b] * r) + relative_trans[b]
+                    
+                else:
+                    # First compute parent's
+                    parent_idx = self.bones[b].parent.idx
+                    fk_helper(parent_idx)
+            
+                    vQ[b] = vQ[parent_idx] * relative_rot_q[b]
+                    vT[b] = vT[parent_idx] - vQ[b]*r + vQ[parent_idx]*(r + relative_trans[b])
+                  
+                computed[b] = True
+                
+        for b in range(n_bones):
+            fk_helper(b)
+        
+        absolute_rot, absolute_trans = vQ, vT
+        return absolute_rot, absolute_trans
+     
+        
+    def pose_bones(self, theta, trans=None, get_transforms=False): 
         """
         Apply the given relative rotations to the bones in the skeleton.
         This is used for deforming the rest pose to the current frame.
-        WARNING: YOU SHOULDN'T USE THIS FUNCTION TO DEFORM SKELETON EVERY FRAME
-        It should be in between the rest pose and the desired frame.
+        WARNING: It should be in between the rest pose and the desired frame.
 
         Parameters
         ----------
         theta : np.ndarray 
-            DESCRIPTION.
-
+            Relative bone rotations as given in SMPL data.
+        trans : np.ndarray (optionl)
+            Relative bone translations as given in SMPL data.
+            If None, relative translations are set to zero vectors.
+            
         Returns
         -------
         final_bone_locations : list
         Joint locations of the posed skeleton, that is 2 joints per bone, for 
-        the both endpoints of the bone. Has shape (#n_bones * 2, 3)
-
+        the both endpoints of the bone. Has shape (n_bones * 2, 3)
+        
+        abs_rot_quat : np.ndarray (optional)
+            Absolute quaternion rotations for each bone, has shape (n_bones, 4).
+            Returned only if get_transforms=True.
+            
+        abs_trans : np.ndarray (optional)
+            Absolute translations for each bone, has shape (n_bones, 3)
+            Returned only if get_transforms=True.
         """
         assert type(theta) == np.ndarray, f"Expected pose type np.ndarray, got {type(theta)}"
-        assert len(trans) == 3, f"Expected shape (3, ) translation vector, got {trans.shape}."
-        # Get the bones as a copy from skeleton (do not directly apply these to skeleton)
-        # otherwise the bone information will be distorted. We want to keep the rest pose
-        # information as is, and apply forward kinematics separately.
-        bones = self.bones.copy()
         
-        final_bone_locations = []
-        for i, bone in enumerate(bones):
-            # Apply rotations (note that bone.rotate automatically converts to 
-            # bone space and then it gets back to world space)
-            start_point, end_point = bone.start_location, bone.end_location
-            parent_bone = bone.parent
-            
-            # At the root node, there's no parent whose transformations should be
-            # inherited, so skip that part
-            if parent_bone:
-                # Apply parent bone's rotation first
-                bone.rotate(theta[parent_bone.idx], override=False)
-            # Apply bone's own relative rotation
-            end_point = bone.rotate(theta[i], override=False)
-            
-            if parent_bone:
-                # Apply the parent bone's translation first
-                # TODO: we cannot translate the vector when we don't apply rotation
-                # so you may consider changing your design?
-                # bone.translate(bone.parent.t, override=False)
-                end_point += bone.parent.t
-                start_point += bone.parent.t
-                bone.t += bone.parent.t
+        if trans is None:
+            trans = np.zeros((len(self.bones), 4))
+            trans[:, -1] = 1   # Homogeneous coordinates
+        else:
+            assert trans.shape == (len(self.bones), 4) or trans.shape == (len(self.bones), 3) 
+            if trans.shape[1] == 3:
+                trans[:, -1] = 1   # Convert to homogeneous coordinates
         
-            # Apply bone's own relative translation
-            # bone.translate(trans, override=False)
-            end_point += trans
-            start_point += trans
-            bone.t += trans
+        abs_rot_quat, abs_trans_homo = self.get_absolute_transformations(theta, trans)
+        final_bone_locations = np.empty((2*len(self.bones), 3))
+        
+        for i, bone in enumerate(self.bones):
+            rot = Rotation.from_quat(abs_rot_quat[i])
             
-            # Append the final joint location information
-            final_bone_locations.append([start_point, end_point])
-            
+            s_rotated = rot.apply(bone.start_location)
+            e_rotated = rot.apply(bone.end_location )
+
+            s_translated = s_rotated + abs_trans_homo[i][:-1] # omit last coordinate of homogeneous
+            e_translated = e_rotated + abs_trans_homo[i][:-1] # omit last coordinate of homogeneous     
+
+            final_bone_locations[2*i] = s_translated
+            final_bone_locations[2*i + 1] = e_translated
+
+        if get_transforms:
+            return final_bone_locations, abs_rot_quat, abs_trans_homo[:3]
         return final_bone_locations
         
     def insert_bone(self, endpoint_location, parent_node_idx):
@@ -251,7 +273,7 @@ class Skeleton():
         # Remove the bone from the skeleton bones list
         bone_to_be_removed.children = None    # It's unnecessary probably.
         self.bones.remove(bone_to_be_removed)
-        self.kintree = self.get_kintree()
+        self.kintree = self.get_kintree()     # Update kintree
         return
         
     def get_bone(self, bone_idx):
@@ -352,9 +374,9 @@ if __name__ == "__main__":
             # TODO: Update mesh points
             theta = np.reshape(pose[frame].numpy(), newshape=(-1, 3))
             t = trans[frame].numpy()
-            posed_bone_locations = smpl_skeleton.pose_bones(theta, t)
+            posed_bone_locations = smpl_skeleton.pose_bones(theta)
            
-            current_skel_data = np.reshape(posed_bone_locations[1:], (2*(n_bones-1), 3))
+            current_skel_data = np.reshape(posed_bone_locations[2:], (2*(n_bones-1), 3))
             skel_mesh.points = current_skel_data
             
             # Write a frame. This triggers a render.
