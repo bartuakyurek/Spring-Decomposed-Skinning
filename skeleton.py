@@ -10,6 +10,7 @@ import numpy as np
 import igl
 
 from skinning import compose_transform_matrix
+from global_vars import VERBOSE
 
 class Bone():
     def __init__(self, endpoint_location, idx, parent=None):
@@ -114,7 +115,8 @@ class Bone():
         # Since this is a rotation, bone origin does not move, so only change the
         # location of the tip of the bone.
         if override:
-            print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
+            if VERBOSE:
+                print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
             self.end_location = final_bone_pos
             if not keep_trans: # If we're not keeping the transformation, reset
                 self.rotation = Rotation.from_euler('xyz', [0, 0, 0])
@@ -172,16 +174,24 @@ class Skeleton():
                     vQ[b] = relative_rot_q[b]
                     
                     abs_rot = Rotation.from_quat(vQ[b])
-                    r = self.bones[b].end_location 
+                    r = self.bones[b].start_location
                     r_rotated = abs_rot.apply(r)               # (vQ[b] * r)
                     vT[b] = r - r_rotated + relative_trans[b]
-                    
+                    if VERBOSE:
+                        pass
+                        #print(">> Fk_helper() parent bone r: ", r)
+                        #print("vQ[b]=", vQ[b])
+                        #print("vT[b]=", vT[b])
+                        #print("dQ[b]=", relative_trans[b])
+                        #print("dT[b]=", relative_rot_q[b])
                 else:
                     # First compute parent's
                     parent_idx = self.bones[b].parent.idx
                     fk_helper(parent_idx)
             
-                    vQ[b] = vQ[parent_idx] * relative_rot_q[b]
+                    parent_rot = Rotation.from_quat(vQ[parent_idx])
+                    rel_rot = Rotation.from_quat(relative_rot_q[b])
+                    vQ[b] = (parent_rot * rel_rot).as_quat()
                     
                     abs_rot = Rotation.from_quat(vQ[b])
                     r = self.bones[b].start_location 
@@ -192,6 +202,14 @@ class Skeleton():
                     x_rotated = abs_rot_parent.apply(x) # vQ[p]* (r + dT[b])
                    
                     vT[b] = vT[parent_idx] - r_rotated + x_rotated
+                    
+                    if VERBOSE:
+                        pass
+                        #print(">> Fk_helper() bone r: ", r)
+                        #print("vQ[b]=", vQ[b])
+                        #print("vT[b]=", vT[b])
+                        #print("dT[b]=", relative_trans[b])
+                        #print("dQ[b]=", relative_rot_q[b])
 
                 computed[b] = True
                 

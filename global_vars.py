@@ -11,5 +11,5 @@ _SPACE_DIMS_ = 3    # Space dimensions either 2 or 3
 HOMO_COORD = False  # Adds 1 to the transformation dimensions if True
 
 # TODO: Add data paths
-DEBUG = True        # WARNING: This is not used yet
+VERBOSE = True        # WARNING: This is not used in every function yet
 
