@@ -172,10 +172,10 @@ class Skeleton():
                     vQ[b] = relative_rot_q[b]
                     
                     abs_rot = Rotation.from_quat(vQ[b])
-                    r = self.bones[b].end_location 
+                    r = self.bones[b].start_location
                     r_rotated = abs_rot.apply(r)               # (vQ[b] * r)
                     vT[b] = r - r_rotated + relative_trans[b]
-                    
+                
                 else:
                     # First compute parent's
                     parent_idx = self.bones[b].parent.idx

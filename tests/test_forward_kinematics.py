@@ -16,11 +16,19 @@ import pyvista as pv
 from pyvista_render_tools import add_skeleton
 from skeleton import Skeleton
 
-TGF_PATH = "/Users/bartu/Desktop/MS/simplified-deltamush-libigl/libigl-data/arm.tgf"
-joint_locations, kintree, _, _, _, _ = igl.read_tgf(TGF_PATH)
+joint_locations = np.array([
+                            [1., 1., 0.],
+                            [1., 2., 0.],
+                            [1., 3., 0.]
+                            ])
+kintree = np.array([
+                    [0, 1],
+                    [1, 2]
+                    ])
 
+EXCLUDE_ROOT = False
 # ---------------------------------------------------------------------------- 
-# Create skeleton based on loaded data
+# Create skeleton based on data
 # ---------------------------------------------------------------------------- 
 # TODO: if you always create root_vec based on your first data, why don't you 
 #       include it in the insert_bone phase to make it easier to read?
@@ -30,58 +38,29 @@ for edge in kintree:
      test_skeleton.insert_bone(endpoint_location = joint_locations[bone_idx], 
                                parent_node_idx = parent_idx)
      
-    
-# ---------------------------------------------------------------------------- 
-# Create plotter 
-# ---------------------------------------------------------------------------- 
-RENDER = True
-plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
-plotter.camera_position = 'zy'
-plotter.camera.azimuth = -90
-
 # ---------------------------------------------------------------------------- 
 # Add skeleton mesh based on T-pose locations
 # ---------------------------------------------------------------------------- 
 n_bones = len(test_skeleton.bones)
-rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root = True)
+rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 
-skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-plotter.open_movie("../results/smpl-skeleton.mp4")
+print("Rest bone locations:")
+for i in range(n_bones):
+    print(rest_bone_locations[2*i], "-->",rest_bone_locations[2*i+1] )
 
-
-pose = np.array([
+pose = np.array(
                 [
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0., 0., 0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                ],
-                [
+                 [0.,0. ,0.],
                  [30.,0.,0.],
                  [0.,0. ,0.],
-                 [45., 45., 0.],
-                 [0.,0.,10.],
-                 [0.,0.,0.],
                 ]
-                ])
+                )
 
-n_repeats = 24
-n_frames = 2
-for _ in range(n_repeats):    
-    for frame in range(n_frames):
-            
-        for _ in range(24):
-            
-            theta = pose[frame]
-            posed_bone_locations = test_skeleton.pose_bones(theta, degrees=True, exclude_root=True)
-            skel_mesh.points = posed_bone_locations
-            
-            # Write a frame. This triggers a render.
-            plotter.write_frame()
-
-# Closes and finalizes movie
-plotter.close()
-plotter.deep_clean()
+posed_bones = test_skeleton.pose_bones(pose, degrees=True, exclude_root=EXCLUDE_ROOT)
+          
+print("Posed bone locations:")
+for i in range(n_bones):
+    print(posed_bones[2*i], "-->",posed_bones[2*i+1] )
+    
     
