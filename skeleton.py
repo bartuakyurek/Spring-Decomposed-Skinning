@@ -24,11 +24,11 @@ class Bone():
         if parent is None:
             self.start_location = np.zeros(3)
             self.visible = False # Root bone is an invisible one, determining global transformation
-      
         else:
             self.start_location = parent.end_location
             self.visible = True
         
+        # TODO:shall we use these while computing FK? If not shall we delete these properties?
         self.rotation = Rotation.from_euler('xyz', angles=[0, 0, 0]) # Relative rotation
         self.t = np.zeros(3)                                         # Relative translation
       
