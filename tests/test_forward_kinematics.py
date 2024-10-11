@@ -59,21 +59,14 @@ pose = np.array([
                  [0.,0.,0.],
                 ],
                 [
-                 [10.,0.,0.],
-                 [30.,0. ,0.],
+                 [30.,0.,0.],
+                 [0.,0. ,0.],
                  [45., 45., 0.],
                  [0.,0.,10.],
                  [0.,0.,0.],
                 ]
                 ])
-"""
-d_t = np.zeros((n_bones-1,3))
-d_q = np.zeros((n_bones-1,4))
-from scipy.spatial.transform import Rotation
-d_q[1] = Rotation.from_euler('xyz', pose[1][2]).as_quat()
-P = igl.directed_edge_parents(kintree)
-abs_rot, abs_t = igl.forward_kinematics(joint_locations, kintree, P, d_q, d_t)
-"""
+
 n_repeats = 24
 n_frames = 2
 for _ in range(n_repeats):    
