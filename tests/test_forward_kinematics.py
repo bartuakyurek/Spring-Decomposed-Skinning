@@ -13,8 +13,10 @@ import igl
 import __init__
 import numpy as np
 import pyvista as pv
+
 from pyvista_render_tools import add_skeleton
 from skeleton import Skeleton
+from global_vars import VERBOSE
 
 joint_locations = np.array([
                             [1., 1., 0.],
@@ -47,12 +49,14 @@ line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 
 print("Rest bone locations:")
 for i in range(n_bones):
-    print(rest_bone_locations[2*i], "-->",rest_bone_locations[2*i+1] )
+    begin = np.round(rest_bone_locations[2*i], 3)
+    end = np.round(rest_bone_locations[2*i+1], 3)
+    print(begin, "-->", end)
 
 pose = np.array(
                 [
-                 [0.,0. ,0.],
-                 [30.,0.,0.],
+                 [90.,0. ,0.],
+                 [0.,0.,0.],
                  [0.,0. ,0.],
                 ]
                 )
@@ -61,6 +65,8 @@ posed_bones = test_skeleton.pose_bones(pose, degrees=True, exclude_root=EXCLUDE_
           
 print("Posed bone locations:")
 for i in range(n_bones):
-    print(posed_bones[2*i], "-->",posed_bones[2*i+1] )
+    begin = np.round(posed_bones[2*i], 3)
+    end = np.round(posed_bones[2*i+1], 3)
+    print(begin, "-->", end)
     
     
