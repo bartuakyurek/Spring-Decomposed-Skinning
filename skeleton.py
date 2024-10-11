@@ -258,6 +258,9 @@ class Skeleton():
             M[:3, :3] = rot_mat     # Place rotation matrix
             M[:3, -1] = abs_trans[i] # Place translation vector
             M[-1, -1] = 1.0
+            
+            # Sanity check that M transformation matrix last row must be [0 0 0 1] 
+            assert np.all(M[-1] == np.array([0.,0.,0.,1.])), f"Unexpected error occured at {M}."
                 
             s, e = np.ones((4,)), np.ones((4,))
             s[:3] = bone.start_location

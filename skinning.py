@@ -10,6 +10,48 @@ IMPORTANT NOTES:
 import igl
 import torch
 import numpy as np
+from scipy.spatial.transformation import Rotation
+
+def compose_transform_matrix(trans_vec, rot : Rotation ):
+    """
+    Compose a transformation matrix given the translation vector
+    and Rotation object.
+
+    Parameters
+    ----------
+    trans_vec : np.ndarray or list
+        3D translation vector to be inserted at the last column of 4x4 matrix.
+    rot : Rotation
+        Rotation object of scipy.spatial.transformation. This is internally
+        converted to 3x3 matrix to place in the 4x4 transformation matrix.
+
+    Returns
+    -------
+    M : np.ndarray
+        Transformation matrix composed by 3x3 rotation matrix and 3x1 translation
+        vector, with the last row being [0,0,0,1].
+
+    """
+    if type(trans_vec) is list:
+        trans_vec = np.array(trans_vec)
+    
+    if trans_vec.shape == (3,1):
+        trans_vec = trans_vec[:,0]
+        
+    assert type(trans_vec) == np.ndarray, f"Expected translation vector to have type np.ndarray, got {trans_vec.shape}."
+    assert trans_vec.shape == (3, ), f"Expected translation vector to have shape (3,) got {trans_vec.shape}"
+    
+    rot_mat = rot.as_matrix()
+    
+    # Convert absolute rotations and translations into a single transformation matrix
+    M = np.zeros((4,4))
+    M[:3, :3] = rot_mat     # Place rotation matrix
+    M[:3, -1] = trans_vec # Place translation vector
+    M[-1, -1] = 1.0  
+    # Sanity check that M transformation matrix last row must be [0 0 0 1] 
+    assert np.all(M[-1] == np.array([0.,0.,0.,1.])), f"Unexpected error occured at {M}."
+    return M
+
     
 def skinning(verts, abs_rot, abs_trans, weights, skinning_type="LBS"):
     """
@@ -217,7 +259,7 @@ def inverse_LBS(V_posed, W, J, JE, theta):
 
 if __name__ == "__main__":
     print(">> Testing skinning.py...")
-   
+    """
     from smpl_torch_batch import SMPLModel
     from skeleton_data import get_smpl_skeleton
 
@@ -239,6 +281,7 @@ if __name__ == "__main__":
     V = smpl_verts.detach().cpu().numpy()
     J = joints.detach().cpu().numpy()
     n_frames, n_verts, n_dims = target_verts.shape
+    """
     
     
     
