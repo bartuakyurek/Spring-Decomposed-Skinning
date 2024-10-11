@@ -29,14 +29,9 @@ class Bone():
             self.start_location = parent.end_location
             self.visible = True
         
-        self.rotation = Rotation.from_euler('xyz', angles=[0, 0, 0])
-        self.t = np.zeros(3)
-        # TODO: is this t for offset vector OR is it the absolute translation of the bone?
-        # I think we also need to store a boneSpaceMatrix to offset the vertices into bone space,
-        # apply self.rotation and self.translation and then use the inverse boneSpaceMatrix to 
-        # locate the vertices.
-        # Note: it's the absolute translation that is intended to be used as in libigl's forward_kinematics()
-        
+        self.rotation = Rotation.from_euler('xyz', angles=[0, 0, 0]) # Relative rotation
+        self.t = np.zeros(3)                                         # Relative translation
+      
         self.parent = parent
         self.children = []
         
