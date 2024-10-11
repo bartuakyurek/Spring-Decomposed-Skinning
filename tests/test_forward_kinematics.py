@@ -49,8 +49,7 @@ line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
 plotter.open_movie("../results/smpl-skeleton.mp4")
 
-n_repeats = 100
-n_frames = 2
+
 pose = np.array([
                 [
                  [0.,0.,0.],
@@ -60,25 +59,34 @@ pose = np.array([
                  [0.,0.,0.],
                 ],
                 [
-                 [0.,0.,0.],
-                 [0.,0.,0.],
+                 [10.,0.,0.],
+                 [30.,0. ,0.],
                  [45., 45., 0.],
-                 [0.,0.,0.],
+                 [0.,0.,10.],
                  [0.,0.,0.],
                 ]
                 ])
-for _ in range(n_repeats):
+"""
+d_t = np.zeros((n_bones-1,3))
+d_q = np.zeros((n_bones-1,4))
+from scipy.spatial.transform import Rotation
+d_q[1] = Rotation.from_euler('xyz', pose[1][2]).as_quat()
+P = igl.directed_edge_parents(kintree)
+abs_rot, abs_t = igl.forward_kinematics(joint_locations, kintree, P, d_q, d_t)
+"""
+n_repeats = 24
+n_frames = 2
+for _ in range(n_repeats):    
     for frame in range(n_frames):
-        
-        # TODO: Update mesh points
-        theta = np.reshape(pose[frame], newshape=(-1, 3))
-        posed_bone_locations = test_skeleton.pose_bones(theta)
-       
-        current_skel_data = np.reshape(posed_bone_locations[2:], (2*(n_bones-1), 3))
-        skel_mesh.points = current_skel_data
-        
-        # Write a frame. This triggers a render.
-        plotter.write_frame()
+            
+        for _ in range(24):
+            
+            theta = pose[frame]
+            posed_bone_locations = test_skeleton.pose_bones(theta, degrees=True, exclude_root=True)
+            skel_mesh.points = posed_bone_locations
+            
+            # Write a frame. This triggers a render.
+            plotter.write_frame()
 
 # Closes and finalizes movie
 plotter.close()

@@ -145,7 +145,7 @@ class Skeleton():
             
         return kintree
     
-    def get_absolute_transformations(self, theta, trans):
+    def get_absolute_transformations(self, theta, trans, degrees):
         
         n_bones = len(self.bones)
         assert len(theta) == n_bones, f"Expected theta to have shape (n_bones, 3), got {theta.shape}"
@@ -155,7 +155,7 @@ class Skeleton():
         relative_trans = np.array(trans)
         relative_rot_q = np.empty((n_bones, 4))
         for i in range(n_bones):
-            rot = Rotation.from_euler('xyz', theta[i])
+            rot = Rotation.from_euler('xyz', theta[i], degrees=degrees)
             relative_rot_q[i] = rot.as_quat()
         
         computed = np.zeros(n_bones, dtype=bool)
@@ -189,7 +189,7 @@ class Skeleton():
         return absolute_rot, absolute_trans
      
         
-    def pose_bones(self, theta, trans=None, get_transforms=False): 
+    def pose_bones(self, theta, trans=None, get_transforms=False, degrees=False, exclude_root=False): 
         """
         Apply the given relative rotations to the bones in the skeleton.
         This is used for deforming the rest pose to the current frame.
@@ -202,6 +202,9 @@ class Skeleton():
         trans : np.ndarray (optionl)
             Relative bone translations as given in SMPL data.
             If None, relative translations are set to zero vectors.
+        degrees: bool
+            If True, theta rotation parameter will be interpreted as in degrees.
+            Else, theta is assumed to be in radians. Default is False.
             
         Returns
         -------
@@ -226,8 +229,8 @@ class Skeleton():
             assert trans.shape == (len(self.bones), 4) or trans.shape == (len(self.bones), 3) 
             if trans.shape[1] == 3:
                 trans[:, -1] = 1   # Convert to homogeneous coordinates
-        
-        abs_rot_quat, abs_trans_homo = self.get_absolute_transformations(theta, trans)
+                
+        abs_rot_quat, abs_trans_homo = self.get_absolute_transformations(theta, trans, degrees)
         final_bone_locations = np.empty((2*len(self.bones), 3))
         
         for i, bone in enumerate(self.bones):
@@ -248,7 +251,13 @@ class Skeleton():
             final_bone_locations[2*i] = s_translated
             final_bone_locations[2*i + 1] = e_translated
             
-
+        if exclude_root:
+            # Warning: This still assumes absolute transformations are returned for all joints
+            # so it doesn't exclude root. It just excludes root bone assuming the descedents are
+            # connected to them without an offset. TODO: Couldn't we design better so that we won't
+            # need this option at all?
+            final_bone_locations = final_bone_locations[2:] 
+            
         if get_transforms:
             return final_bone_locations, abs_rot_quat, abs_trans_homo[:3]
         return final_bone_locations
@@ -364,7 +373,7 @@ if __name__ == "__main__":
     # Add skeleton mesh based on T-pose locations
     # ---------------------------------------------------------------------------- 
     n_bones = len(smpl_skeleton.bones)
-    rest_bone_locations = smpl_skeleton.get_rest_bone_locations(exclude_root = True)
+    rest_bone_locations = smpl_skeleton.get_rest_bone_locations(exclude_root=True)
     line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
     
     skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
@@ -373,16 +382,16 @@ if __name__ == "__main__":
     n_repeats = 1
     n_frames = len(J)
     for _ in range(n_repeats):
-        for frame in range(n_frames-1):
+        for frame in range(n_frames):
             
             # TODO: Update mesh points
             theta = np.reshape(pose[frame].numpy(), newshape=(-1, 3))
             t = trans[frame].numpy()
-            # !!!!!!!!!!!!!!! YOU're not using t  !!!!!!!!!!!!!!!!!!!!!!!!!!!
-            posed_bone_locations = smpl_skeleton.pose_bones(theta)
-           
-            current_skel_data = np.reshape(posed_bone_locations[2:], (2*(n_bones-1), 3))
-            skel_mesh.points = current_skel_data
+            # TODO: (because it's global t, should be only applied to root)
+            # we're not using t, we should handle it after correcting the FK.
+         
+            posed_bone_locations = smpl_skeleton.pose_bones(theta, exclude_root=True)
+            skel_mesh.points = posed_bone_locations
             
             # Write a frame. This triggers a render.
             plotter.write_frame()
