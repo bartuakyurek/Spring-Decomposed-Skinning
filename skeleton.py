@@ -150,7 +150,7 @@ class Skeleton():
         n_bones = len(self.bones)
         assert len(theta) == n_bones, f"Expected theta to have shape (n_bones, 3), got {theta.shape}"
         assert len(trans) == n_bones, f"Expected trans to have shape (n_bones, 4), got {trans.shape}"
-        assert trans.shape[1] == 4, "Please provide homogeneous coordinates."
+        assert trans.shape[1] == 3, "Please provide 3D coordinates for translation."
         
         relative_trans = np.array(trans)
         relative_rot_q = np.empty((n_bones, 4))
@@ -160,16 +160,19 @@ class Skeleton():
         
         computed = np.zeros(n_bones, dtype=bool)
         vQ = np.zeros((n_bones, 4))
-        vT = np.zeros((n_bones, 4))
+        vT = np.zeros((n_bones, 3))
         # Dynamic programming
         def fk_helper(b : int): 
             if not computed[b]:
-                r = np.ones(4) 
-                r[:3] = self.bones[b].start_location 
+                
+                r = self.bones[b].start_location 
                 if self.bones[b].parent is None:
                     # Base case for roots
                     vQ[b] = relative_rot_q[b]
-                    vT[b] = r - (relative_rot_q[b] * r) + relative_trans[b]
+                    
+                    abs_rot = Rotation.from_quat(vQ[b])
+                    r_rotated = abs_rot.apply(r)               # (vQ[b] * r)
+                    vT[b] = r - r_rotated + relative_trans[b]
                     
                 else:
                     # First compute parent's
@@ -177,8 +180,15 @@ class Skeleton():
                     fk_helper(parent_idx)
             
                     vQ[b] = vQ[parent_idx] * relative_rot_q[b]
-                    vT[b] = vT[parent_idx] - (vQ[b] * r) + vQ[parent_idx]*(r + relative_trans[b])
-                    #vT[b] = -(vQ[b] * r) + vQ[parent_idx]*(r + relative_trans[b] - vT[parent_idx]) + vT[parent_idx]
+                    
+                    abs_rot = Rotation.from_quat(vQ[b])
+                    r_rotated = abs_rot.apply(r)  # (vQ[b] * r)
+                    
+                    abs_rot_parent = Rotation.from_quat(vQ[parent_idx])
+                    x = r + relative_trans[b] 
+                    x_rotated = abs_rot_parent.apply(x) # vQ[p]* (r + dT[b])
+                   
+                    vT[b] = vT[parent_idx] - r_rotated + x_rotated
 
                 computed[b] = True
                 
@@ -226,17 +236,12 @@ class Skeleton():
         # Set up the relative translation (if not provided set to zero)
         # ---------------------------------------------------------------------
         if trans is None:
-            trans = np.zeros((len(self.bones), 4))
-            trans[:, -1] = 1   # Homogeneous coordinates
-        else:
-            assert trans.shape == (len(self.bones), 4) or trans.shape == (len(self.bones), 3) 
-            if trans.shape[1] == 3:
-                trans[:, -1] = 1   # Convert to homogeneous coordinates
+            trans = np.zeros((len(self.bones), 3))
         
         # ---------------------------------------------------------------------
         # Get absolute rotation and translation of the bones
         # ---------------------------------------------------------------------
-        abs_rot_quat, abs_trans_homo = self.get_absolute_transformations(theta, trans, degrees)
+        abs_rot_quat, abs_trans = self.get_absolute_transformations(theta, trans, degrees)
         
         
         # ---------------------------------------------------------------------
@@ -250,9 +255,10 @@ class Skeleton():
             
             # Convert absolute rotations and translations into a single transformation matrix
             M = np.zeros((4,4))
-            M[:3, :3] = rot_mat 
-            M[:, -1] = abs_trans_homo[i] # Homogeneous coordinates have 1.0 at the end
-            
+            M[:3, :3] = rot_mat     # Place rotation matrix
+            M[:3, -1] = abs_trans[i] # Place translation vector
+            M[-1, -1] = 1.0
+                
             s, e = np.ones((4,)), np.ones((4,))
             s[:3] = bone.start_location
             e[:3] = bone.end_location
