@@ -10,7 +10,90 @@ IMPORTANT NOTES:
 import igl
 import torch
 import numpy as np
+from scipy.spatial.transform import Rotation
+
+def compose_transform_matrix(trans_vec, rot : Rotation ):
+    """
+    Compose a transformation matrix given the translation vector
+    and Rotation object.
+
+    Parameters
+    ----------
+    trans_vec : np.ndarray or list
+        3D translation vector to be inserted at the last column of 4x4 matrix.
+    rot : scipy.spatial.transform.Rotation
+        Rotation object of scipy.spatial.transform. This is internally
+        converted to 3x3 matrix to place in the 4x4 transformation matrix.
+
+    Returns
+    -------
+    M : np.ndarray
+        Transformation matrix composed by 3x3 rotation matrix and 3x1 translation
+        vector, with the last row being [0,0,0,1].
+
+    """
+    if type(trans_vec) is list:
+        trans_vec = np.array(trans_vec)
     
+    if trans_vec.shape == (3,1):
+        trans_vec = trans_vec[:,0]
+        
+    assert type(trans_vec) == np.ndarray, f"Expected translation vector to have type np.ndarray, got {trans_vec.shape}."
+    assert trans_vec.shape == (3, ), f"Expected translation vector to have shape (3,) got {trans_vec.shape}"
+    
+    rot_mat = rot.as_matrix()
+    
+    # Convert absolute rotations and translations into a single transformation matrix
+    M = np.zeros((4,4))
+    M[:3, :3] = rot_mat     # Place rotation matrix
+    M[:3, -1] = trans_vec # Place translation vector
+    M[-1, -1] = 1.0  
+    # Sanity check that M transformation matrix last row must be [0 0 0 1] 
+    assert np.all(M[-1] == np.array([0.,0.,0.,1.])), f"Unexpected error occured at {M}."
+    return M
+
+    
+def skinning(verts, abs_rot, abs_trans, weights, skinning_type="LBS"):
+    """
+    Deform the vertices by provided transformations and selected skinning
+    method.
+
+    Parameters
+    ----------
+    verts : np.ndarray
+        Vertices to be deformed by provided transformations.
+    abs_rot : np.ndarray
+        Absolute rotation transformation quaternions of shape (n_bones, 4)
+    abs_trans : np.ndarray
+        Absolute translation vec3 of shape (n_bones, 3)
+    weights : np.ndarray
+        Binding weights between vertices and bone transformation of shape
+        (n_verts, n_bones). Note that to deform the skeleton, set weights of 
+        shape (n_bones * 2, n_bones) with 1.0 weights for every couple rows.
+        e.g. for a two bones it is 
+                                    [[1.0, 0.0],
+                                     [1.0, 0.0],
+                                     [0.0, 1.0],
+                                     [0.0, 1.0]] 
+    skinning_type : str, optional
+        DESCRIPTION. The default is "LBS".
+
+    Returns
+    -------
+    V_deformed : np.ndarray
+        Deformed vertices of shape (n_verts, 3)
+    """
+    
+    V_deformed = None
+    if skinning_type == "LBS" or skinning_type == "lbs":
+        # Deform vertices based on Linear Blend Skinning
+        pass
+    else:
+        print(f">> ERROR: This skinning type \"{skinning_type}\" is not supported yet.")
+    
+    return V_deformed
+
+
 # todo:  taken https://github.com/Dou-Yiming/Pose_to_SMPL/blob/main/smplpytorch/pytorch/rodrigues_layer.py
 def quat2mat(quat):
     """Convert quaternion coefficients to rotation matrix.
@@ -92,9 +175,8 @@ def batch_axsang_to_quats(rot):
     return stack((qx, qy, qz, qw)).transpose()
 
 def batch_axsang_to_quats2(axisang):
-    # TODO: HEPSINI TORCH'DA YAP YAPACAKSAN....
-    #axisang = torch.from_numpy(axisang)
-    
+    # TODO: assert axisang is type torch array
+   
     axisang_norm = torch.norm(axisang + 1e-8, p=2, dim=1)
     angle = torch.unsqueeze(axisang_norm, -1)
     axisang_normalized = torch.div(axisang, angle)
@@ -103,7 +185,6 @@ def batch_axsang_to_quats2(axisang):
     v_sin = torch.sin(angle)
     quat = torch.cat([v_cos, v_sin * axisang_normalized], dim=1)
     
-   # quat = np.array(quat)
     return quat
 
 def forward_kin(joint_pos, 
@@ -167,46 +248,40 @@ def LBS(V, W, J, JE, theta):
             # tmp = W[vertex, bone] * np.matmul(V[vertex], R_mat[bone]) + abs_t[bone]
             # TODO: remove for loop!
             V_posed[vertex] += W[vertex, bone] * np.matmul(V[vertex], R_mat[bone]) + abs_t[bone]
-    
+            
+    # TODO: where's the T you promised in return?...
     return V_posed
 
 def inverse_LBS(V_posed, W, J, JE, theta):
     
     unposed_V = LBS(V_posed, W, J, JE, -theta)
-    
     return unposed_V
 
 if __name__ == "__main__":
     print(">> Testing skinning.py...")
-    
-    # Load the mesh data
-    with np.load("./results/skinning_sample_data.npz") as data:
-        V = data['arr_0'] # Vertices, V x 3
-        F = data['arr_1'] # Faces, F x 3
-        J = data['arr_2'] # Joint locations J x 3
-        theta = data['arr_3'] # Joint relative rotations J x 3
-        kintree = data['arr_4'] # Skeleton joint hierarchy (J-1) x 2
-        W = data['arr_5']
-        
-    
-    ## UNPOSE FUNCTION -------------------------------------------
-    if np.sum(theta[0]) > 1e-8:
-        print(">>>> WARNING ROOT ROTATION IS NON-ZERO! You need to adjust your code...")
-        
-    theta = theta[1:] # Discrad the root bone's rotation (it is zero)
-    theta = np.array(theta) # TODO: stick to either torch or numpy, dont juggle two
-    
-    V_unposed = inverse_LBS(V, W, J, kintree, theta)
-    V_cycle = LBS(V_unposed, W, J, kintree, theta)
-    
-    print(np.sum(V - V_cycle))
-    #np.savez("./results/V_unposed.npz", V_unposed)
-    F = np.array(F, dtype=int)
-    igl.write_obj("V_unposed_SMPL.obj", V_unposed, F)
-    igl.write_obj("V_cycle_SMPL.obj", V_cycle, F)
+    """
+    from smpl_torch_batch import SMPLModel
+    from skeleton_data import get_smpl_skeleton
 
-    ## END OF UNPOSE FUNCTION ------------------------------------
-    
+    training_data = torch.load('./data/50004_dataset.pt')
+    data_loader = torch.utils.data.DataLoader(training_data, batch_size=1, shuffle=False)
+
+    device = "cpu"
+    smpl_model = SMPLModel(device=device, model_path='./body_models/smpl/female/model.pkl')
+    kintree = get_smpl_skeleton()
+    F = smpl_model.faces
+
+    for data in data_loader:
+       beta_pose_trans_seq = data[0].squeeze().type(torch.float64)
+       betas, pose, trans = beta_pose_trans_seq[:,:10], beta_pose_trans_seq[:,10:82], beta_pose_trans_seq[:,82:] 
+       target_verts = data[1].squeeze()
+       smpl_verts, joints = smpl_model(betas, pose, trans)
+       break
+       
+    V = smpl_verts.detach().cpu().numpy()
+    J = joints.detach().cpu().numpy()
+    n_frames, n_verts, n_dims = target_verts.shape
+    """
     
     
     
