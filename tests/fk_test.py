@@ -18,6 +18,9 @@ from pyvista_render_tools import add_skeleton
 from skeleton import Skeleton
 from global_vars import VERBOSE
 
+# ---------------------------------------------------------------------------- 
+# Declare joint positions and bones between joint indices 
+# ---------------------------------------------------------------------------- 
 joint_locations = np.array([
                             [1., 1., 0.],
                             [1., 2., 0.],

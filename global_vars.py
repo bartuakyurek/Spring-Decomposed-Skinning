@@ -10,6 +10,12 @@ Created on Fri Sep 27 13:36:50 2024
 _SPACE_DIMS_ = 3    # Space dimensions either 2 or 3
 HOMO_COORD = False  # Adds 1 to the transformation dimensions if True
 
-# TODO: Add data paths
-VERBOSE = True        # WARNING: This is not used in every function yet
+# WARNING: This is not used in every function yet
+VERBOSE = True        
 
+# TODO: why don't you use os.path...? 
+ABS_PATH = "/Users/bartu/Documents/Github/Spring-Decomp/"
+RESULT_PATH = ABS_PATH + "results/"
+DATA_PATH = ABS_PATH + "data/"
+MODEL_PATH = ABS_PATH + "body_models/"
+IGL_DATA_PATH = DATA_PATH +"igl_data/"

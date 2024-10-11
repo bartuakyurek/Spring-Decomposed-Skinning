@@ -25,12 +25,13 @@ from skeleton import Skeleton
 from smpl_torch_batch import SMPLModel
 from skeleton_data import get_smpl_skeleton
 from pyvista_render_tools import add_skeleton
+from global_vars import DATA_PATH, MODEL_PATH, RESULT_PATH
 
 # ---------------------------------------------------------------------------- 
 # Load SMPL animation file and get the mesh and associated rig data
 # ---------------------------------------------------------------------------- 
-data_loader = torch.utils.data.DataLoader(torch.load('../data/50004_dataset.pt'), batch_size=1, shuffle=False)
-smpl_model = SMPLModel(device="cpu", model_path='../body_models/smpl/female/model.pkl')
+data_loader = torch.utils.data.DataLoader(torch.load(DATA_PATH+'50004_dataset.pt'), batch_size=1, shuffle=False)
+smpl_model = SMPLModel(device="cpu", model_path = MODEL_PATH +'smpl/female/model.pkl')
 kintree = get_smpl_skeleton()
 for data in data_loader:
    beta_pose_trans_seq = data[0].squeeze().type(torch.float64)
@@ -71,7 +72,7 @@ rest_bone_locations = smpl_skeleton.get_rest_bone_locations(exclude_root=True)
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-plotter.open_movie("../results/smpl-skeleton.mp4")
+plotter.open_movie(RESULT_PATH + "smpl-skeleton.mp4")
 
 n_repeats = 1
 n_frames = len(J)
