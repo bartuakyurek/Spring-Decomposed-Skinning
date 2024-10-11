@@ -177,13 +177,7 @@ class Skeleton():
                     r = self.bones[b].start_location
                     r_rotated = abs_rot.apply(r)               # (vQ[b] * r)
                     vT[b] = r - r_rotated + relative_trans[b]
-                    if VERBOSE:
-                        pass
-                        #print(">> Fk_helper() parent bone r: ", r)
-                        #print("vQ[b]=", vQ[b])
-                        #print("vT[b]=", vT[b])
-                        #print("dQ[b]=", relative_trans[b])
-                        #print("dT[b]=", relative_rot_q[b])
+                    
                 else:
                     # First compute parent's
                     parent_idx = self.bones[b].parent.idx
@@ -203,14 +197,6 @@ class Skeleton():
                    
                     vT[b] = vT[parent_idx] - r_rotated + x_rotated
                     
-                    if VERBOSE:
-                        pass
-                        #print(">> Fk_helper() bone r: ", r)
-                        #print("vQ[b]=", vQ[b])
-                        #print("vT[b]=", vT[b])
-                        #print("dT[b]=", relative_trans[b])
-                        #print("dQ[b]=", relative_rot_q[b])
-
                 computed[b] = True
                 
         for b in range(n_bones):
@@ -359,80 +345,10 @@ class Skeleton():
     
 if __name__ == "__main__":
     print(">> Testing skeleton.py...")
+    
+    
      
-    import torch
-    import pyvista as pv
     
-    from smpl_torch_batch import SMPLModel
-    from skeleton_data import get_smpl_skeleton
-    from pyvista_render_tools import add_skeleton
-    # ---------------------------------------------------------------------------- 
-    # Load SMPL animation file and get the mesh and associated rig data
-    # ---------------------------------------------------------------------------- 
-    data_loader = torch.utils.data.DataLoader(torch.load('./data/50004_dataset.pt'), batch_size=1, shuffle=False)
-    smpl_model = SMPLModel(device="cpu", model_path='./body_models/smpl/female/model.pkl')
-    kintree = get_smpl_skeleton()
-    for data in data_loader:
-       beta_pose_trans_seq = data[0].squeeze().type(torch.float64)
-       betas, pose, trans = beta_pose_trans_seq[:,:10], beta_pose_trans_seq[:,10:82], beta_pose_trans_seq[:,82:] 
-       target_verts = data[1].squeeze()
-       smpl_verts, joints = smpl_model(betas, pose, trans)
-       break
-    V = smpl_verts.detach().cpu().numpy()
-    J = joints.detach().cpu().numpy()
-    n_frames, n_verts, n_dims = target_verts.shape
-
-    # Get rest pose SMPL data
-    rest_verts, rest_joints = smpl_model(betas, torch.zeros_like(pose), trans)
-    J_rest = rest_joints.numpy()[0]
-    
-    # ---------------------------------------------------------------------------- 
-    # Create skeleton based on rest pose SMPL data
-    # ---------------------------------------------------------------------------- 
-    smpl_skeleton = Skeleton(root_vec = J_rest[0])
-    for edge in kintree:
-        parent_idx, bone_idx = edge
-        smpl_skeleton.insert_bone(endpoint_location = J_rest[bone_idx], 
-                                  parent_node_idx = parent_idx)
-        
-    # ---------------------------------------------------------------------------- 
-    # Create plotter 
-    # ---------------------------------------------------------------------------- 
-    RENDER = True
-    plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
-    plotter.camera_position = 'zy'
-    plotter.camera.azimuth = -90
-
-    # ---------------------------------------------------------------------------- 
-    # Add skeleton mesh based on T-pose locations
-    # ---------------------------------------------------------------------------- 
-    n_bones = len(smpl_skeleton.bones)
-    rest_bone_locations = smpl_skeleton.get_rest_bone_locations(exclude_root=True)
-    line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
-    
-    skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-    plotter.open_movie("./results/smpl-skeleton.mp4")
-    
-    n_repeats = 1
-    n_frames = len(J)
-    for _ in range(n_repeats):
-        for frame in range(n_frames):
-            
-            # TODO: Update mesh points
-            theta = np.reshape(pose[frame].numpy(), newshape=(-1, 3))
-            t = trans[frame].numpy()
-            # TODO: (because it's global t, should be only applied to root)
-            # we're not using t, we should handle it after correcting the FK.
-         
-            posed_bone_locations = smpl_skeleton.pose_bones(theta, exclude_root=True)
-            skel_mesh.points = posed_bone_locations
-            
-            # Write a frame. This triggers a render.
-            plotter.write_frame()
-
-    # Closes and finalizes movie
-    plotter.close()
-    plotter.deep_clean()
 
     
         
