@@ -222,6 +222,9 @@ class Skeleton():
         """
         assert type(theta) == np.ndarray, f"Expected pose type np.ndarray, got {type(theta)}"
         
+        # ---------------------------------------------------------------------
+        # Set up the relative translation (if not provided set to zero)
+        # ---------------------------------------------------------------------
         if trans is None:
             trans = np.zeros((len(self.bones), 4))
             trans[:, -1] = 1   # Homogeneous coordinates
@@ -229,8 +232,16 @@ class Skeleton():
             assert trans.shape == (len(self.bones), 4) or trans.shape == (len(self.bones), 3) 
             if trans.shape[1] == 3:
                 trans[:, -1] = 1   # Convert to homogeneous coordinates
-                
+        
+        # ---------------------------------------------------------------------
+        # Get absolute rotation and translation of the bones
+        # ---------------------------------------------------------------------
         abs_rot_quat, abs_trans_homo = self.get_absolute_transformations(theta, trans, degrees)
+        
+        
+        # ---------------------------------------------------------------------
+        # Compute the final bone locations
+        # ---------------------------------------------------------------------
         final_bone_locations = np.empty((2*len(self.bones), 3))
         
         for i, bone in enumerate(self.bones):
@@ -242,20 +253,23 @@ class Skeleton():
             M[:3, :3] = rot_mat 
             M[:, -1] = abs_trans_homo[i] # Homogeneous coordinates have 1.0 at the end
             
-            s, e = np.ones((4,1)), np.ones((4,1))
-            s[:3, 0] = bone.start_location
-            e[:3, 0] = bone.end_location
-            s_translated = (M @ s)[:3,0]
-            e_translated = (M @ e)[:3,0]
+            s, e = np.ones((4,)), np.ones((4,))
+            s[:3] = bone.start_location
+            e[:3] = bone.end_location
+            s_translated = (M @ s)[:3]
+            e_translated = (M @ e)[:3]
             
             final_bone_locations[2*i] = s_translated
             final_bone_locations[2*i + 1] = e_translated
-            
+        
+        # ---------------------------------------------------------------------
+        # Return the data with the requested settings
+        # ---------------------------------------------------------------------
         if exclude_root:
             # Warning: This still assumes absolute transformations are returned for all joints
             # so it doesn't exclude root. It just excludes root bone assuming the descedents are
-            # connected to them without an offset. TODO: Couldn't we design better so that we won't
-            # need this option at all?
+            # connected to them without an offset. 
+            # TODO: Couldn't we design better so that we won't need this option at all?
             final_bone_locations = final_bone_locations[2:] 
             
         if get_transforms:
