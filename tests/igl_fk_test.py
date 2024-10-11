@@ -70,7 +70,7 @@ for _ in range(n_repeats):
     for frame in range(n_frames):
         for _ in range(24):
             # TODO: Update mesh points
-            theta = np.reshape(pose[frame], newshape=(-1, 3))
+            theta = pose[frame]
             posed_bone_locations = test_skeleton.pose_bones(theta)
     
             current_skel_data = np.reshape(posed_bone_locations[2:], (2*(n_bones-1), 3))
