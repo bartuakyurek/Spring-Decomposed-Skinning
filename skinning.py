@@ -10,7 +10,7 @@ IMPORTANT NOTES:
 import igl
 import torch
 import numpy as np
-from scipy.spatial.transformation import Rotation
+from scipy.spatial.transform import Rotation
 
 def compose_transform_matrix(trans_vec, rot : Rotation ):
     """
@@ -21,8 +21,8 @@ def compose_transform_matrix(trans_vec, rot : Rotation ):
     ----------
     trans_vec : np.ndarray or list
         3D translation vector to be inserted at the last column of 4x4 matrix.
-    rot : Rotation
-        Rotation object of scipy.spatial.transformation. This is internally
+    rot : scipy.spatial.transform.Rotation
+        Rotation object of scipy.spatial.transform. This is internally
         converted to 3x3 matrix to place in the 4x4 transformation matrix.
 
     Returns

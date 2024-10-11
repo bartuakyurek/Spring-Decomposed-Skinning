@@ -9,6 +9,8 @@ from scipy.spatial.transform import Rotation
 import numpy as np
 import igl
 
+from skinning import compose_transform_matrix
+
 class Bone():
     def __init__(self, endpoint_location, idx, parent=None):
         assert type(idx) == int, f"Expected bone index to be type int, got {type(idx)}"
@@ -251,17 +253,8 @@ class Skeleton():
         
         for i, bone in enumerate(self.bones):
             rot = Rotation.from_quat(abs_rot_quat[i])
-            rot_mat = rot.as_matrix()
+            M = compose_transform_matrix(abs_trans[i], rot)
             
-            # Convert absolute rotations and translations into a single transformation matrix
-            M = np.zeros((4,4))
-            M[:3, :3] = rot_mat     # Place rotation matrix
-            M[:3, -1] = abs_trans[i] # Place translation vector
-            M[-1, -1] = 1.0
-            
-            # Sanity check that M transformation matrix last row must be [0 0 0 1] 
-            assert np.all(M[-1] == np.array([0.,0.,0.,1.])), f"Unexpected error occured at {M}."
-                
             s, e = np.ones((4,)), np.ones((4,))
             s[:3] = bone.start_location
             e[:3] = bone.end_location
