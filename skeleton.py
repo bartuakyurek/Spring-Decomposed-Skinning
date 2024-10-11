@@ -167,12 +167,12 @@ class Skeleton():
         def fk_helper(b : int): 
             if not computed[b]:
                 
-                r = self.bones[b].start_location 
                 if self.bones[b].parent is None:
                     # Base case for roots
                     vQ[b] = relative_rot_q[b]
                     
                     abs_rot = Rotation.from_quat(vQ[b])
+                    r = self.bones[b].end_location 
                     r_rotated = abs_rot.apply(r)               # (vQ[b] * r)
                     vT[b] = r - r_rotated + relative_trans[b]
                     
@@ -184,6 +184,7 @@ class Skeleton():
                     vQ[b] = vQ[parent_idx] * relative_rot_q[b]
                     
                     abs_rot = Rotation.from_quat(vQ[b])
+                    r = self.bones[b].start_location 
                     r_rotated = abs_rot.apply(r)  # (vQ[b] * r)
                     
                     abs_rot_parent = Rotation.from_quat(vQ[parent_idx])
