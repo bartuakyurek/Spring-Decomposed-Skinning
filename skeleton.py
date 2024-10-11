@@ -245,7 +245,6 @@ class Skeleton():
         # ---------------------------------------------------------------------
         abs_rot_quat, abs_trans = self.get_absolute_transformations(theta, trans, degrees)
         
-        
         # ---------------------------------------------------------------------
         # Compute the final bone locations
         # ---------------------------------------------------------------------
@@ -257,7 +256,7 @@ class Skeleton():
             
             s, e = np.ones((4,)), np.ones((4,))
             s[:3] = bone.start_location
-            e[:3] = bone.end_location
+            e[:3] = bone.end_location 
             s_translated = (M @ s)[:3]
             e_translated = (M @ e)[:3]
             
@@ -275,7 +274,7 @@ class Skeleton():
             final_bone_locations = final_bone_locations[2:] 
             
         if get_transforms:
-            return final_bone_locations, abs_rot_quat, abs_trans_homo[:3]
+            return final_bone_locations, abs_rot_quat, abs_trans
         return final_bone_locations
         
     def insert_bone(self, endpoint_location, parent_node_idx):
