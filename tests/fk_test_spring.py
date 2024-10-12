@@ -13,6 +13,7 @@ import pyvista as pv
 
 import __init__
 from skeleton import Skeleton
+from spring_rig_helper import SpringRigContainer
 from pyvista_render_tools import add_skeleton
 from global_vars import IGL_DATA_PATH, RESULT_PATH
 
@@ -77,8 +78,13 @@ pose = np.array([
 
 test_skeleton = create_skeleton(joint_locations, kintree)
 helper_indices  = add_helper_bones(test_skeleton, helper_bone_endpoints, 
-                 helper_bone_parents, #offset_ratio=0.0,
-                 startpoints=helper_bone_endpoints-1e-4)
+                                     helper_bone_parents, #offset_ratio=0.0,
+                                     startpoints=helper_bone_endpoints-1e-6)
+
+helper_bones = np.array(test_skeleton.bones)[helper_indices]
+helper_rig = SpringRigContainer(helper_bones) # TODO: could you do the naming more consistent? i.e. spring_rig_helper SpringRigContainer and helper_rig are all different names!
+
+
 # TODO: you could also add insert_point_handle() to Skeleton class
 # that creates a zero-length bone (we need to render bone tips as spheres to see that)
 
