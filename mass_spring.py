@@ -16,14 +16,13 @@ import numpy as np
 import pyvista as pv
 
 from sanity_check import _is_equal
-from global_vars import _SPACE_DIMS_
+from global_vars import _SPACE_DIMS_, VERBOSE
 
 _DEFAULT_STIFFNESS = 0.5
 _DEFAULT_DAMPING = 1.0
 _DEFAULT_MASS = 2.5
 _DEFAULT_SPRING_SCALE = 1
 _DEFAULT_MASS_SCALE = 1 # Default is 0.1 but the simulation doesn't work at 0.1...
-_VERBOSE = False
 class Particle:
     def __init__(self, 
                  coordinate, 
@@ -74,7 +73,7 @@ class Spring:
                  stiffness : float, 
                  damping : float,
                  dscale : float = _DEFAULT_SPRING_SCALE,
-                 verbose : bool = _VERBOSE
+                 verbose : bool = VERBOSE
                  ):
         
         # TODO: Are you going to implement squared norms for optimized performance?
@@ -90,7 +89,7 @@ class Spring:
         self.m1 = beginning_mass
         self.m2 = ending_mass
         
-    def get_force_on_mass(self, mass : Particle, verbose=_VERBOSE):
+    def get_force_on_mass(self, mass : Particle, verbose=VERBOSE):
         
         distance = np.linalg.norm(self.m1.center - self.m2.center)
         if distance < 1e-16:
@@ -146,12 +145,13 @@ class MassSpringSystem:
             self.masses[i].center += velocity * dt * self.masses[i].dscale
             self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
             
-    def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS,  gravity=False, verbose=_VERBOSE):
+    def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS,  gravity=False, verbose=VERBOSE):
         mass = Particle(mass_coordinate, mass=mass, gravity=gravity)
         
         if type(mass) is Particle:
             if verbose: print(f">> Added mass at {mass.center}")
             self.masses.append(mass)
+            return len(self.masses) - 1  # Return the index of the appended mass
         else:
             print(f"Expected Particle class, got {type(mass)}")
             
