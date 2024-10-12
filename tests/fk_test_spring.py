@@ -30,6 +30,18 @@ for edge in kintree:
      test_skeleton.insert_bone(endpoint = joint_locations[bone_idx], 
                                parent_idx = parent_idx)
 
+helper_bone_endpoints = np.array([ joint_locations[2] + [0.0, 0.2, 0.0] ])
+helper_bone_parents = [2]
+n_helper = len(helper_bone_parents)
+
+for i in range(n_helper):
+    test_skeleton.insert_bone(endpoint = helper_bone_endpoints[i],
+                              parent_idx = helper_bone_parents[i],
+                              at_the_tip=False,
+                              offset_ratio = 1.0,
+                              #startpoint = test_skeleton.bones[2].end_location-test_skeleton.bones[2].start_location
+                              )
+
 # ---------------------------------------------------------------------------- 
 # Create plotter 
 # ---------------------------------------------------------------------------- 
@@ -41,8 +53,9 @@ plotter.camera.azimuth = -90
 # ---------------------------------------------------------------------------- 
 # Add skeleton mesh based on T-pose locations
 # ---------------------------------------------------------------------------- 
+EXCLUDE_ROOT = True
 n_bones = len(test_skeleton.bones)
-rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root = True)
+rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
@@ -57,13 +70,15 @@ pose = np.array([
                  [0., 0., 0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
+                 [0.,0.,0.],
                 ],
                 [
                  [0.,0.,0.],
-                 [0.,40.,0.],
+                 [0.,0.,0.],
                  [0., 0., 0.],
-                 [0.,10.,0.],
-                 [10.,0.,0.],
+                 [0.,0.,0.],
+                 [0.,0.,0.],
+                 [0.,0.,0.],
                 ]
                 ])
 """
@@ -89,10 +104,8 @@ for _ in range(n_repeats):
         for _ in range(24):
             theta = pose[frame]
             #t = trans[frame]
-            posed_bone_locations = test_skeleton.pose_bones(theta, degrees=True)
-    
-            current_skel_data = np.reshape(posed_bone_locations[2:], (2*(n_bones-1), 3))
-            skel_mesh.points = current_skel_data
+            posed_bone_locations = test_skeleton.pose_bones(theta, degrees=True, exclude_root=EXCLUDE_ROOT)
+            skel_mesh.points = posed_bone_locations
     
             # Write a frame. This triggers a render.
             plotter.write_frame()
