@@ -300,6 +300,7 @@ class Skeleton():
             starts at the starting point of the parent bone, at 1.0 it is
             at the tip of the parent bone, in between it's positioned based on 
             the parent bone's length and provided ratio. The default is 1.0.
+            Note that to use this option you need to set at_the_tip=False first.
         startpoint : np.ndarray, optional
             When provided, it sets the bone starting point. The default is None.
 
@@ -308,8 +309,10 @@ class Skeleton():
         None.
 
         """
+        if not type(parent_idx) == int:
+            assert np.issubdtype(parent_idx, np.integer), f"Expected parent index to be an integer, got {type(parent_idx)}"
+       
         assert parent_idx < len(self.bones), f">> Invalid parent index {parent_idx}. Please select an index less than {len(self.bones)}"
-        assert type(parent_idx) == int, f">> Parent index expected to be type int, got {type(parent_idx)}."
         assert offset_ratio <= 1.0 and offset_ratio >= 0.0, f"Offset ratio is expected to be in range [0.0, 1.0], got {offset_ratio}."
         
         parent_bone = self.bones[parent_idx]
