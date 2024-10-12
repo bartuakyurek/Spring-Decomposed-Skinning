@@ -32,13 +32,17 @@ def add_helper_bones(test_skeleton, helper_bone_endpoints, helper_bone_parents,
     n_helper = len(helper_bone_parents)
     if len(startpoints)==0: startpoints = np.repeat([None],n_helper)
     
+    helper_indices = []
     for i in range(n_helper):
-        test_skeleton.insert_bone(endpoint = helper_bone_endpoints[i],
-                                  parent_idx = helper_bone_parents[i],
-                                  at_the_tip=False,
-                                  offset_ratio = offset_ratio,
-                                  startpoint = startpoints[i]
-                                  )
+        bone_idx = test_skeleton.insert_bone(endpoint = helper_bone_endpoints[i],
+                                              parent_idx = helper_bone_parents[i],
+                                              at_the_tip=False,
+                                              offset_ratio = offset_ratio,
+                                              startpoint = startpoints[i]
+                                              )
+        helper_indices.append(bone_idx)
+    return helper_indices
+
 # ---------------------------------------------------------------------------- 
 # Set skeletal animation data
 # ---------------------------------------------------------------------------- 
@@ -72,9 +76,11 @@ pose = np.array([
 # ---------------------------------------------------------------------------- 
 
 test_skeleton = create_skeleton(joint_locations, kintree)
-add_helper_bones(test_skeleton, helper_bone_endpoints, 
+helper_indices  = add_helper_bones(test_skeleton, helper_bone_endpoints, 
                  helper_bone_parents, #offset_ratio=0.0,
                  startpoints=helper_bone_endpoints-1e-4)
+# TODO: you could also add insert_point_handle() to Skeleton class
+# that creates a zero-length bone (we need to render bone tips as spheres to see that)
 
 # ---------------------------------------------------------------------------- 
 # Create plotter 
@@ -106,6 +112,11 @@ for _ in range(n_repeats):
             theta = pose[frame]
             #t = trans[frame]
             posed_bone_locations = test_skeleton.pose_bones(theta, degrees=True, exclude_root=EXCLUDE_ROOT)
+            
+            # TODO: simulate the mass
+            
+            # TODO: update the posed_bone_locations (maybe not directly update the skeleton bones' locations?)
+            
             skel_mesh.points = posed_bone_locations
     
             # Write a frame. This triggers a render.

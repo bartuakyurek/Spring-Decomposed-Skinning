@@ -302,8 +302,8 @@ class Skeleton():
 
         Returns
         -------
-        None.
-
+        new_bone.idx : int
+        Returns the index of the inserted bone in the Skeleton.bones list.
         """
         if not type(parent_idx) == int:
             assert np.issubdtype(parent_idx, np.integer), f"Expected parent index to be an integer, got {type(parent_idx)}"
@@ -326,7 +326,10 @@ class Skeleton():
                 self.bones[new_bone.idx].translate(parent_dir_scaled, override=True)
         else:
             self.bones[new_bone.idx].start_location = startpoint
-            
+        
+        # Sanity check the created bone.idx corresponds to its index the bones list
+        assert new_bone.idx == len(self.bones)-1
+        return new_bone.idx
     
     def remove_bone(self, bone_idx):
         bone_to_be_removed = self.bones[bone_idx]
@@ -379,6 +382,7 @@ class Skeleton():
             
         return bone_endpoints
     
+
 if __name__ == "__main__":
     print(">> Testing skeleton.py...")
     
