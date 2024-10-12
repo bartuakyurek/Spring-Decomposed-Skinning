@@ -18,6 +18,9 @@ from pyvista_render_tools import add_skeleton
 from skeleton import Skeleton
 from global_vars import VERBOSE
 
+# ---------------------------------------------------------------------------- 
+# Declare joint positions and bones between joint indices 
+# ---------------------------------------------------------------------------- 
 joint_locations = np.array([
                             [1., 1., 0.],
                             [1., 2., 0.],
@@ -37,8 +40,8 @@ EXCLUDE_ROOT = False
 test_skeleton = Skeleton(root_vec = joint_locations[0])
 for edge in kintree:
      parent_idx, bone_idx = edge
-     test_skeleton.insert_bone(endpoint_location = joint_locations[bone_idx], 
-                               parent_node_idx = parent_idx)
+     test_skeleton.insert_bone(endpoint = joint_locations[bone_idx], 
+                               parent_idx = parent_idx)
      
 # ---------------------------------------------------------------------------- 
 # Add skeleton mesh based on T-pose locations
@@ -55,9 +58,9 @@ for i in range(n_bones):
 
 pose = np.array(
                 [
-                 [90.,0. ,0.],
-                 [0.,0.,0.],
                  [0.,0. ,0.],
+                 [0.,30.,0.],
+                 [0.,30. ,0.],
                 ]
                 )
 

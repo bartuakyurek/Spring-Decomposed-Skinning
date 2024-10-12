@@ -24,19 +24,14 @@ class Bone():
         if parent is None:
             self.start_location = np.zeros(3)
             self.visible = False # Root bone is an invisible one, determining global transformation
-      
         else:
             self.start_location = parent.end_location
             self.visible = True
         
-        self.rotation = Rotation.from_euler('xyz', angles=[0, 0, 0])
-        self.t = np.zeros(3)
-        # TODO: is this t for offset vector OR is it the absolute translation of the bone?
-        # I think we also need to store a boneSpaceMatrix to offset the vertices into bone space,
-        # apply self.rotation and self.translation and then use the inverse boneSpaceMatrix to 
-        # locate the vertices.
-        # Note: it's the absolute translation that is intended to be used as in libigl's forward_kinematics()
-        
+        # TODO:shall we use these while computing FK? If not shall we delete these properties?
+        self.rotation = Rotation.from_euler('xyz', angles=[0, 0, 0]) # Relative rotation
+        self.t = np.zeros(3)                                         # Relative translation
+      
         self.parent = parent
         self.children = []
         
@@ -46,7 +41,7 @@ class Bone():
     def add_child(self, child_node):
         self.children.append(child_node)
         
-    def translate(self, offset_vec, override=True, keep_trans=True):
+    def translate(self, offset_vec, override=True, keep_trans=False):
         """
         Translate the bone line segment given the translation vector.
 
@@ -73,7 +68,8 @@ class Bone():
         start_translated = self.start_location + offset_vec
         end_translated = self.end_location + offset_vec
         if override:
-            print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
+            if VERBOSE:
+                print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
             self.start_location = start_translated
             self.end_location = end_translated
             if keep_trans:
@@ -177,13 +173,7 @@ class Skeleton():
                     r = self.bones[b].start_location
                     r_rotated = abs_rot.apply(r)               # (vQ[b] * r)
                     vT[b] = r - r_rotated + relative_trans[b]
-                    if VERBOSE:
-                        pass
-                        #print(">> Fk_helper() parent bone r: ", r)
-                        #print("vQ[b]=", vQ[b])
-                        #print("vT[b]=", vT[b])
-                        #print("dQ[b]=", relative_trans[b])
-                        #print("dT[b]=", relative_rot_q[b])
+                    
                 else:
                     # First compute parent's
                     parent_idx = self.bones[b].parent.idx
@@ -203,14 +193,6 @@ class Skeleton():
                    
                     vT[b] = vT[parent_idx] - r_rotated + x_rotated
                     
-                    if VERBOSE:
-                        pass
-                        #print(">> Fk_helper() bone r: ", r)
-                        #print("vQ[b]=", vQ[b])
-                        #print("vT[b]=", vT[b])
-                        #print("dT[b]=", relative_trans[b])
-                        #print("dQ[b]=", relative_rot_q[b])
-
                 computed[b] = True
                 
         for b in range(n_bones):
@@ -296,15 +278,55 @@ class Skeleton():
             return final_bone_locations, abs_rot_quat, abs_trans
         return final_bone_locations
         
-    def insert_bone(self, endpoint_location, parent_node_idx):
-        assert parent_node_idx < len(self.bones), f">> Invalid parent index {parent_node_idx}. Please select an index less than {len(self.bones)}"
+    def insert_bone(self, endpoint, parent_idx, 
+                    at_the_tip=True, offset_ratio=0.0,
+                    startpoint=None):
+        """
+        Insert a bone providing the tip location and parent index. 
+
+        Parameters
+        ----------
+        endpoint : np.ndarray
+            Location of the tip of the inserted bone, has shape (3, ).
+        parent_idx : int
+            Index of the parent bone corresponding to the bone array.
+        offset_ratio : float, optional
+            Determines the starting point of the inserted bone on the parent bone.
+            It must be between [0.0, 1.0], when at 1.0 the inserted bone
+            starts at the starting point of the parent bone, at 0.0 it is
+            at the tip of the parent bone, in between it's positioned based on 
+            the parent bone's length and provided ratio. The default is 0.0.
+            Note that to use this option you need to set at_the_tip=False first.
+        startpoint : np.ndarray, optional
+            When provided, it sets the bone starting point. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        if not type(parent_idx) == int:
+            assert np.issubdtype(parent_idx, np.integer), f"Expected parent index to be an integer, got {type(parent_idx)}"
+       
+        assert parent_idx < len(self.bones), f">> Invalid parent index {parent_idx}. Please select an index less than {len(self.bones)}"
+        assert offset_ratio <= 1.0 and offset_ratio >= 0.0, f"Offset ratio is expected to be in range [0.0, 1.0], got {offset_ratio}."
         
-        parent_bone = self.bones[parent_node_idx]
-        new_bone = Bone(endpoint_location, idx=len(self.bones), parent=parent_bone)
+        parent_bone = self.bones[parent_idx]
+        new_bone = Bone(endpoint, idx=len(self.bones), parent=parent_bone)
         
         self.bones.append(new_bone)
-        self.bones[parent_node_idx].add_child(new_bone)
+        self.bones[parent_idx].add_child(new_bone)
         self.kintree = self.get_kintree() # Update kintree
+        
+        if startpoint is None:
+            if offset_ratio:
+                parent_dir = parent_bone.start_location - parent_bone.end_location
+                parent_dir_scaled = parent_dir * offset_ratio
+                # Translate the bone along the parent bone line segment
+                self.bones[new_bone.idx].translate(parent_dir_scaled, override=True)
+        else:
+            self.bones[new_bone.idx].start_location = startpoint
+            
     
     def remove_bone(self, bone_idx):
         bone_to_be_removed = self.bones[bone_idx]
@@ -359,80 +381,10 @@ class Skeleton():
     
 if __name__ == "__main__":
     print(">> Testing skeleton.py...")
+    
+    
      
-    import torch
-    import pyvista as pv
     
-    from smpl_torch_batch import SMPLModel
-    from skeleton_data import get_smpl_skeleton
-    from pyvista_render_tools import add_skeleton
-    # ---------------------------------------------------------------------------- 
-    # Load SMPL animation file and get the mesh and associated rig data
-    # ---------------------------------------------------------------------------- 
-    data_loader = torch.utils.data.DataLoader(torch.load('./data/50004_dataset.pt'), batch_size=1, shuffle=False)
-    smpl_model = SMPLModel(device="cpu", model_path='./body_models/smpl/female/model.pkl')
-    kintree = get_smpl_skeleton()
-    for data in data_loader:
-       beta_pose_trans_seq = data[0].squeeze().type(torch.float64)
-       betas, pose, trans = beta_pose_trans_seq[:,:10], beta_pose_trans_seq[:,10:82], beta_pose_trans_seq[:,82:] 
-       target_verts = data[1].squeeze()
-       smpl_verts, joints = smpl_model(betas, pose, trans)
-       break
-    V = smpl_verts.detach().cpu().numpy()
-    J = joints.detach().cpu().numpy()
-    n_frames, n_verts, n_dims = target_verts.shape
-
-    # Get rest pose SMPL data
-    rest_verts, rest_joints = smpl_model(betas, torch.zeros_like(pose), trans)
-    J_rest = rest_joints.numpy()[0]
-    
-    # ---------------------------------------------------------------------------- 
-    # Create skeleton based on rest pose SMPL data
-    # ---------------------------------------------------------------------------- 
-    smpl_skeleton = Skeleton(root_vec = J_rest[0])
-    for edge in kintree:
-        parent_idx, bone_idx = edge
-        smpl_skeleton.insert_bone(endpoint_location = J_rest[bone_idx], 
-                                  parent_node_idx = parent_idx)
-        
-    # ---------------------------------------------------------------------------- 
-    # Create plotter 
-    # ---------------------------------------------------------------------------- 
-    RENDER = True
-    plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
-    plotter.camera_position = 'zy'
-    plotter.camera.azimuth = -90
-
-    # ---------------------------------------------------------------------------- 
-    # Add skeleton mesh based on T-pose locations
-    # ---------------------------------------------------------------------------- 
-    n_bones = len(smpl_skeleton.bones)
-    rest_bone_locations = smpl_skeleton.get_rest_bone_locations(exclude_root=True)
-    line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
-    
-    skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-    plotter.open_movie("./results/smpl-skeleton.mp4")
-    
-    n_repeats = 1
-    n_frames = len(J)
-    for _ in range(n_repeats):
-        for frame in range(n_frames):
-            
-            # TODO: Update mesh points
-            theta = np.reshape(pose[frame].numpy(), newshape=(-1, 3))
-            t = trans[frame].numpy()
-            # TODO: (because it's global t, should be only applied to root)
-            # we're not using t, we should handle it after correcting the FK.
-         
-            posed_bone_locations = smpl_skeleton.pose_bones(theta, exclude_root=True)
-            skel_mesh.points = posed_bone_locations
-            
-            # Write a frame. This triggers a render.
-            plotter.write_frame()
-
-    # Closes and finalizes movie
-    plotter.close()
-    plotter.deep_clean()
 
     
         
