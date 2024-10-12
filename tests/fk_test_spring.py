@@ -28,13 +28,16 @@ def create_skeleton(joint_locations, kintree):
     return test_skeleton
 
 def add_helper_bones(test_skeleton, helper_bone_endpoints, helper_bone_parents,
-                     offset_ratio):
+                     offset_ratio=0.0, startpoints=[]):
     n_helper = len(helper_bone_parents)
+    if len(startpoints)==0: startpoints = np.repeat([None],n_helper)
+    
     for i in range(n_helper):
         test_skeleton.insert_bone(endpoint = helper_bone_endpoints[i],
                                   parent_idx = helper_bone_parents[i],
                                   at_the_tip=False,
                                   offset_ratio = offset_ratio,
+                                  startpoint = startpoints[i]
                                   )
 # ---------------------------------------------------------------------------- 
 # Set skeletal animation data
@@ -57,7 +60,7 @@ pose = np.array([
                 [
                  [0.,0.,0.],
                  [0.,0.,0.],
-                 [0., 20., 0.],
+                 [10., 10., 0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
@@ -69,7 +72,9 @@ pose = np.array([
 # ---------------------------------------------------------------------------- 
 
 test_skeleton = create_skeleton(joint_locations, kintree)
-add_helper_bones(test_skeleton, helper_bone_endpoints, helper_bone_parents, offset_ratio=0.5)
+add_helper_bones(test_skeleton, helper_bone_endpoints, 
+                 helper_bone_parents, #offset_ratio=0.0,
+                 startpoints=helper_bone_endpoints-1e-4)
 
 # ---------------------------------------------------------------------------- 
 # Create plotter 
@@ -97,7 +102,7 @@ n_repeats = 20
 n_frames = 2
 for _ in range(n_repeats):
     for frame in range(n_frames):
-        for _ in range(24 * 3):
+        for _ in range(24 * 2):
             theta = pose[frame]
             #t = trans[frame]
             posed_bone_locations = test_skeleton.pose_bones(theta, degrees=True, exclude_root=EXCLUDE_ROOT)
