@@ -277,15 +277,20 @@ class Skeleton():
             return final_bone_locations, abs_rot_quat, abs_trans
         return final_bone_locations
         
-    def insert_bone(self, endpoint_location, parent_node_idx):
-        assert parent_node_idx < len(self.bones), f">> Invalid parent index {parent_node_idx}. Please select an index less than {len(self.bones)}"
+    def insert_bone(self, endpoint, parent_idx, at_the_tip=True, offset_ratio=1.0):
+        assert parent_idx < len(self.bones), f">> Invalid parent index {parent_idx}. Please select an index less than {len(self.bones)}"
         
-        parent_bone = self.bones[parent_node_idx]
-        new_bone = Bone(endpoint_location, idx=len(self.bones), parent=parent_bone)
+        parent_bone = self.bones[parent_idx]
+        new_bone = Bone(endpoint, idx=len(self.bones), parent=parent_bone)
         
         self.bones.append(new_bone)
-        self.bones[parent_node_idx].add_child(new_bone)
+        self.bones[parent_idx].add_child(new_bone)
         self.kintree = self.get_kintree() # Update kintree
+        
+        if not at_the_tip and offset_ratio < 1.0:
+            parent_bone_dir = parent_bone.end_location - parent_bone.start_location
+            
+            
     
     def remove_bone(self, bone_idx):
         bone_to_be_removed = self.bones[bone_idx]

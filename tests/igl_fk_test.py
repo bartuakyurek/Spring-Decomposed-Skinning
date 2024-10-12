@@ -27,8 +27,8 @@ joint_locations, kintree, _, _, _, _ = igl.read_tgf(TGF_PATH)
 test_skeleton = Skeleton(root_vec = joint_locations[0])
 for edge in kintree:
      parent_idx, bone_idx = edge
-     test_skeleton.insert_bone(endpoint_location = joint_locations[bone_idx], 
-                               parent_node_idx = parent_idx)
+     test_skeleton.insert_bone(endpoint = joint_locations[bone_idx], 
+                               parent_idx = parent_idx)
 
 # ---------------------------------------------------------------------------- 
 # Create plotter 

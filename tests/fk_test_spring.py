@@ -27,8 +27,8 @@ joint_locations, kintree, _, _, _, _ = igl.read_tgf(TGF_PATH)
 test_skeleton = Skeleton(root_vec = joint_locations[0])
 for edge in kintree:
      parent_idx, bone_idx = edge
-     test_skeleton.insert_bone(endpoint_location = joint_locations[bone_idx], 
-                               parent_node_idx = parent_idx)
+     test_skeleton.insert_bone(endpoint = joint_locations[bone_idx], 
+                               parent_idx = parent_idx)
 
 # ---------------------------------------------------------------------------- 
 # Create plotter 
@@ -60,13 +60,13 @@ pose = np.array([
                 ],
                 [
                  [0.,0.,0.],
-                 [0.,0.,0.],
+                 [0.,40.,0.],
                  [0., 0., 0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
+                 [0.,10.,0.],
+                 [10.,0.,0.],
                 ]
                 ])
-
+"""
 trans = np.array([
                 [
                  [0.,0.,0.],
@@ -76,20 +76,20 @@ trans = np.array([
                  [0.,0.,0.],
                 ],
                 [
-                 [0.1,0.,0.],
+                 [0.0,0.,0.],
                  [0.,0.,0.],
                  [0., 0., 0.],
-                 [0.,0.,0.1],
+                 [0.,0.,0.0],
                  [0.,0.,0.],
                 ]
                 ])
+"""
 for _ in range(n_repeats):
     for frame in range(n_frames):
         for _ in range(24):
-            # TODO: Update mesh points
             theta = pose[frame]
-            t = trans[frame]
-            posed_bone_locations = test_skeleton.pose_bones(theta, t, degrees=True)
+            #t = trans[frame]
+            posed_bone_locations = test_skeleton.pose_bones(theta, degrees=True)
     
             current_skel_data = np.reshape(posed_bone_locations[2:], (2*(n_bones-1), 3))
             skel_mesh.points = current_skel_data

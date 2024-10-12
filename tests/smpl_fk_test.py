@@ -53,8 +53,8 @@ J_rest = rest_joints.numpy()[0]
 smpl_skeleton = Skeleton(root_vec = J_rest[0])
 for edge in kintree:
     parent_idx, bone_idx = edge
-    smpl_skeleton.insert_bone(endpoint_location = J_rest[bone_idx], 
-                              parent_node_idx = parent_idx)
+    smpl_skeleton.insert_bone(endpoint = J_rest[bone_idx], 
+                              parent_idx = parent_idx)
     
 # ---------------------------------------------------------------------------- 
 # Create plotter 
