@@ -41,7 +41,7 @@ class Bone():
     def add_child(self, child_node):
         self.children.append(child_node)
         
-    def translate(self, offset_vec, override=True, keep_trans=True):
+    def translate(self, offset_vec, override=True, keep_trans=False):
         """
         Translate the bone line segment given the translation vector.
 
@@ -277,8 +277,40 @@ class Skeleton():
             return final_bone_locations, abs_rot_quat, abs_trans
         return final_bone_locations
         
-    def insert_bone(self, endpoint, parent_idx, at_the_tip=True, offset_ratio=1.0):
+    def insert_bone(self, endpoint, parent_idx, 
+                    at_the_tip=True, offset_ratio=1.0,
+                    startpoint=None):
+        """
+        Insert a bone providing the tip location and parent index. 
+
+        Parameters
+        ----------
+        endpoint : np.ndarray
+            Location of the tip of the inserted bone, has shape (3, ).
+        parent_idx : int
+            Index of the parent bone corresponding to the bone array.
+        at_the_tip : bool, optional
+            If True, the bone will be added at the tip of its parent bone. 
+            If False, it will be relocated based on the offset_ratio.
+            Note that this option is overridden if the startpoint parameter
+            is provided. The default is True.
+        offset_ratio : float, optional
+            Determines the starting point of the inserted bone on the parent bone.
+            It must be between [0.0, 1.0], when at 0.0 the inserted bone
+            starts at the starting point of the parent bone, at 1.0 it is
+            at the tip of the parent bone, in between it's positioned based on 
+            the parent bone's length and provided ratio. The default is 1.0.
+        startpoint : np.ndarray, optional
+            When provided, it sets the bone starting point. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
         assert parent_idx < len(self.bones), f">> Invalid parent index {parent_idx}. Please select an index less than {len(self.bones)}"
+        assert type(parent_idx) == int, f">> Parent index expected to be type int, got {type(parent_idx)}."
+        assert offset_ratio <= 1.0 and offset_ratio >= 0.0, f"Offset ratio is expected to be in range [0.0, 1.0], got {offset_ratio}."
         
         parent_bone = self.bones[parent_idx]
         new_bone = Bone(endpoint, idx=len(self.bones), parent=parent_bone)
@@ -287,9 +319,16 @@ class Skeleton():
         self.bones[parent_idx].add_child(new_bone)
         self.kintree = self.get_kintree() # Update kintree
         
-        if not at_the_tip and offset_ratio < 1.0:
-            parent_bone_dir = parent_bone.end_location - parent_bone.start_location
-            
+        if startpoint is None:
+            if not at_the_tip and offset_ratio < 1.0:
+                parent_dir = parent_bone.end_location - parent_bone.start_location
+                parent_dir_scaled = parent_dir * offset_ratio
+                target_point = parent_bone.start_location + parent_dir_scaled
+                trans = new_bone.end_location - target_point
+                
+                self.bones[new_bone.idx].translate(trans, override=True)
+        else:
+            self.bones[new_bone.idx].start_location = startpoint
             
     
     def remove_bone(self, bone_idx):
