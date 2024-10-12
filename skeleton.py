@@ -68,7 +68,8 @@ class Bone():
         start_translated = self.start_location + offset_vec
         end_translated = self.end_location + offset_vec
         if override:
-            print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
+            if VERBOSE:
+                print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
             self.start_location = start_translated
             self.end_location = end_translated
             if keep_trans:
@@ -278,7 +279,7 @@ class Skeleton():
         return final_bone_locations
         
     def insert_bone(self, endpoint, parent_idx, 
-                    at_the_tip=True, offset_ratio=1.0,
+                    at_the_tip=True, offset_ratio=0.0,
                     startpoint=None):
         """
         Insert a bone providing the tip location and parent index. 
@@ -289,17 +290,12 @@ class Skeleton():
             Location of the tip of the inserted bone, has shape (3, ).
         parent_idx : int
             Index of the parent bone corresponding to the bone array.
-        at_the_tip : bool, optional
-            If True, the bone will be added at the tip of its parent bone. 
-            If False, it will be relocated based on the offset_ratio.
-            Note that this option is overridden if the startpoint parameter
-            is provided. The default is True.
         offset_ratio : float, optional
             Determines the starting point of the inserted bone on the parent bone.
-            It must be between [0.0, 1.0], when at 0.0 the inserted bone
-            starts at the starting point of the parent bone, at 1.0 it is
+            It must be between [0.0, 1.0], when at 1.0 the inserted bone
+            starts at the starting point of the parent bone, at 0.0 it is
             at the tip of the parent bone, in between it's positioned based on 
-            the parent bone's length and provided ratio. The default is 1.0.
+            the parent bone's length and provided ratio. The default is 0.0.
             Note that to use this option you need to set at_the_tip=False first.
         startpoint : np.ndarray, optional
             When provided, it sets the bone starting point. The default is None.
@@ -323,13 +319,11 @@ class Skeleton():
         self.kintree = self.get_kintree() # Update kintree
         
         if startpoint is None:
-            if not at_the_tip and offset_ratio < 1.0:
-                parent_dir = parent_bone.end_location - parent_bone.start_location
+            if offset_ratio:
+                parent_dir = parent_bone.start_location - parent_bone.end_location
                 parent_dir_scaled = parent_dir * offset_ratio
-                target_point = parent_bone.start_location + parent_dir_scaled
-                trans = new_bone.end_location - target_point
-                
-                self.bones[new_bone.idx].translate(trans, override=True)
+                # Translate the bone along the parent bone line segment
+                self.bones[new_bone.idx].translate(parent_dir_scaled, override=True)
         else:
             self.bones[new_bone.idx].start_location = startpoint
             
