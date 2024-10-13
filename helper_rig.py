@@ -118,9 +118,7 @@ class HelperBonesHandler:
             
             simulated_locations[helper_end_idx] = free_mass_locations[i]
             self.prev_bone_locations = simulated_locations
-            
-            print(free_mass_locations[i] - rigidly_posed_locations[helper_end_idx])
-        
+                    
         if exclude_root:
             return simulated_locations[2:]
         return simulated_locations
