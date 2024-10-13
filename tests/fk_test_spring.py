@@ -13,7 +13,7 @@ import pyvista as pv
 
 import __init__
 from skeleton import Skeleton
-from spring_rig_helper import SpringRigContainer
+from helper_rig import HelperBonesHandler
 from pyvista_render_tools import add_skeleton
 from global_vars import IGL_DATA_PATH, RESULT_PATH
 
@@ -82,7 +82,7 @@ helper_indices  = add_helper_bones(test_skeleton, helper_bone_endpoints,
                                      startpoints=helper_bone_endpoints-1e-6)
 
 helper_bones = np.array(test_skeleton.bones)[helper_indices]
-helper_rig = SpringRigContainer(helper_bones) # TODO: could you do the naming more consistent? i.e. spring_rig_helper SpringRigContainer and helper_rig are all different names!
+helper_rig = HelperBonesHandler(helper_bones) # TODO: could you do the naming more consistent? i.e. spring_rig_helper SpringRigContainer and helper_rig are all different names!
 
 
 # TODO: you could also add insert_point_handle() to Skeleton class
@@ -110,7 +110,7 @@ line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
 plotter.open_movie(RESULT_PATH + "/igl-skeleton.mp4")
 
-n_repeats = 20
+n_repeats = 10
 n_frames = 2
 for _ in range(n_repeats):
     for frame in range(n_frames):

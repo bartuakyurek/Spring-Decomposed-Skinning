@@ -9,7 +9,7 @@ Created on Sat Oct 12 10:05:05 2024
 from skeleton import Skeleton, Bone
 from mass_spring import MassSpringSystem
 
-class SpringRigContainer:
+class HelperBonesHandler:
     
     def __init__(self, helper_bones, mass=1.0, stiffness=100):
         """
