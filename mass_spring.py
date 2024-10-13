@@ -165,7 +165,7 @@ class MassSpringSystem:
     def get_free_mass_indices(self):
         indices = np.arange(0, len(self.masses))
         free_mass_indices = np.delete(indices, self.fixed_indices)
-        return free_mass_indices
+        return np.array(free_mass_indices)
         
     def remove_mass(self, mass_idx):
         # TODO: remove mass dictionary entry
