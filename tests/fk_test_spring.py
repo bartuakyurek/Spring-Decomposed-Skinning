@@ -13,12 +13,15 @@ import pyvista as pv
 
 import __init__
 from skeleton import Skeleton
+from helper_rig import HelperBonesHandler
 from pyvista_render_tools import add_skeleton
 from global_vars import IGL_DATA_PATH, RESULT_PATH
 
 # ---------------------------------------------------------------------------- 
 # Declare helper functions
 # ---------------------------------------------------------------------------- 
+# TODO: Could we move these functions to skeleton class so that every other test
+# can utilize them?
 def create_skeleton(joint_locations, kintree):
     test_skeleton = Skeleton(root_vec = joint_locations[0])
     for edge in kintree:
@@ -28,14 +31,21 @@ def create_skeleton(joint_locations, kintree):
     return test_skeleton
 
 def add_helper_bones(test_skeleton, helper_bone_endpoints, helper_bone_parents,
-                     offset_ratio):
+                     offset_ratio=0.0, startpoints=[]):
     n_helper = len(helper_bone_parents)
+    if len(startpoints)==0: startpoints = np.repeat([None],n_helper)
+    
+    helper_indices = []
     for i in range(n_helper):
-        test_skeleton.insert_bone(endpoint = helper_bone_endpoints[i],
-                                  parent_idx = helper_bone_parents[i],
-                                  at_the_tip=False,
-                                  offset_ratio = offset_ratio,
-                                  )
+        bone_idx = test_skeleton.insert_bone(endpoint = helper_bone_endpoints[i],
+                                              parent_idx = helper_bone_parents[i],
+                                              at_the_tip=False,
+                                              offset_ratio = offset_ratio,
+                                              startpoint = startpoints[i]
+                                              )
+        helper_indices.append(bone_idx)
+    return helper_indices
+
 # ---------------------------------------------------------------------------- 
 # Set skeletal animation data
 # ---------------------------------------------------------------------------- 
@@ -57,19 +67,37 @@ pose = np.array([
                 [
                  [0.,0.,0.],
                  [0.,0.,0.],
-                 [0., 20., 0.],
+                 [90., 10., 0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
                 ]
                 ])
 
+DEGREES = True # Set true if pose is represented with degrees as Euler angles.
+MODE = "Dynamic"
+MASS = 10.0
+STIFFNESS = 100.0
+MASS_DSCALE = 0.1
+SPRING_DSCALE = 0.01
 # ---------------------------------------------------------------------------- 
 # Create rig and set helper bones
 # ---------------------------------------------------------------------------- 
 
 test_skeleton = create_skeleton(joint_locations, kintree)
-add_helper_bones(test_skeleton, helper_bone_endpoints, helper_bone_parents, offset_ratio=0.5)
+helper_indices = add_helper_bones(test_skeleton, helper_bone_endpoints, 
+                                     helper_bone_parents, #offset_ratio=0.0,
+                                     startpoints=helper_bone_endpoints-1e-6)
+
+helper_rig = HelperBonesHandler(test_skeleton, 
+                                helper_indices,
+                                mass=MASS, 
+                                stiffness=STIFFNESS,
+                                mass_dscale=MASS_DSCALE,
+                                spring_dscale=SPRING_DSCALE) 
+
+# TODO: you could also add insert_point_handle() to Skeleton class
+# that creates a zero-length bone (we need to render bone tips as spheres to see that)
 
 # ---------------------------------------------------------------------------- 
 # Create plotter 
@@ -83,7 +111,7 @@ plotter.camera.azimuth = -90
 # Add skeleton mesh based on T-pose locations
 # ---------------------------------------------------------------------------- 
 EXCLUDE_ROOT = True
-n_bones = len(test_skeleton.bones)
+n_bones = len(test_skeleton.rest_bones)
 rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 # TODO: rename get_rest_bone_locations() to get_rest_bones() that will also return
@@ -93,15 +121,21 @@ line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
 plotter.open_movie(RESULT_PATH + "/igl-skeleton.mp4")
 
-n_repeats = 20
+n_repeats = 10
 n_frames = 2
 for _ in range(n_repeats):
     for frame in range(n_frames):
-        for _ in range(24 * 3):
+        for _ in range(24):
             theta = pose[frame]
-            #t = trans[frame]
-            posed_bone_locations = test_skeleton.pose_bones(theta, degrees=True, exclude_root=EXCLUDE_ROOT)
-            skel_mesh.points = posed_bone_locations
+            trans = None
+            # WARNING (TODO): No relative translation yet!
+            
+            if MODE == "Rigid":
+                rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
+                skel_mesh.points = rigid_bone_locations
+            else:
+                simulated_bone_locations = helper_rig.update(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
+                skel_mesh.points = simulated_bone_locations
     
             # Write a frame. This triggers a render.
             plotter.write_frame()

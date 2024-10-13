@@ -16,14 +16,13 @@ import numpy as np
 import pyvista as pv
 
 from sanity_check import _is_equal
-from global_vars import _SPACE_DIMS_
+from global_vars import _SPACE_DIMS_, VERBOSE
 
 _DEFAULT_STIFFNESS = 0.5
 _DEFAULT_DAMPING = 1.0
 _DEFAULT_MASS = 2.5
 _DEFAULT_SPRING_SCALE = 1
 _DEFAULT_MASS_SCALE = 1 # Default is 0.1 but the simulation doesn't work at 0.1...
-_VERBOSE = False
 class Particle:
     def __init__(self, 
                  coordinate, 
@@ -74,7 +73,7 @@ class Spring:
                  stiffness : float, 
                  damping : float,
                  dscale : float = _DEFAULT_SPRING_SCALE,
-                 verbose : bool = _VERBOSE
+                 verbose : bool = VERBOSE
                  ):
         
         # TODO: Are you going to implement squared norms for optimized performance?
@@ -90,7 +89,7 @@ class Spring:
         self.m1 = beginning_mass
         self.m2 = ending_mass
         
-    def get_force_on_mass(self, mass : Particle, verbose=_VERBOSE):
+    def get_force_on_mass(self, mass : Particle, verbose=VERBOSE):
         
         distance = np.linalg.norm(self.m1.center - self.m2.center)
         if distance < 1e-16:
@@ -109,19 +108,23 @@ class Spring:
         s2 = np.dot(self.m2.velocity, normalized_dir)
         damping_force_amount = -self.kd * (s1 + s2)
         
+        force = None
         if self.m1 == mass:
-            return (spring_force_amount + damping_force_amount) * normalized_dir
+            force = (spring_force_amount + damping_force_amount) * normalized_dir
         elif self.m2 == mass:
-            return (-spring_force_amount + damping_force_amount) * normalized_dir
+            force = (-spring_force_amount + damping_force_amount) * normalized_dir
         else:
             print(">> WARNING: Unexpected case occured, given mass location does not exist for this spring. No force is exerted.")
-            return None 
+          
+        assert not np.any(force > 1e10), f"WARNING: System got unstable with force {force}, stopping execution..."
+        return force
         
         
 class MassSpringSystem:
     def __init__(self, dt):
         print(">> Initiated empty mass-spring system")
         self.masses = []
+        self.fixed_indices = []
         self.connections = []
         self.dt =  dt
         
@@ -146,19 +149,27 @@ class MassSpringSystem:
             self.masses[i].center += velocity * dt * self.masses[i].dscale
             self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
             
-    def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS,  gravity=False, verbose=_VERBOSE):
-        mass = Particle(mass_coordinate, mass=mass, gravity=gravity)
+    def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS, dscale=_DEFAULT_MASS_SCALE,
+                 gravity=False, verbose=VERBOSE):
+        mass = Particle(mass_coordinate, mass=mass, dscale=dscale, gravity=gravity)
         
         if type(mass) is Particle:
             if verbose: print(f">> Added mass at {mass.center}")
             self.masses.append(mass)
+            return len(self.masses) - 1  # Return the index of the appended mass
         else:
             print(f"Expected Particle class, got {type(mass)}")
             
-    def fix_mass(self, mass_idx, verbose=False):
+    def fix_mass(self, mass_idx, verbose=VERBOSE):
         self.masses[mass_idx].mass = 0.0
+        self.fixed_indices.append(mass_idx)
         if verbose: print(f">> Fixed mass at location {self.masses[mass_idx].center}")
         return
+    
+    def get_free_mass_indices(self):
+        indices = np.arange(0, len(self.masses))
+        free_mass_indices = np.delete(indices, self.fixed_indices)
+        return np.array(free_mass_indices)
         
     def remove_mass(self, mass_idx):
         # TODO: remove mass dictionary entry

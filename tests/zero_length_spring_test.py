@@ -34,7 +34,7 @@ mass_spring_system.fix_mass(0)
 
 # Apply rigid transformation (rotation, translation) to fixed mass
 t = np.array([0.1, 0.1, -0.2])
-mass_spring_system.translate_mass(0, t)
+#mass_spring_system.translate_mass(0, t)
 
 
 # -----------------------------------------------------------------------------
@@ -63,6 +63,11 @@ def callback(step):
     if ((step+1) % 50) == 0:
         print(">> Step ", step+1)
         
+    if (step) % 5 == 0 and step < 400:
+        print(">> Force applied...")
+        mass_spring_system.translate_mass(0, np.random.randn(3) / 100)
+
+        
     mass_spring_system.simulate()
 
     # Step 2 - Get current mass positions and update rendered particles
@@ -80,7 +85,7 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(dt * 1000) 
-n_simulation_steps = 400
+n_simulation_steps = 800
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 
 plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)
