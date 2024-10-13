@@ -84,16 +84,20 @@ class HelperBonesHandler:
         # TODO: exclude_root=False is intentional! Do not delete it! But also it's not
         # a good design if you're not using the same parameter name, your intention is unclear
         # so maybe you could remove this exclude_root option all together and handle it elsewhere
-        posed_bone_locations = self.skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=False)
         
-        simulated_locations = posed_bone_locations
+        rigidly_posed_locations = self.skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=False)
+        simulated_locations = rigidly_posed_locations.copy() 
         for i, helper_idx in enumerate(self.helper_indices):
             
             # TODO: why don't you rename ms_system that doesn't sound like a meaningful name?
             # even system could be more meaningful though it might be close to a keyword
             # maybe self.simulator could work.
-            mass_idx = self.fixed_idx[i]
-            diff = posed_bone_locations - self.prev_bone_locations
+            
+            # WARNING: You're taking the difference data from the rigid skeleton, but what happens
+            # if you had a chaing of helper bones that are affecting each other? i.e.
+            # The start of the child helper bone would be changed in previous frame, are your posed_bpnes
+            # taking this into account? No.Maybe you would change theta trans parameters before skeleton.pose_bones
+            diff = rigidly_posed_locations - self.prev_bone_locations
             helper_end_idx = (2 * helper_idx) + 1 # since bone locations have 2 joints per bone, multiply helper_bone_idx by 2 
             translate_vec = diff[helper_end_idx]  # TODO: then why don't you have a better data structure? Maybe dict could 
                                                   # work to access diff[helper_idx]["end"] or diff[helper_idx].end_location to
@@ -103,7 +107,8 @@ class HelperBonesHandler:
             # TODO: are you handling the chained helper bones? like the start of
             # the children bone should be relocated in that case, 
             # and FK needed to be  re-called?
-            self.ms_system.translate_mass(mass_idx, translate_vec)
+            fixed_mass_idx = self.fixed_idx[i]
+            self.ms_system.translate_mass(fixed_mass_idx, translate_vec)
             self.ms_system.simulate()
 
             # Step 2 - Get current mass positions
@@ -111,6 +116,9 @@ class HelperBonesHandler:
             free_mass_locations = cur_mass_locations[self.free_idx]
             
             simulated_locations[helper_end_idx] = free_mass_locations[i]
+            self.prev_bone_locations = simulated_locations
+            
+            print(free_mass_locations[i] - rigidly_posed_locations[helper_end_idx])
         
         if exclude_root:
             return simulated_locations[2:]
