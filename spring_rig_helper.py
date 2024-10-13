@@ -42,6 +42,8 @@ class SpringRigContainer:
             self.ms_system.connect_masses(int(m1_idx), int(m2_idx), stiffness=stiffness)
             self.ms_system.fix_mass(m1_idx)
     
+        self.fixed_idx = self.ms_system.fixed_indices
+        self.free_idx = self.ms_system.get_free_mass_indices()
     # TODO: We should be able to change the individual masses and stiffness, 
     # for optimization we should be able to provide an array of particle mass
     # that will update the individual Particle.mass in the system
