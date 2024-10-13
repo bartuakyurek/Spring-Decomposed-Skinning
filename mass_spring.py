@@ -161,6 +161,11 @@ class MassSpringSystem:
         self.fixed_indices.append(mass_idx)
         if verbose: print(f">> Fixed mass at location {self.masses[mass_idx].center}")
         return
+    
+    def get_free_mass_indices(self):
+        indices = np.arange(0, len(self.masses))
+        free_mass_indices = np.delete(indices, self.fixed_indices)
+        return free_mass_indices
         
     def remove_mass(self, mass_idx):
         # TODO: remove mass dictionary entry
