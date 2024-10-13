@@ -76,7 +76,10 @@ pose = np.array([
 
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 MODE = "Dynamic"
-
+MASS = 10.0
+STIFFNESS = 100.0
+MASS_DSCALE = 0.1
+SPRING_DSCALE = 0.01
 # ---------------------------------------------------------------------------- 
 # Create rig and set helper bones
 # ---------------------------------------------------------------------------- 
@@ -86,7 +89,12 @@ helper_indices = add_helper_bones(test_skeleton, helper_bone_endpoints,
                                      helper_bone_parents, #offset_ratio=0.0,
                                      startpoints=helper_bone_endpoints-1e-6)
 
-helper_rig = HelperBonesHandler(test_skeleton, helper_indices) 
+helper_rig = HelperBonesHandler(test_skeleton, 
+                                helper_indices,
+                                mass=MASS, 
+                                stiffness=STIFFNESS,
+                                mass_dscale=MASS_DSCALE,
+                                spring_dscale=SPRING_DSCALE) 
 
 # TODO: you could also add insert_point_handle() to Skeleton class
 # that creates a zero-length bone (we need to render bone tips as spheres to see that)
@@ -113,11 +121,11 @@ line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
 plotter.open_movie(RESULT_PATH + "/igl-skeleton.mp4")
 
-n_repeats = 5
+n_repeats = 10
 n_frames = 2
 for _ in range(n_repeats):
     for frame in range(n_frames):
-        for _ in range(24 * 2):
+        for _ in range(24):
             theta = pose[frame]
             trans = None
             # WARNING (TODO): No relative translation yet!
