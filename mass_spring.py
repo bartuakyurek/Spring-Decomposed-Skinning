@@ -108,13 +108,16 @@ class Spring:
         s2 = np.dot(self.m2.velocity, normalized_dir)
         damping_force_amount = -self.kd * (s1 + s2)
         
+        force = None
         if self.m1 == mass:
-            return (spring_force_amount + damping_force_amount) * normalized_dir
+            force = (spring_force_amount + damping_force_amount) * normalized_dir
         elif self.m2 == mass:
-            return (-spring_force_amount + damping_force_amount) * normalized_dir
+            force = (-spring_force_amount + damping_force_amount) * normalized_dir
         else:
             print(">> WARNING: Unexpected case occured, given mass location does not exist for this spring. No force is exerted.")
-            return None 
+          
+        assert not np.any(force > 1e10), f"WARNING: System got unstable with force {force}, stopping execution..."
+        return force
         
         
 class MassSpringSystem:
