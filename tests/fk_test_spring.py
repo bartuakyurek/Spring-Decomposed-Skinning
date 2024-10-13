@@ -20,6 +20,8 @@ from global_vars import IGL_DATA_PATH, RESULT_PATH
 # ---------------------------------------------------------------------------- 
 # Declare helper functions
 # ---------------------------------------------------------------------------- 
+# TODO: Could we move these functions to skeleton class so that every other test
+# can utilize them?
 def create_skeleton(joint_locations, kintree):
     test_skeleton = Skeleton(root_vec = joint_locations[0])
     for edge in kintree:
@@ -65,7 +67,7 @@ pose = np.array([
                 [
                  [0.,0.,0.],
                  [0.,0.,0.],
-                 [10., 10., 0.],
+                 [90., 10., 0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
@@ -77,13 +79,11 @@ pose = np.array([
 # ---------------------------------------------------------------------------- 
 
 test_skeleton = create_skeleton(joint_locations, kintree)
-helper_indices  = add_helper_bones(test_skeleton, helper_bone_endpoints, 
+helper_indices = add_helper_bones(test_skeleton, helper_bone_endpoints, 
                                      helper_bone_parents, #offset_ratio=0.0,
                                      startpoints=helper_bone_endpoints-1e-6)
 
-helper_bones = np.array(test_skeleton.bones)[helper_indices]
-helper_rig = HelperBonesHandler(helper_bones) # TODO: could you do the naming more consistent? i.e. spring_rig_helper SpringRigContainer and helper_rig are all different names!
-
+helper_rig = HelperBonesHandler(test_skeleton, helper_indices) 
 
 # TODO: you could also add insert_point_handle() to Skeleton class
 # that creates a zero-length bone (we need to render bone tips as spheres to see that)
@@ -100,7 +100,7 @@ plotter.camera.azimuth = -90
 # Add skeleton mesh based on T-pose locations
 # ---------------------------------------------------------------------------- 
 EXCLUDE_ROOT = True
-n_bones = len(test_skeleton.bones)
+n_bones = len(test_skeleton.rest_bones)
 rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 # TODO: rename get_rest_bone_locations() to get_rest_bones() that will also return
@@ -110,7 +110,7 @@ line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
 plotter.open_movie(RESULT_PATH + "/igl-skeleton.mp4")
 
-n_repeats = 10
+n_repeats = 5
 n_frames = 2
 for _ in range(n_repeats):
     for frame in range(n_frames):
@@ -120,9 +120,11 @@ for _ in range(n_repeats):
             posed_bone_locations = test_skeleton.pose_bones(theta, degrees=True, exclude_root=EXCLUDE_ROOT)
             
             # TODO: simulate the mass
+            simulated_locations = helper_rig.update(test_skeleton)
+            print(">>> Simulated locations", simulated_locations)
             
             # TODO: update the posed_bone_locations (maybe not directly update the skeleton bones' locations?)
-            
+            print(">> WARNING: PLEASE DON'T FORGET TO UPDATE THE BONE TIPS... See the line below")
             skel_mesh.points = posed_bone_locations
     
             # Write a frame. This triggers a render.

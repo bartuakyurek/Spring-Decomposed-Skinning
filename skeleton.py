@@ -126,17 +126,17 @@ class Skeleton():
             of root node laction. It will be used to create invisible root bone, 
             that is starting from the origin and ends at the provided root_vec.
         """
-        self.bones = []
+        self.rest_bones = []
         self.kintree = []
         
         # Initiate skeleton with a root bone
         assert len(root_vec) == 3, f"Root vector is expected to be a 3D vector, got {root_vec.shape}"
         root_bone = Bone(root_vec, idx=0)
-        self.bones.append(root_bone)
+        self.rest_bones.append(root_bone)
         
     def get_kintree(self):
         kintree = []
-        for bone in self.bones:
+        for bone in self.rest_bones:
             if bone.parent is None:
                 continue
             bone_id = bone.idx
@@ -147,7 +147,7 @@ class Skeleton():
     
     def get_absolute_transformations(self, theta, trans, degrees):
         
-        n_bones = len(self.bones)
+        n_bones = len(self.rest_bones)
         assert len(theta) == n_bones, f"Expected theta to have shape (n_bones, 3), got {theta.shape}"
         assert len(trans) == n_bones, f"Expected trans to have shape (n_bones, 4), got {trans.shape}"
         assert trans.shape[1] == 3, "Please provide 3D coordinates for translation."
@@ -165,18 +165,18 @@ class Skeleton():
         def fk_helper(b : int): 
             if not computed[b]:
                 
-                if self.bones[b].parent is None:
+                if self.rest_bones[b].parent is None:
                     # Base case for roots
                     vQ[b] = relative_rot_q[b]
                     
                     abs_rot = Rotation.from_quat(vQ[b])
-                    r = self.bones[b].start_location
+                    r = self.rest_bones[b].start_location
                     r_rotated = abs_rot.apply(r)               # (vQ[b] * r)
                     vT[b] = r - r_rotated + relative_trans[b]
                     
                 else:
                     # First compute parent's
-                    parent_idx = self.bones[b].parent.idx
+                    parent_idx = self.rest_bones[b].parent.idx
                     fk_helper(parent_idx)
             
                     parent_rot = Rotation.from_quat(vQ[parent_idx])
@@ -184,7 +184,7 @@ class Skeleton():
                     vQ[b] = (parent_rot * rel_rot).as_quat()
                     
                     abs_rot = Rotation.from_quat(vQ[b])
-                    r = self.bones[b].start_location 
+                    r = self.rest_bones[b].start_location 
                     r_rotated = abs_rot.apply(r)  # (vQ[b] * r)
                     
                     abs_rot_parent = Rotation.from_quat(vQ[parent_idx])
@@ -239,7 +239,7 @@ class Skeleton():
         # Set up the relative translation (if not provided set to zero)
         # ---------------------------------------------------------------------
         if trans is None:
-            trans = np.zeros((len(self.bones), 3))
+            trans = np.zeros((len(self.rest_bones), 3))
         
         # ---------------------------------------------------------------------
         # Get absolute rotation and translation of the bones
@@ -249,9 +249,9 @@ class Skeleton():
         # ---------------------------------------------------------------------
         # Compute the final bone locations
         # ---------------------------------------------------------------------
-        final_bone_locations = np.empty((2*len(self.bones), 3))
+        final_bone_locations = np.empty((2*len(self.rest_bones), 3))
         
-        for i, bone in enumerate(self.bones):
+        for i, bone in enumerate(self.rest_bones):
             rot = Rotation.from_quat(abs_rot_quat[i])
             M = compose_transform_matrix(abs_trans[i], rot)
             
@@ -308,14 +308,14 @@ class Skeleton():
         if not type(parent_idx) == int:
             assert np.issubdtype(parent_idx, np.integer), f"Expected parent index to be an integer, got {type(parent_idx)}"
        
-        assert parent_idx < len(self.bones), f">> Invalid parent index {parent_idx}. Please select an index less than {len(self.bones)}"
+        assert parent_idx < len(self.rest_bones), f">> Invalid parent index {parent_idx}. Please select an index less than {len(self.rest_bones)}"
         assert offset_ratio <= 1.0 and offset_ratio >= 0.0, f"Offset ratio is expected to be in range [0.0, 1.0], got {offset_ratio}."
         
-        parent_bone = self.bones[parent_idx]
-        new_bone = Bone(endpoint, idx=len(self.bones), parent=parent_bone)
+        parent_bone = self.rest_bones[parent_idx]
+        new_bone = Bone(endpoint, idx=len(self.rest_bones), parent=parent_bone)
         
-        self.bones.append(new_bone)
-        self.bones[parent_idx].add_child(new_bone)
+        self.rest_bones.append(new_bone)
+        self.rest_bones[parent_idx].add_child(new_bone)
         self.kintree = self.get_kintree() # Update kintree
         
         if startpoint is None:
@@ -323,16 +323,16 @@ class Skeleton():
                 parent_dir = parent_bone.start_location - parent_bone.end_location
                 parent_dir_scaled = parent_dir * offset_ratio
                 # Translate the bone along the parent bone line segment
-                self.bones[new_bone.idx].translate(parent_dir_scaled, override=True)
+                self.rest_bones[new_bone.idx].translate(parent_dir_scaled, override=True)
         else:
-            self.bones[new_bone.idx].start_location = startpoint
+            self.rest_bones[new_bone.idx].start_location = startpoint
         
         # Sanity check the created bone.idx corresponds to its index the bones list
-        assert new_bone.idx == len(self.bones)-1
+        assert new_bone.idx == len(self.rest_bones)-1
         return new_bone.idx
     
     def remove_bone(self, bone_idx):
-        bone_to_be_removed = self.bones[bone_idx]
+        bone_to_be_removed = self.rest_bones[bone_idx]
         parent = bone_to_be_removed.parent
         
         if parent:
@@ -344,13 +344,13 @@ class Skeleton():
         
         # Remove the bone from the skeleton bones list
         bone_to_be_removed.children = None    # It's unnecessary probably.
-        self.bones.remove(bone_to_be_removed)
+        self.rest_bones.remove(bone_to_be_removed)
         self.kintree = self.get_kintree()     # Update kintree
         return
         
     def get_bone(self, bone_idx):
-        assert bone_idx < len(self.bones), f">> Invalid bone index {bone_idx}. Please select an index less than {len(self.bones)}"
-        return self.bones[bone_idx]
+        assert bone_idx < len(self.rest_bones), f">> Invalid bone index {bone_idx}. Please select an index less than {len(self.rest_bones)}"
+        return self.rest_bones[bone_idx]
     
     def get_rest_bone_locations(self, exclude_root=True):
         """
@@ -373,7 +373,7 @@ class Skeleton():
             so there are #n_bones * 2 endpoints in the returned list
         """
         bone_endpoints = []
-        for bone in self.bones:
+        for bone in self.rest_bones:
             if exclude_root and bone.parent is None:
                 continue # Skip the root node
                 
