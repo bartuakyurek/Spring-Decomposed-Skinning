@@ -11,7 +11,8 @@ from mass_spring import MassSpringSystem
 
 class HelperBonesHandler:
     
-    def __init__(self, skeleton, helper_indices, mass=1.0, stiffness=100,
+    def __init__(self, skeleton, helper_indices, 
+                 mass=1.0, stiffness=100, damping=1.0,
                  mass_dscale=1.0, spring_dscale=0.01):
         """
         Create a mass-spring system provided an array of Bone objects.
@@ -44,7 +45,10 @@ class HelperBonesHandler:
             mass1 = self.ms_system.add_mass(helper_start, mass=mass, dscale=mass_dscale)
             mass2 = self.ms_system.add_mass(helper_end, mass=mass, dscale=mass_dscale)
             
-            self.ms_system.connect_masses(mass1, mass2, stiffness=stiffness, dscale=spring_dscale)
+            self.ms_system.connect_masses(mass1, mass2, 
+                                          stiffness=stiffness, 
+                                          damping=damping,
+                                          dscale=spring_dscale)
             self.ms_system.fix_mass(mass1)
     
         self.fixed_idx = self.ms_system.fixed_indices

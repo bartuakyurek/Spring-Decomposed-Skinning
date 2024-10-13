@@ -76,10 +76,11 @@ pose = np.array([
 
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 MODE = "Dynamic"
-MASS = 10.0
-STIFFNESS = 100.0
+MASS = 1.0
+STIFFNESS = 50.0
 MASS_DSCALE = 0.1
-SPRING_DSCALE = 0.01
+SPRING_DSCALE = 0.1
+DAMPING = 0.1
 # ---------------------------------------------------------------------------- 
 # Create rig and set helper bones
 # ---------------------------------------------------------------------------- 
@@ -93,6 +94,7 @@ helper_rig = HelperBonesHandler(test_skeleton,
                                 helper_indices,
                                 mass=MASS, 
                                 stiffness=STIFFNESS,
+                                damping=DAMPING,
                                 mass_dscale=MASS_DSCALE,
                                 spring_dscale=SPRING_DSCALE) 
 
@@ -125,7 +127,7 @@ n_repeats = 10
 n_frames = 2
 for _ in range(n_repeats):
     for frame in range(n_frames):
-        for _ in range(24):
+        for _ in range(4):#24):
             theta = pose[frame]
             trans = None
             # WARNING (TODO): No relative translation yet!
