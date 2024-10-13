@@ -352,7 +352,7 @@ class Skeleton():
         assert bone_idx < len(self.rest_bones), f">> Invalid bone index {bone_idx}. Please select an index less than {len(self.rest_bones)}"
         return self.rest_bones[bone_idx]
     
-    def get_rest_bone_locations(self, exclude_root=True):
+    def get_rest_bone_locations(self, exclude_root):
         """
         Get the bone joint locations for the entire skeleton. Note that this is
         not the same as SMPL joint locations. In this skeleton, every bone has

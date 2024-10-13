@@ -74,6 +74,9 @@ pose = np.array([
                 ]
                 ])
 
+DEGREES = True # Set true if pose is represented with degrees as Euler angles.
+MODE = "Dynamic"
+
 # ---------------------------------------------------------------------------- 
 # Create rig and set helper bones
 # ---------------------------------------------------------------------------- 
@@ -116,16 +119,15 @@ for _ in range(n_repeats):
     for frame in range(n_frames):
         for _ in range(24 * 2):
             theta = pose[frame]
-            #t = trans[frame]
-            posed_bone_locations = test_skeleton.pose_bones(theta, degrees=True, exclude_root=EXCLUDE_ROOT)
+            trans = None
+            # WARNING (TODO): No relative translation yet!
             
-            # TODO: simulate the mass
-            simulated_locations = helper_rig.update(test_skeleton)
-            print(">>> Simulated locations", simulated_locations)
-            
-            # TODO: update the posed_bone_locations (maybe not directly update the skeleton bones' locations?)
-            print(">> WARNING: PLEASE DON'T FORGET TO UPDATE THE BONE TIPS... See the line below")
-            skel_mesh.points = posed_bone_locations
+            if MODE == "Rigid":
+                rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
+                skel_mesh.points = rigid_bone_locations
+            else:
+                simulated_bone_locations = helper_rig.update(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
+                skel_mesh.points = simulated_bone_locations
     
             # Write a frame. This triggers a render.
             plotter.write_frame()
