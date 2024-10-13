@@ -121,6 +121,7 @@ class MassSpringSystem:
     def __init__(self, dt):
         print(">> Initiated empty mass-spring system")
         self.masses = []
+        self.fixed_indices = []
         self.connections = []
         self.dt =  dt
         
@@ -155,8 +156,9 @@ class MassSpringSystem:
         else:
             print(f"Expected Particle class, got {type(mass)}")
             
-    def fix_mass(self, mass_idx, verbose=False):
+    def fix_mass(self, mass_idx, verbose=VERBOSE):
         self.masses[mass_idx].mass = 0.0
+        self.fixed_indices.append(mass_idx)
         if verbose: print(f">> Fixed mass at location {self.masses[mass_idx].center}")
         return
         
