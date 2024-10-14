@@ -46,6 +46,10 @@ def add_helper_bones(test_skeleton, helper_bone_endpoints, helper_bone_parents,
         helper_indices.append(bone_idx)
     return helper_indices
 
+def lerp(arr1, arr2, ratio):
+    
+    return ((1.0 - ratio) * arr1) + (ratio * arr2)
+
 # ---------------------------------------------------------------------------- 
 # Set skeletal animation data
 # ---------------------------------------------------------------------------- 
@@ -128,14 +132,17 @@ skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
 plotter.open_movie(RESULT_PATH + "/igl-skeleton.mp4")
 
 n_repeats = 10
-n_frames = 2
+n_poses = pose.shape[0]
+frame_rate = 24
+trans = None # TODO: No relative translation yet...
 for _ in range(n_repeats):
-    for frame in range(n_frames):
-        for _ in range(24):
+    for pose_idx in range(n_poses):
+        for frame_idx in range(frame_rate):
             
-            theta = pose[frame]
-            trans = None
-            # WARNING (TODO): No relative translation yet!
+            if pose_idx:
+                theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/frame_rate)
+            else:
+                theta = lerp(pose[pose_idx], pose[-1], frame_idx/frame_rate)
             
             if MODE == "Rigid":
                 rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
