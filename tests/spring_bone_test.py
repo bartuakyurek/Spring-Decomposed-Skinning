@@ -76,11 +76,11 @@ pose = np.array([
 
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 MODE = "Dynamic"
-MASS = 1.0
-STIFFNESS = 10.0
+MASS = 0.1
+STIFFNESS = 0.3
 MASS_DSCALE = 1.0        # Range [0.0, 1.0] Scales mass velocity
 SPRING_DSCALE = 1.0      # Range [0.0, 1.0]
-DAMPING = 1.0
+DAMPING = 0.4            # TODO: Why increasing damping makes the stability worse?
 TIME_STEP = 1/30
 POINT_SPRING = False
 # ---------------------------------------------------------------------------- 
@@ -131,7 +131,7 @@ n_repeats = 10
 n_frames = 2
 for _ in range(n_repeats):
     for frame in range(n_frames):
-        for _ in range(240):
+        for _ in range(24):
             
             theta = pose[frame]
             trans = None

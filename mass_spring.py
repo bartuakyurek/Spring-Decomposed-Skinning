@@ -18,11 +18,11 @@ import pyvista as pv
 from sanity_check import _is_equal
 from global_vars import _SPACE_DIMS_, VERBOSE
 
-_DEFAULT_STIFFNESS = 0.5
-_DEFAULT_DAMPING = 1.0
+_DEFAULT_STIFFNESS = 1.5
+_DEFAULT_DAMPING = 0.5
 _DEFAULT_MASS = 2.5
-_DEFAULT_SPRING_SCALE = 1
-_DEFAULT_MASS_SCALE = 1 # Default is 0.1 but the simulation doesn't work at 0.1...
+_DEFAULT_SPRING_SCALE = 1.
+_DEFAULT_MASS_SCALE = 1.
 class Particle:
     def __init__(self, 
                  coordinate, 
@@ -94,34 +94,36 @@ class Spring:
     def get_force_on_mass(self, mass : Particle, verbose=VERBOSE):
         
         distance = np.linalg.norm(self.m1.center - self.m2.center)
+        
         if verbose:
-            if np.abs(distance - self.rest_length) < 1e-16:
-                print(f">>> Balance reached. At distance {distance} with spring rest length {self.rest_length}")
+            if np.abs(distance - self.rest_length) < 1e-8:
+               if np.linalg.norm(self.m1.velocity) + np.linalg.norm(self.m2.velocity) < 1e-8: 
+                   print(f">>> Balance reached at distance {np.round(distance,6)} with spring rest length {np.round(self.rest_length,6)}")
         
         spring_force_amount  = (distance - self.rest_length) * self.k * self.distance_scale
         
-        if distance < 1e-5:
-            print("WARNING: This mass-spring simulation is not good for zero-length springs.")
-            return np.array([0.,0.,0.])
+        if distance < 1e-10:
+            distance = 1e-10
             
-        else:
-            # Find speed of contraction/expansion for damping force
-            normalized_dir = (self.m2.center - self.m1.center) / distance
-            
-            s1 = np.dot(self.m1.velocity, normalized_dir)
-            s2 = np.dot(self.m2.velocity, normalized_dir)
-            damping_force_amount = -self.kd * (s1 + s2)
+        # Find speed of contraction/expansion for damping force
+        normalized_dir = (self.m2.center - self.m1.center) / distance
+        assert np.linalg.norm(normalized_dir) < 1.0+1e-12, f"ERROR: Expected normalized direction provided {normalized_dir} is not normalized."
+        assert np.linalg.norm(normalized_dir) > 1.0-1e-12, f"ERROR: Expected normalized direction provided {normalized_dir} is not normalized."
+
+        s1 = np.dot(self.m1.velocity, normalized_dir)
+        s2 = np.dot(self.m2.velocity, normalized_dir)
+        damping_force_amount = -self.kd * (s1 + s2)
         
-            force = None
-            if self.m1 == mass:
-                force = (spring_force_amount + damping_force_amount) * normalized_dir
-            elif self.m2 == mass:
-                force = (-spring_force_amount + damping_force_amount) * normalized_dir
-            else:
-                print(">> WARNING: Unexpected case occured, given mass location does not exist for this spring. No force is exerted.")
+        force = None
+        if self.m1 == mass:
+            force = (spring_force_amount + damping_force_amount) * normalized_dir
+        elif self.m2 == mass:
+            force = (-spring_force_amount + damping_force_amount) * normalized_dir
+        else:
+            print(">> WARNING: Unexpected case occured, given mass location does not exist for this spring. No force is exerted.")
               
-            assert not np.any(force > 1e10), f"WARNING: System got unstable with force {force}, stopping execution..."
-            return force
+        assert not np.any(force > 1e10), f"WARNING: System got unstable with force {force}, stopping execution..."
+        return force
         
         
 class MassSpringSystem:
@@ -149,9 +151,11 @@ class MassSpringSystem:
         
             velocity = self.masses[i].velocity + acc * dt
             previous_position = self.masses[i].center.copy()
-            
+           
+            self.masses[i].prev_center = previous_position
             self.masses[i].center += velocity * dt * self.masses[i].dscale
             self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
+    
     
     def simulate_zero_length(self, dt):
         """
@@ -231,6 +235,7 @@ class MassSpringSystem:
         
     def remove_mass(self, mass_idx):
         # TODO: remove mass dictionary entry
+        print("WARNING: This function remove_mass() have not been implemented yet.")
         pass
     
     def translate_mass(self, mass_idx, translate_vec):
@@ -238,6 +243,7 @@ class MassSpringSystem:
         assert type(mass_idx) is int, f"Expected mass_idx to be int, got {type(mass_idx)}"
         assert mass_idx < len(self.masses), "Provided mass index is out of bounds."
         
+        self.masses[mass_idx].prev_center = self.masses[mass_idx].center
         self.masses[mass_idx].center += translate_vec
         return
     

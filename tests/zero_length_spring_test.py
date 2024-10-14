@@ -64,7 +64,7 @@ def callback(step):
         print(">> Step ", step+1)
         
     FORCE_SCALE = 1. / 50 # Scale the np.random to apply a small force
-    if (step) % 25 == 0 and step < 400:
+    if (step) % 25 == 0 and step < 250:
         print(">> Force applied...")
         mass_spring_system.translate_mass(0, np.random.randn(3) * FORCE_SCALE)
 
