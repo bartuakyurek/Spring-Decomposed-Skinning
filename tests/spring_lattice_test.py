@@ -117,8 +117,8 @@ n_simulation_steps = 200
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 
 plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)
-plotter.camera_position = 'zx'
-
+plotter.camera_position = 'xy'
+plotter.camera.view_angle = 30.0
 plotter.show()
 
 
