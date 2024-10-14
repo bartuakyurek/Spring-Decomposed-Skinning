@@ -92,9 +92,6 @@ class Spring:
     def get_force_on_mass(self, mass : Particle, verbose=VERBOSE):
         
         distance = np.linalg.norm(self.m1.center - self.m2.center)
-        if distance < 1e-16:
-            distance = 1e-6 # For numerical stability
-        
         if verbose:
             if np.abs(distance - self.rest_length) < 1e-16:
                 print(">>> Balance reached.", distance, self.rest_length)
@@ -102,6 +99,9 @@ class Spring:
         spring_force_amount  = (distance - self.rest_length) * self.k * self.distance_scale
         
         # Find speed of contraction/expansion for damping force
+        if distance < 1e-5:
+            print("WARNING: This mass-spring simulation is not good for zero-length springs.")
+            distance = 1e-5
         normalized_dir = (self.m2.center - self.m1.center) / distance
         
         s1 = np.dot(self.m1.velocity, normalized_dir)
