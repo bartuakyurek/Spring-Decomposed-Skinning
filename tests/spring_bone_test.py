@@ -79,7 +79,7 @@ pose = np.array([
                 ])
 
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-MODE = "Rigid" #"Dynamic"
+MODE = "Dynamic" #"Rigid" or "Dynamic"
 MASS = 0.1
 STIFFNESS = 0.3
 MASS_DSCALE = 1.0        # Range [0.0, 1.0] Scales mass velocity
