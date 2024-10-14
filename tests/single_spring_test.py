@@ -27,7 +27,7 @@ k = 100
 gravity=False # If you'll enable gravity, make sure the spring length is not so small
 
 mass_spring_system.add_mass(mass_coordinate=np.array([0,0,0]), mass=mass, gravity=gravity)
-mass_spring_system.add_mass(mass_coordinate=np.array([0.4,0,0.]), mass=mass, gravity=gravity)
+mass_spring_system.add_mass(mass_coordinate=np.array([0.,0,-0.4]), mass=mass, gravity=gravity)
 mass_spring_system.connect_masses(0, 1, stiffness=k)
 mass_spring_system.fix_mass(0)
     
@@ -72,7 +72,8 @@ n_simulation_steps = 500
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 
 plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)
-plotter.camera_position = 'xy' 
+plotter.camera_position = 'xy'
+plotter.camera.view_angle = 30.0
 plotter.show()
 
 
