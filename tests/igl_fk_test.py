@@ -41,7 +41,7 @@ plotter.camera.azimuth = -90
 # ---------------------------------------------------------------------------- 
 # Add skeleton mesh based on T-pose locations
 # ---------------------------------------------------------------------------- 
-n_bones = len(test_skeleton.bones)
+n_bones = len(test_skeleton.rest_bones)
 rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root = True)
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 
@@ -63,7 +63,7 @@ pose = np.array([
                  [0.,0.,0.],
                  [45., 45., 0.],
                  [0.,0.,0.],
-                 [0.,0.,0.],
+                 [0.,10.,0.],
                 ]
                 ])
 for _ in range(n_repeats):
