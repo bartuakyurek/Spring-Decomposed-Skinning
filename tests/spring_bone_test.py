@@ -71,7 +71,7 @@ pose = np.array([
                 [
                  [0.,0.,0.],
                  [0.,0.,0.],
-                 [90., 10., 0.],
+                 [0., 10., 40.],
                  [0.,0.,0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
@@ -79,7 +79,7 @@ pose = np.array([
                 ])
 
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-MODE = "Dynamic"
+MODE = "Rigid" #"Dynamic"
 MASS = 0.1
 STIFFNESS = 0.3
 MASS_DSCALE = 1.0        # Range [0.0, 1.0] Scales mass velocity
@@ -87,6 +87,8 @@ SPRING_DSCALE = 1.0      # Range [0.0, 1.0]
 DAMPING = 0.4            # TODO: Why increasing damping makes the stability worse?
 TIME_STEP = 1/30
 POINT_SPRING = False
+FRAME_RATE = 60 #24
+
 # ---------------------------------------------------------------------------- 
 # Create rig and set helper bones
 # ---------------------------------------------------------------------------- 
@@ -133,16 +135,15 @@ plotter.open_movie(RESULT_PATH + "/igl-skeleton.mp4")
 
 n_repeats = 10
 n_poses = pose.shape[0]
-frame_rate = 24
 trans = None # TODO: No relative translation yet...
 for _ in range(n_repeats):
     for pose_idx in range(n_poses):
-        for frame_idx in range(frame_rate):
+        for frame_idx in range(FRAME_RATE):
             
             if pose_idx:
-                theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/frame_rate)
+                theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
             else:
-                theta = lerp(pose[pose_idx], pose[-1], frame_idx/frame_rate)
+                theta = lerp(pose[-1], pose[pose_idx], frame_idx/FRAME_RATE)
             
             if MODE == "Rigid":
                 rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
