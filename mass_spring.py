@@ -31,14 +31,37 @@ class Particle:
                  dscale=_DEFAULT_MASS_SCALE,
                  radius=0.05,
                  gravity=False):
+        """
         
+
+        Parameters
+        ----------
+        coordinate : TYPE
+            DESCRIPTION.
+        orientation : TYPE, optional
+            DESCRIPTION. The default is [0., 1., 0.].
+        mass : TYPE, optional
+            DESCRIPTION. The default is _DEFAULT_MASS.
+        dscale : TYPE, optional
+            DESCRIPTION. The default is _DEFAULT_MASS_SCALE.
+        radius : TYPE, optional
+            DESCRIPTION. The default is 0.05.
+        gravity : bool or np.ndarray or List, optional
+            Sets the gravitational acceleration of the particle.
+            It can be either provided as a 3d vector or can be set True
+            to set it [0.0, 0.0, -9.81]. The default is False.
+
+        Returns
+        -------
+        None.
+
+        """
         MAX_ALLOWED_MASS = 99
         assert np.any(orientation), f"Particle orientation vector must have nonzero length. Provided direction is {orientation}."
         assert mass < MAX_ALLOWED_MASS, f"Provided mass {mass} is greater than maximum allowed mass {MAX_ALLOWED_MASS}"
         
         self.mass = mass
         self.radius = radius
-        self.gravity = gravity
         self.dscale = dscale
         
         self.center = np.array(coordinate, dtype=float)
@@ -48,6 +71,19 @@ class Particle:
         self.velocity = np.zeros_like(coordinate)
         self.springs = []
         
+        if gravity is not None and gravity is not False:
+            # If gravity is set to True:
+            if gravity is True:
+                self.gravity = np.array([0.0, 0.0, -9.81])
+            # If gravity is provided via an array:
+            else: 
+                if type(gravity) is list or type(gravity) is np.ndarray:
+                    assert len(gravity) == 3, f"Expected gravity to have length 3, got {len(self.gravity)}"
+                    self.gravity = np.array(gravity)
+        # If gravity is set to False:
+        else:
+            self.gravity = np.array([0.0, 0.0, 0.0]) # Set no gravitational acceleration.
+            
     def add_spring(self, s):
         self.springs.append(s)
         return
@@ -63,9 +99,8 @@ class Particle:
             assert f_spring.shape == tot_force.shape, f"Calculated force must be a 3D vector, provided {f_spring.shape}."
             tot_force += f_spring
             
-        if self.gravity:
-            tot_force += self.mass * np.array([0.0, -9.81, 0.0])  # F = mg where g is graviational acceleration
         
+        tot_force += self.mass * self.gravity # F = mg where g is graviational acceleration
         return tot_force
         
 class Spring:
