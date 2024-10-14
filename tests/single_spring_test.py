@@ -21,10 +21,10 @@ dt = 1. / 24
 mass_spring_system = MassSpringSystem(dt)
 
 # Add masses to container and connect them, and fix some of them.
-n_masses =  2
+n_masses = 2
 MASS = 1.
 STIFFNESS = 5e2
-DAMPING = 10.0
+DAMPING = 1.
 ENABLE_GRAVITY=True # If you'll enable gravity, make sure the spring length is not so small
 
 mass_spring_system.add_mass(mass_coordinate=np.array([0,0,0]), mass=MASS, gravity=ENABLE_GRAVITY)
