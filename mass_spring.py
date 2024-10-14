@@ -96,7 +96,7 @@ class Spring:
         distance = np.linalg.norm(self.m1.center - self.m2.center)
         if verbose:
             if np.abs(distance - self.rest_length) < 1e-16:
-                print(">>> Balance reached.", distance, self.rest_length)
+                print(f">>> Balance reached. At distance {distance} with spring rest length {self.rest_length}")
         
         spring_force_amount  = (distance - self.rest_length) * self.k * self.distance_scale
         
@@ -153,14 +153,14 @@ class MassSpringSystem:
             self.masses[i].center += velocity * dt * self.masses[i].dscale
             self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
     
-    def simulate_zero_length(self):
+    def simulate_zero_length(self, dt):
         """
         WARNING: This assumes the spring is zero-length spring. I.e. masses
         of the spring are at the same location.
 
         Parameters
         ----------
-        dt : TYPE, optional
+        dt : float, optional
             DESCRIPTION. The default is None.
 
         Returns
@@ -168,6 +168,8 @@ class MassSpringSystem:
         None.
 
         """
+        if dt is None: dt = 1.0
+        assert dt <= 1.0, f"Please provide a smaller time step, expected <= 1.0, got {dt}."
         
         n_masses = len(self.masses)
         for i in range(n_masses):
@@ -195,13 +197,13 @@ class MassSpringSystem:
                     f_d = velocity * (1.0 - damping)
                     f_s = (target - p_dragged) * stiffness
                     forces += f_d + f_s
-                    
+                
                 p_new = p_current + forces
-                previous_position = self.masses[i].center.copy()
                 
                 self.masses[i].center = p_new
                 self.masses[i].prev_center = p_current
                 
+                #previous_position = self.masses[i].center.copy()
                 #self.masses[i].velocity = (p_new - previous_position) #/ dt
             
     
