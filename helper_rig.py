@@ -13,13 +13,15 @@ class HelperBonesHandler:
     
     def __init__(self, skeleton, helper_indices, 
                  mass=1.0, stiffness=100, damping=1.0,
-                 mass_dscale=1.0, spring_dscale=0.01, dt=1./24):
+                 mass_dscale=1.0, spring_dscale=0.01, dt=1./24,
+                 point_spring=None):
         """
         Create a mass-spring system provided an array of Bone objects.
         Every bone is modelled as two masses at the tip points, connected
         via a spring. The beginning mass of the bone is fixed, so that only the
         ending mass is jiggling.
 
+        Note that if point_spring is not None, the provided boolean will be used.
         """
         self.skeleton = skeleton
         self.prev_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False) 
@@ -57,6 +59,10 @@ class HelperBonesHandler:
     
         self.fixed_idx = self.ms_system.fixed_indices
         self.free_idx = self.ms_system.get_free_mass_indices()
+        
+        if point_spring is not None:
+            assert type(point_spring) == bool, f"Expected point_spring parameter to be boolean. Got {type(point_spring)}."
+            self.POINT_SPRINGS = point_spring
     # TODO: We should be able to change the individual masses and stiffness, 
     # for optimization we should be able to provide an array of particle mass
     # that will update the individual Particle.mass in the system
