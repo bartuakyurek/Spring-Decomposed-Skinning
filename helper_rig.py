@@ -120,7 +120,7 @@ class HelperBonesHandler:
             self.ms_system.translate_mass(fixed_mass_idx, translate_vec)
 
             if self.POINT_SPRINGS:
-                self.ms_system.simulate_zero_length()
+                self.ms_system.simulate_zero_length(dt)
             else:
                 self.ms_system.simulate(dt)
             
