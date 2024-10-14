@@ -24,10 +24,10 @@ mass_spring_system = MassSpringSystem(dt)
 n_masses =  2
 mass = 1.
 k = 100
-gravity=True # If you'll enable gravity, make sure the spring length is not so small
+gravity=False # If you'll enable gravity, make sure the spring length is not so small
 
 mass_spring_system.add_mass(mass_coordinate=np.array([0,0,0]), mass=mass, gravity=gravity)
-mass_spring_system.add_mass(mass_coordinate=np.array([1.4,0,0.]), mass=mass, gravity=gravity)
+mass_spring_system.add_mass(mass_coordinate=np.array([0.4,0,0.]), mass=mass, gravity=gravity)
 mass_spring_system.connect_masses(0, 1, stiffness=k)
 mass_spring_system.fix_mass(0)
     
@@ -49,7 +49,7 @@ def callback(step):
         print(">> Simulation started.")
         print(f">> {step} Force applied.")
         SELECTED_MASS = 1 
-        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.4,0.,0.]))
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.1,0.,0.]))
         
     if ((step+1) % 50) == 0:
         print(">> Step ", step)
