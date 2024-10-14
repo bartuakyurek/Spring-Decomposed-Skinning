@@ -70,7 +70,7 @@ def callback(step):
         print(">> Step ", step+1)
         
     if (step) % APPLY_FORCE_STEP == 0 and step < STOP_FORCE_STEP:
-        print(">> Force applied...")
+        print(">> Force applied... at step ", step)
         #mass_spring_system.translate_mass(0, np.random.randn(3) * FORCE_SCALE)
         mass_spring_system.masses[1].velocity += np.random.randn(3) * FORCE_SCALE
 
