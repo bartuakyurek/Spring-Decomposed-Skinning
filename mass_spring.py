@@ -96,9 +96,9 @@ class Spring:
         distance = np.linalg.norm(self.m1.center - self.m2.center)
         
         if verbose:
-            if np.abs(distance - self.rest_length) < 1e-8:
-               if np.linalg.norm(self.m1.velocity) + np.linalg.norm(self.m2.velocity) < 1e-8: 
-                   print(f">>> Balance reached at distance {np.round(distance,6)} with spring rest length {np.round(self.rest_length,6)}")
+            #if np.abs(distance - self.rest_length) < 1e-8: --> This is not the necessary condition for balance. Balance could be achieved even if the spring is stretched a bit (because of gravity).
+            if np.linalg.norm(self.m1.velocity) + np.linalg.norm(self.m2.velocity) < 1e-8: 
+                print(f">>> Balance reached at distance {np.round(distance,6)} with spring rest length {np.round(self.rest_length,6)}")
         
         spring_force_amount  = (distance - self.rest_length) * self.k * self.distance_scale
         
