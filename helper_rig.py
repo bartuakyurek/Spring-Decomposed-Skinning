@@ -13,7 +13,7 @@ class HelperBonesHandler:
     
     def __init__(self, skeleton, helper_indices, 
                  mass=1.0, stiffness=100, damping=1.0,
-                 mass_dscale=1.0, spring_dscale=0.01):
+                 mass_dscale=1.0, spring_dscale=0.01, dt=1./24):
         """
         Create a mass-spring system provided an array of Bone objects.
         Every bone is modelled as two masses at the tip points, connected
@@ -32,8 +32,7 @@ class HelperBonesHandler:
         self.helper_indices = helper_indices
         helper_bones = np.array(skeleton.rest_bones)[helper_indices]
  
-        self.dt = 1. / 24
-        self.ms_system = MassSpringSystem(self.dt)
+        self.ms_system = MassSpringSystem(dt)
     
         print("WARNING: Masses should be initiated NOT at the rest pose but the first keyframe pose \
               to be simulated in between the frames")
@@ -57,7 +56,7 @@ class HelperBonesHandler:
     # for optimization we should be able to provide an array of particle mass
     # that will update the individual Particle.mass in the system
     
-    def update(self, theta, trans, degrees, exclude_root):
+    def update(self, theta, trans, degrees, exclude_root, dt=None):
         """
         Given the relative rotations, update the skeleton joints with mass-spring
         system and return the resulting joint locations.
@@ -114,8 +113,12 @@ class HelperBonesHandler:
             # and FK needed to be  re-called?
             fixed_mass_idx = self.fixed_idx[i]
             self.ms_system.translate_mass(fixed_mass_idx, translate_vec)
-            self.ms_system.simulate()
-
+            
+            if dt:
+                self.ms_system.simulate(dt)
+            else:
+                self.ms_system.simulate()
+                
             # Step 2 - Get current mass positions
             cur_mass_locations = self.ms_system.get_mass_locations()
             free_mass_locations = cur_mass_locations[self.free_idx]
