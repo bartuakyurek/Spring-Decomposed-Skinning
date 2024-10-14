@@ -46,7 +46,7 @@ for edge in kintree:
 # ---------------------------------------------------------------------------- 
 # Add skeleton mesh based on T-pose locations
 # ---------------------------------------------------------------------------- 
-n_bones = len(test_skeleton.bones)
+n_bones = len(test_skeleton.rest_bones)
 rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 
