@@ -64,7 +64,7 @@ class Particle:
             tot_force += f_spring
             
         if self.gravity:
-            tot_force += self.mass * np.array([0.0, -9.81, 0.0])
+            tot_force += self.mass * np.array([0.0, -9.81, 0.0])  # F = mg where g is graviational acceleration
             
         return tot_force
         
