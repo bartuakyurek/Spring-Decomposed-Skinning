@@ -65,7 +65,7 @@ class Particle:
             
         if self.gravity:
             tot_force += self.mass * np.array([0.0, -9.81, 0.0])  # F = mg where g is graviational acceleration
-            
+        
         return tot_force
         
 class Spring:
@@ -107,8 +107,10 @@ class Spring:
             
         # Find speed of contraction/expansion for damping force
         normalized_dir = (self.m2.center - self.m1.center) / distance
-        assert np.linalg.norm(normalized_dir) < 1.0+1e-12, f"ERROR: Expected normalized direction provided {normalized_dir} is not normalized."
-        assert np.linalg.norm(normalized_dir) > 1.0-1e-12, f"ERROR: Expected normalized direction provided {normalized_dir} is not normalized."
+        
+        if np.linalg.norm(normalized_dir) > 1e-20: # If the direction is not a zero vector
+            assert np.linalg.norm(normalized_dir) < 1.0+1e-12, f"ERROR: Expected normalized direction provided {normalized_dir} is not normalized."
+            assert np.linalg.norm(normalized_dir) > 1.0-1e-12, f"ERROR: Expected normalized direction provided {normalized_dir} is not normalized."
 
         s1 = np.dot(self.m1.velocity, normalized_dir)
         s2 = np.dot(self.m2.velocity, normalized_dir)
