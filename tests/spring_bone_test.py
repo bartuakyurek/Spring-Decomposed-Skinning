@@ -76,12 +76,13 @@ pose = np.array([
 
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 MODE = "Dynamic"
-MASS = 0.1
-STIFFNESS = 1.0
-MASS_DSCALE = 1.0
-SPRING_DSCALE = 1.0
+MASS = 1.0
+STIFFNESS = 10.0
+MASS_DSCALE = 1.0        # Range [0.0, 1.0] Scales mass velocity
+SPRING_DSCALE = 1.0      # Range [0.0, 1.0]
 DAMPING = 1.0
 TIME_STEP = 1/30
+POINT_SPRING = False
 # ---------------------------------------------------------------------------- 
 # Create rig and set helper bones
 # ---------------------------------------------------------------------------- 
@@ -98,7 +99,8 @@ helper_rig = HelperBonesHandler(test_skeleton,
                                 damping       = DAMPING,
                                 mass_dscale   = MASS_DSCALE,
                                 spring_dscale = SPRING_DSCALE,
-                                dt            = TIME_STEP) 
+                                dt            = TIME_STEP,
+                                point_spring  = POINT_SPRING) 
 
 # TODO: you could also add insert_point_handle() to Skeleton class
 # that creates a zero-length bone (we need to render bone tips as spheres to see that)
@@ -129,7 +131,8 @@ n_repeats = 10
 n_frames = 2
 for _ in range(n_repeats):
     for frame in range(n_frames):
-        for _ in range(24):
+        for _ in range(240):
+            
             theta = pose[frame]
             trans = None
             # WARNING (TODO): No relative translation yet!
