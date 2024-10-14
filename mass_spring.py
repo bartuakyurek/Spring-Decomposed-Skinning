@@ -40,7 +40,9 @@ class Particle:
         self.radius = radius
         self.gravity = gravity
         self.dscale = dscale
+        
         self.center = np.array(coordinate, dtype=float)
+        self.prev_center = np.array(coordinate, dtype=float)  # WARNING: it might be misleading cause prev center must be set manually 
         self.orientation = np.array(orientation, dtype=float) # Used for rendering the mass sphere
         
         self.velocity = np.zeros_like(coordinate)
@@ -98,26 +100,28 @@ class Spring:
         
         spring_force_amount  = (distance - self.rest_length) * self.k * self.distance_scale
         
-        # Find speed of contraction/expansion for damping force
         if distance < 1e-5:
             print("WARNING: This mass-spring simulation is not good for zero-length springs.")
-            distance = 1e-5
-        normalized_dir = (self.m2.center - self.m1.center) / distance
-        
-        s1 = np.dot(self.m1.velocity, normalized_dir)
-        s2 = np.dot(self.m2.velocity, normalized_dir)
-        damping_force_amount = -self.kd * (s1 + s2)
-        
-        force = None
-        if self.m1 == mass:
-            force = (spring_force_amount + damping_force_amount) * normalized_dir
-        elif self.m2 == mass:
-            force = (-spring_force_amount + damping_force_amount) * normalized_dir
+            return np.array([0.,0.,0.])
+            
         else:
-            print(">> WARNING: Unexpected case occured, given mass location does not exist for this spring. No force is exerted.")
-          
-        assert not np.any(force > 1e10), f"WARNING: System got unstable with force {force}, stopping execution..."
-        return force
+            # Find speed of contraction/expansion for damping force
+            normalized_dir = (self.m2.center - self.m1.center) / distance
+            
+            s1 = np.dot(self.m1.velocity, normalized_dir)
+            s2 = np.dot(self.m2.velocity, normalized_dir)
+            damping_force_amount = -self.kd * (s1 + s2)
+        
+            force = None
+            if self.m1 == mass:
+                force = (spring_force_amount + damping_force_amount) * normalized_dir
+            elif self.m2 == mass:
+                force = (-spring_force_amount + damping_force_amount) * normalized_dir
+            else:
+                print(">> WARNING: Unexpected case occured, given mass location does not exist for this spring. No force is exerted.")
+              
+            assert not np.any(force > 1e10), f"WARNING: System got unstable with force {force}, stopping execution..."
+            return force
         
         
 class MassSpringSystem:
@@ -148,7 +152,59 @@ class MassSpringSystem:
             
             self.masses[i].center += velocity * dt * self.masses[i].dscale
             self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
+    
+    def simulate_zero_length(self):
+        """
+        WARNING: This assumes the spring is zero-length spring. I.e. masses
+        of the spring are at the same location.
+
+        Parameters
+        ----------
+        dt : TYPE, optional
+            DESCRIPTION. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        n_masses = len(self.masses)
+        for i in range(n_masses):
+            # Constraint: If a mass is zero, i.e. fixed mass, don't exert any force (f=ma=0).
+            if self.masses[i].mass < 1e-12:
+                continue
+            else:
+                m = self.masses[i]
+                p_current = m.center
+                velocity = p_current - m.prev_center
+                p_dragged = p_current + velocity
+                
+                forces = np.zeros(3)
+                for spring in m.springs:
+                    if spring.m1 == m:
+                        target = spring.m2.center
+                    elif spring.m2 == m:
+                        target = spring.m1.center
+                    else:
+                        print(">> Unexpected copy error occured.")
+                    
+                    damping = spring.kd
+                    stiffness = spring.k
+                    
+                    f_d = velocity * (1.0 - damping)
+                    f_s = (target - p_dragged) * stiffness
+                    forces += f_d + f_s
+                    
+                p_new = p_current + forces
+                previous_position = self.masses[i].center.copy()
+                
+                self.masses[i].center = p_new
+                self.masses[i].prev_center = p_current
+                
+                #self.masses[i].velocity = (p_new - previous_position) #/ dt
             
+    
     def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS, dscale=_DEFAULT_MASS_SCALE,
                  gravity=False, verbose=VERBOSE):
         mass = Particle(mass_coordinate, mass=mass, dscale=dscale, gravity=gravity)

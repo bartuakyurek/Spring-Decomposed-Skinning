@@ -36,6 +36,8 @@ class HelperBonesHandler:
     
         print("WARNING: Masses should be initiated NOT at the rest pose but the first keyframe pose \
               to be simulated in between the frames")
+
+        self.POINT_SPRINGS = False
         n_helper = len(helper_bones)
         for i in range(n_helper):
             helper_start = helper_bones[i].start_location
@@ -49,6 +51,9 @@ class HelperBonesHandler:
                                           damping=damping,
                                           dscale=spring_dscale)
             self.ms_system.fix_mass(mass1)
+            
+            if np.linalg.norm(helper_start-helper_end) < 1e-5:
+                self.POINT_SPRINGS = True
     
         self.fixed_idx = self.ms_system.fixed_indices
         self.free_idx = self.ms_system.get_free_mass_indices()
@@ -113,12 +118,12 @@ class HelperBonesHandler:
             # and FK needed to be  re-called?
             fixed_mass_idx = self.fixed_idx[i]
             self.ms_system.translate_mass(fixed_mass_idx, translate_vec)
-            
-            if dt:
-                self.ms_system.simulate(dt)
+
+            if self.POINT_SPRINGS:
+                self.ms_system.simulate_zero_length()
             else:
-                self.ms_system.simulate()
-                
+                self.ms_system.simulate(dt)
+            
             # Step 2 - Get current mass positions
             cur_mass_locations = self.ms_system.get_mass_locations()
             free_mass_locations = cur_mass_locations[self.free_idx]
