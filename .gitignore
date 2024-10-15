@@ -13,3 +13,4 @@
 .DS_Store
 /results
 *.pyc
+/demo/.conda
