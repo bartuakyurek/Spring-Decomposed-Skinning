@@ -157,7 +157,7 @@ class HelperBonesHandler:
                 
                 # Sanity check
                 new_length = np.linalg.norm(bone_start - self.ms_system.masses[free_idx].center)
-                #assert np.abs(new_length-original_length) < 0.1, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {original_length}." 
+                assert np.abs(new_length-original_length) < 0.1, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {original_length}." 
         else:
             print(">> WARNING: Adjustment for non-point spring bones is not implemented yet.")
         
