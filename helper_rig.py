@@ -10,7 +10,9 @@ from skeleton import Skeleton, Bone
 from mass_spring import MassSpringSystem
 
 class HelperBonesHandler:
-    
+    # TODO: We should be able to change the individual masses and stiffness, 
+    # for optimization we should be able to provide an array of particle mass
+    # that will update the individual Particle.mass in the system
     def __init__(self, 
                  skeleton, 
                  helper_idxs, 
@@ -96,9 +98,9 @@ class HelperBonesHandler:
         self.prev_bone_locations = initial_pose_locations
         return initial_pose_locations
     
-    # TODO: We should be able to change the individual masses and stiffness, 
-    # for optimization we should be able to provide an array of particle mass
-    # that will update the individual Particle.mass in the system
+    
+    
+    
     
     def update(self, theta, trans, degrees, exclude_root, dt=None):
         """
