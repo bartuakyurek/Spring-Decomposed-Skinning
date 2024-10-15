@@ -68,7 +68,7 @@ class Particle:
         self.prev_center = np.array(coordinate, dtype=float)  # WARNING: it might be misleading cause prev center must be set manually 
         self.orientation = np.array(orientation, dtype=float) # Used for rendering the mass sphere
         
-        self.velocity = np.zeros_like(coordinate)
+        self.velocity = np.zeros(_SPACE_DIMS_)
         self.springs = []
         
         if gravity is not None and gravity is not False:
@@ -187,7 +187,7 @@ class MassSpringSystem:
         
             velocity = self.masses[i].velocity + acc * dt
             previous_position = self.masses[i].center.copy()
-           
+            
             self.masses[i].prev_center = previous_position
             self.masses[i].center += velocity * dt * self.masses[i].dscale
             self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
