@@ -14,8 +14,6 @@ import numpy as np
 
 from vispy import gloo, app, scene
 from vispy.color import Color
-from vispy.geometry import create_sphere
-
 
 class ControlPoints(scene.visuals.Compound):
     def __init__(self, parent):
@@ -230,7 +228,7 @@ class Canvas(scene.SceneCanvas):
         self.unfreeze()
 
         self.view = self.central_widget.add_view(bgcolor='#efefef')
-        self.view.camera = scene.ArcballCamera()
+        self.view.camera = scene.PanZoomCamera() #ArcballCamera()
         self.view.camera.set_range(x=[-20, 20])
         
         # the left mouse button pan has to be disabled in the camera, as it
