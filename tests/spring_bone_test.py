@@ -87,16 +87,20 @@ pose = np.array([
                 ])
 
 MODE = "Dynamic" #"Rigid" or "Dynamic"
-POINT_SPRING = False
+
+POINT_SPRING = False # Set true for the point spring implementation (!) It's not working yet.
 EXCLUDE_ROOT = True
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-FRAME_RATE = 60 #24
-TIME_STEP = 1./FRAME_RATE  #1/30
+
+N_REPEAT = 20
+FRAME_RATE = 24
+TIME_STEP = 1./FRAME_RATE  
+
 MASS = 10.
 STIFFNESS = 500
-MASS_DSCALE = 1.0        # Range [0.0, 1.0] Scales mass velocity
-SPRING_DSCALE = 1.0      # Range [0.0, 1.0]
-DAMPING = 0.4            # TODO: Why increasing damping makes the stability worse?
+MASS_DSCALE = 0.1        # Range [0.0, 1.0] Scales mass velocity
+SPRING_DSCALE = 0.1      # Range [0.0, 1.0]
+DAMPING = 40.            # TODO: Why increasing damping makes the stability worse?
 
 # ---------------------------------------------------------------------------- 
 # Create rig and set helper bones
@@ -142,10 +146,9 @@ line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
 plotter.open_movie(RESULT_PATH + "/igl-skeleton.mp4")
 
-n_repeats = 10
 n_poses = pose.shape[0]
 trans = None # TODO: No relative translation yet...
-for rep in range(n_repeats):
+for rep in range(N_REPEAT):
     init_locations = helper_rig.init_pose(theta=pose[0], trans=trans, degrees=DEGREES)
     for pose_idx in range(n_poses):
         for frame_idx in range(FRAME_RATE):
@@ -157,9 +160,8 @@ for rep in range(n_repeats):
                 
                 if rep==0 and frame_idx==0 and rep==0:
                     rigid_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
-                    assert np.linalg.norm(init_locations - rigid_locations) < 1e-20, f"ERROR: Initial pose does not match with helper bone's initial settings. Please fix it first in order not to run into stabilization errors."
-            
-            
+                    assert np.linalg.norm(init_locations - rigid_locations) < 1e-20, "ERROR: Initial pose does not match with helper bone's initial settings. Please fix it first in order not to run into stabilization errors."
+             
             if MODE == "Rigid":
                 rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
                 skel_mesh.points = rigid_bone_locations
