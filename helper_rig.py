@@ -13,7 +13,7 @@ class HelperBonesHandler:
     
     def __init__(self, skeleton, helper_indices, 
                  mass=1.0, stiffness=100, damping=1.0,
-                 mass_dscale=1.0, spring_dscale=0.01, dt=1./24,
+                 mass_dscale=1.0, spring_dscale=1.0, dt=1./24,
                  point_spring=None):
         """
         Create a mass-spring system provided an array of Bone objects.
