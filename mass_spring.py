@@ -126,28 +126,22 @@ class Spring:
         self.m1 = beginning_mass
         self.m2 = ending_mass
         
-    def get_force_on_mass(self, mass : Particle, verbose=VERBOSE):
+    def get_force_on_mass(self, mass : Particle, tol=1e-12, verbose=VERBOSE):
         
         distance = np.linalg.norm(self.m1.center - self.m2.center)
-        
-        #if verbose:
-            #if np.abs(distance - self.rest_length) < 1e-8: --> This is not the necessary condition for balance. Balance could be achieved even if the spring is stretched a bit (because of gravity).
-            #if np.linalg.norm(self.m1.velocity) + np.linalg.norm(self.m2.velocity) < 1e-8: 
-            #    print(f">>> Balance reached at distance {np.round(distance,6)} with spring rest length {np.round(self.rest_length,6)}")
-            # Balance check doesn't work...
-            
         spring_force_amount  = (distance - self.rest_length) * self.k * self.distance_scale
         
-        if distance < 1e-10:
-            distance = 1e-10
+        # Avoid division by zero
+        if distance <  tol:
+            distance = tol
             
-        # Find speed of contraction/expansion for damping force
+        # Find the spring direction and normalize it (if it's not a zero vector like in point springs)
         normalized_dir = (self.m2.center - self.m1.center) / distance
-        
         if np.linalg.norm(normalized_dir) > 1e-20: # If the direction is not a zero vector
-            assert np.linalg.norm(normalized_dir) < 1.0+1e-12, f"ERROR: Expected normalized direction provided {normalized_dir} is not normalized."
-            assert np.linalg.norm(normalized_dir) > 1.0-1e-12, f"ERROR: Expected normalized direction provided {normalized_dir} is not normalized."
-
+            assert np.linalg.norm(normalized_dir) < 1.0+tol, f"ERROR: Expected normalized direction provided {normalized_dir} is not normalized."
+            assert np.linalg.norm(normalized_dir) > 1.0-tol, f"ERROR: Expected normalized direction provided {normalized_dir} is not normalized."
+        
+        # Find speed of contraction/expansion for damping force
         s1 = np.dot(self.m1.velocity, normalized_dir)
         s2 = np.dot(self.m2.velocity, normalized_dir)
         damping_force_amount = -self.kd * (s1 + s2)
@@ -160,6 +154,10 @@ class Spring:
         else:
             print(">> WARNING: Unexpected case occured, given mass location does not exist for this spring. No force is exerted.")
         
+        if verbose:
+            if np.linalg.norm(self.m1.velocity) + np.linalg.norm(self.m2.velocity) < tol: 
+                print(f">>> Balance reached at distance {np.round(distance,6)} with spring rest length {np.round(self.rest_length,6)}")
+            
         assert not np.any(np.abs(force) > 1e10), f"WARNING: System got unstable with force {force}, stopping execution..."
         return force
         
