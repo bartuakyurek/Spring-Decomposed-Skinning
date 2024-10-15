@@ -56,7 +56,7 @@ class Particle:
         None.
 
         """
-        MAX_ALLOWED_MASS = 99
+        MAX_ALLOWED_MASS = 999
         assert np.any(orientation), f"Particle orientation vector must have nonzero length. Provided direction is {orientation}."
         assert mass < MAX_ALLOWED_MASS, f"Provided mass {mass} is greater than maximum allowed mass {MAX_ALLOWED_MASS}"
         
