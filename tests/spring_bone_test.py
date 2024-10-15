@@ -30,21 +30,24 @@ def create_skeleton(joint_locations, kintree):
                                    parent_idx = parent_idx)   
     return test_skeleton
 
-def add_helper_bones(test_skeleton, helper_bone_endpoints, helper_bone_parents,
-                     offset_ratio=0.0, startpoints=[]):
+def add_helper_bones(test_skeleton, 
+                     helper_bone_endpoints, 
+                     helper_bone_parents,
+                     offset_ratio=0.0, 
+                     startpoints=[]):
+    
     n_helper = len(helper_bone_parents)
     if len(startpoints)==0: startpoints = np.repeat([None],n_helper)
     
-    helper_indices = []
+    helper_idxs = []
     for i in range(n_helper):
-        bone_idx = test_skeleton.insert_bone(endpoint = helper_bone_endpoints[i],
+        bone_idx = test_skeleton.insert_bone( endpoint = helper_bone_endpoints[i],
                                               parent_idx = helper_bone_parents[i],
-                                              at_the_tip=False,
                                               offset_ratio = offset_ratio,
                                               startpoint = startpoints[i]
                                               )
-        helper_indices.append(bone_idx)
-    return helper_indices
+        helper_idxs.append(bone_idx)
+    return helper_idxs
 
 def lerp(arr1, arr2, ratio):
     
@@ -86,33 +89,34 @@ pose = np.array([
                 ],
                 ])
 
-MODE = "Dynamic" #"Rigid" or "Dynamic"
+MODE = "Rigid" #"Rigid" or "Dynamic"
 
 POINT_SPRING = False # Set true for the point spring implementation (!) It's not working yet.
 EXCLUDE_ROOT = True
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 
 N_REPEAT = 20
-FRAME_RATE = 24
+FRAME_RATE = 60 #24
 TIME_STEP = 1./FRAME_RATE  
 
-MASS = 10.
-STIFFNESS = 500
-MASS_DSCALE = 0.1        # Range [0.0, 1.0] Scales mass velocity
-SPRING_DSCALE = 0.1      # Range [0.0, 1.0]
-DAMPING = 40.            # TODO: Why increasing damping makes the stability worse?
+MASS = 1.
+STIFFNESS = 20.
+MASS_DSCALE = 1.0        # Range [0.0, 1.0] Scales mass velocity
+SPRING_DSCALE = 1.0      # Range [0.0, 1.0]
+DAMPING = 50.            
 
 # ---------------------------------------------------------------------------- 
 # Create rig and set helper bones
 # ---------------------------------------------------------------------------- 
 
 test_skeleton = create_skeleton(joint_locations, kintree)
-helper_indices = add_helper_bones(test_skeleton, helper_bone_endpoints, 
-                                     helper_bone_parents, #offset_ratio=0.0,
+helper_idxs = add_helper_bones(test_skeleton, helper_bone_endpoints, 
+                                     helper_bone_parents,
+                                     #offset_ratio=0.0,
                                      startpoints=helper_bone_endpoints-1e-6)
 
 helper_rig = HelperBonesHandler(test_skeleton, 
-                                helper_indices,
+                                helper_idxs,
                                 mass          = MASS, 
                                 stiffness     = STIFFNESS,
                                 damping       = DAMPING,
