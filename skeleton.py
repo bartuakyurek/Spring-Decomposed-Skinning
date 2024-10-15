@@ -380,7 +380,7 @@ class Skeleton():
             bone_endpoints.append(bone.start_location)
             bone_endpoints.append(bone.end_location)
             
-        return bone_endpoints
+        return np.array(bone_endpoints)
     
 
 if __name__ == "__main__":
