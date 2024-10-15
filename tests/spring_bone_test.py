@@ -78,7 +78,7 @@ pose = np.array([
                 ]
                 ])
 
-MODE = "Dynamic" #"Rigid" or "Dynamic"
+MODE = "Rigid" #"Rigid" or "Dynamic"
 POINT_SPRING = False
 EXCLUDE_ROOT = True
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
@@ -137,15 +137,19 @@ plotter.open_movie(RESULT_PATH + "/igl-skeleton.mp4")
 n_repeats = 10
 n_poses = pose.shape[0]
 trans = None # TODO: No relative translation yet...
-for _ in range(n_repeats):
+for rep in range(n_repeats):
     helper_rig.init_pose(theta=pose[0], trans=trans, degrees=DEGREES)
     for pose_idx in range(n_poses):
         for frame_idx in range(FRAME_RATE):
             
-            if pose_idx:
-                theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
+            if pose_idx == 0 and rep == 0: # If it's the very first pose
+                theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
             else:
-                theta = lerp(pose[-1], pose[pose_idx], frame_idx/FRAME_RATE)
+                if pose_idx: # If not the first pose
+                    theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
+                else:        # Lerp with the last pose for boomerang
+                    theta = lerp(pose[-1], pose[pose_idx], frame_idx/FRAME_RATE)
+
             
             if MODE == "Rigid":
                 rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
