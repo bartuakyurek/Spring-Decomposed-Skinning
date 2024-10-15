@@ -29,24 +29,27 @@ with open(json_path, 'r') as file:
     fixed_pts = data['b']
     m = data['m']
     k = data['k']
-    
+   
+lattice_mesh = igl.read_obj(obj_path)
+lattice_verts = lattice_mesh[0]
+lattice_faces = lattice_mesh[3]
+
 # -----------------------------------------------------------------------------
 # Create masses. Connect masses together. Fixate some of the masses
 # -----------------------------------------------------------------------------
 # Initiate a mass spring system container
-dt = 1. / 24
-mass_spring_system = MassSpringSystem(dt)
+TIME_STEP = 1. / (24*2)
+DAMPING = 10.0
+SPRING_DSCALE = 1.0
+GRAVITY = [0.0, -9.81, 0.0]
 
-lattice_mesh = igl.read_obj(obj_path)
-lattice_verts = lattice_mesh[0]
-lattice_faces = lattice_mesh[3]
-num_masses = lattice_verts.shape[0]
-
-ENABLE_GRAVITY = True
+# Initiate the mass spring system
+mass_spring_system = MassSpringSystem(TIME_STEP)
 
 # Add masses at vertex locations
-for i in range(num_masses):
-    mass_spring_system.add_mass(mass_coordinate=lattice_verts[i], mass=m, gravity=ENABLE_GRAVITY)
+n_masses = lattice_verts.shape[0]
+for i in range(n_masses):
+    mass_spring_system.add_mass(mass_coordinate=lattice_verts[i], mass=m, gravity=GRAVITY)
 
 # Add springs at the edges
 for face in lattice_faces:
@@ -54,7 +57,10 @@ for face in lattice_faces:
         # For stability, either increase it to 10~ if the system is not moving, 
         # or decrease it < 1.0 if the system is overflowing
         # In this test, try setting it 0.25, you'll see how system overflows slowly 
-        mass_spring_system.connect_masses(int(face[f]), int(face[f+1]), stiffness=k, dscale=10.0)
+        mass_spring_system.connect_masses(int(face[f]), int(face[f+1]), 
+                                          stiffness=k, 
+                                          dscale=SPRING_DSCALE,
+                                          damping=DAMPING)
 
 # Fix certain masses' motion
 for idx in fixed_pts:
@@ -112,8 +118,8 @@ def callback(step):
 # -----------------------------------------------------------------------------
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
-dt_milliseconds = int(dt * 1000) 
-n_simulation_steps = 200
+dt_milliseconds = int(TIME_STEP * 1000) 
+n_simulation_steps = 400
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 
 plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)
