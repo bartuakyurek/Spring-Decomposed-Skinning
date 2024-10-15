@@ -47,7 +47,13 @@ class HelperBonesHandler:
         print("WARNING: Masses should be initiated NOT at the rest pose but the first keyframe pose \
               to be simulated in between the frames")
 
-        self.POINT_SPRINGS = False
+        if point_spring is not None:
+            assert type(point_spring) == bool, f"Expected point_spring parameter to be boolean. Got {type(point_spring)}."
+            self.POINT_SPRINGS = point_spring
+        else:
+            self.POINT_SPRINGS = False
+            
+            
         n_helper = len(helper_bones)
         for i in range(n_helper):
             helper_start = helper_bones[i].start_location
@@ -62,15 +68,14 @@ class HelperBonesHandler:
                                           dscale=spring_dscale)
             self.ms_system.fix_mass(mass1)
             
-            if np.linalg.norm(helper_start-helper_end) < 1e-5:
-                self.POINT_SPRINGS = True
+            if point_spring is None:
+                if np.linalg.norm(helper_start - helper_end) < 1e-5:
+                    self.POINT_SPRINGS = True
     
         self.fixed_idx = self.ms_system.fixed_indices
         self.free_idx = self.ms_system.get_free_mass_indices()
         
-        if point_spring is not None:
-            assert type(point_spring) == bool, f"Expected point_spring parameter to be boolean. Got {type(point_spring)}."
-            self.POINT_SPRINGS = point_spring
+        
             
     
     def init_pose(self, theta, trans, degrees):
@@ -98,6 +103,30 @@ class HelperBonesHandler:
         self.prev_bone_locations = initial_pose_locations
         return initial_pose_locations
     
+    
+    def _adjust_masses(self):
+        """
+        Adjust the mass locations after simulating them, such that every bone 
+        will preserve its original length.
+
+        Returns
+        -------
+        adjustments : list
+            Depicts the amount of adjustment made on the mass locations.
+            It's a list of tuples, where every tuple is (mass_idx, adjust_vector)
+        """
+        adjustments = [] # This is just an informative variable for debugging purposes
+        
+        # Loop over the free masses in the system
+        for i in self.free_idx:
+            
+            m = self.ms_system.masses[i] 
+            assert m.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {m.mass}."
+            
+            adjust_vec = 0      
+            adjustments.append((i, adjust_vec))
+        
+        return adjustments
     
     
     
@@ -164,6 +193,10 @@ class HelperBonesHandler:
                 self.ms_system.simulate_zero_length(dt)
             else:
                 self.ms_system.simulate(dt)
+           
+            # Step 1.2 - Adjust the simulation parameters such that helper bones will
+            # preserve their original length
+            self._adjust_masses()
             
             # Step 2 - Get current mass positions
             cur_mass_locations = self.ms_system.get_mass_locations()

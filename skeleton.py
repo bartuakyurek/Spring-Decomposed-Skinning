@@ -279,7 +279,7 @@ class Skeleton():
         return final_bone_locations
         
     def insert_bone(self, endpoint, parent_idx, 
-                    at_the_tip=True, offset_ratio=0.0,
+                    offset_ratio=0.0,
                     startpoint=None):
         """
         Insert a bone providing the tip location and parent index. 
@@ -296,7 +296,6 @@ class Skeleton():
             starts at the starting point of the parent bone, at 0.0 it is
             at the tip of the parent bone, in between it's positioned based on 
             the parent bone's length and provided ratio. The default is 0.0.
-            Note that to use this option you need to set at_the_tip=False first.
         startpoint : np.ndarray, optional
             When provided, it sets the bone starting point. The default is None.
 
@@ -324,6 +323,8 @@ class Skeleton():
                 parent_dir_scaled = parent_dir * offset_ratio
                 # Translate the bone along the parent bone line segment
                 self.rest_bones[new_bone.idx].translate(parent_dir_scaled, override=True)
+            else:
+                print(">> INFO: Startpoint of the bone is taken as the tip of the parent bone")
         else:
             self.rest_bones[new_bone.idx].start_location = startpoint
         
