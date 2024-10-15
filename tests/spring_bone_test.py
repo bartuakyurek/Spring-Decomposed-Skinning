@@ -78,16 +78,17 @@ pose = np.array([
                 ]
                 ])
 
-DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 MODE = "Dynamic" #"Rigid" or "Dynamic"
-MASS = 0.1
-STIFFNESS = 0.3
+POINT_SPRING = False
+EXCLUDE_ROOT = True
+DEGREES = True # Set true if pose is represented with degrees as Euler angles.
+FRAME_RATE = 60 #24
+TIME_STEP = 1./FRAME_RATE  #1/30
+MASS = 10.
+STIFFNESS = 500
 MASS_DSCALE = 1.0        # Range [0.0, 1.0] Scales mass velocity
 SPRING_DSCALE = 1.0      # Range [0.0, 1.0]
 DAMPING = 0.4            # TODO: Why increasing damping makes the stability worse?
-TIME_STEP = 1/30
-POINT_SPRING = False
-FRAME_RATE = 60 #24
 
 # ---------------------------------------------------------------------------- 
 # Create rig and set helper bones
@@ -117,12 +118,12 @@ helper_rig = HelperBonesHandler(test_skeleton,
 RENDER = True
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
 plotter.camera_position = 'zy'
-plotter.camera.azimuth = -90
+plotter.camera.azimuth = 90
+plotter.camera.view_angle = 90 # This works like zoom actually
 
 # ---------------------------------------------------------------------------- 
 # Add skeleton mesh based on T-pose locations
 # ---------------------------------------------------------------------------- 
-EXCLUDE_ROOT = True
 n_bones = len(test_skeleton.rest_bones)
 rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
@@ -137,6 +138,7 @@ n_repeats = 10
 n_poses = pose.shape[0]
 trans = None # TODO: No relative translation yet...
 for _ in range(n_repeats):
+    helper_rig.init_pose(theta=pose[0], trans=trans, degrees=DEGREES)
     for pose_idx in range(n_poses):
         for frame_idx in range(FRAME_RATE):
             
