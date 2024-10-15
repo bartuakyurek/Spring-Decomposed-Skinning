@@ -26,7 +26,8 @@ class HelperBonesHandler:
         self.skeleton = skeleton
         self.prev_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False) 
         print("WARNING: The prev_bone_locations are set at rest locations initially. \
-              However it should be set before the beginning of the animation because rest position might not be animated at all.")
+              However it should be set before the beginning of the animation because rest position might not be animated at all",
+              " Please call init_pose() before animation.")
         # TODO: If what you're returning is actually the JOINT locations, why are you
         # calling these variables and functions as BONE locations? What is a location of
         # a bone afterall?
@@ -63,6 +64,32 @@ class HelperBonesHandler:
         if point_spring is not None:
             assert type(point_spring) == bool, f"Expected point_spring parameter to be boolean. Got {type(point_spring)}."
             self.POINT_SPRINGS = point_spring
+            
+    
+    def init_pose(self, theta, trans, degrees):
+        """
+        Sets the previous bone locations to the given pose. This should be
+        called before initiating animation.
+
+        Parameters
+        ----------
+       theta : np.ndarray
+           DESCRIPTION.
+       trans : np.ndarray
+           DESCRIPTION.
+       degrees : bool 
+           DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        initial_pose_locations = self.skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=False)
+        assert self.prev_bone_locations.shape == initial_pose_locations.shape
+    
+        self.prev_bone_locations = initial_pose_locations
+        return
     # TODO: We should be able to change the individual masses and stiffness, 
     # for optimization we should be able to provide an array of particle mass
     # that will update the individual Particle.mass in the system
