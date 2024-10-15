@@ -89,7 +89,8 @@ class HelperBonesHandler:
         assert self.prev_bone_locations.shape == initial_pose_locations.shape
     
         self.prev_bone_locations = initial_pose_locations
-        return
+        return initial_pose_locations
+    
     # TODO: We should be able to change the individual masses and stiffness, 
     # for optimization we should be able to provide an array of particle mass
     # that will update the individual Particle.mass in the system
