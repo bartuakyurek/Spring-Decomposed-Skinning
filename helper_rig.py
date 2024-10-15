@@ -16,65 +16,81 @@ class HelperBonesHandler:
     def __init__(self, 
                  skeleton, 
                  helper_idxs, 
+                 point_spring=True,
                  mass=1.0, 
                  stiffness=100, 
                  damping=1.0,
                  mass_dscale=1.0, 
                  spring_dscale=1.0, dt=1./24,
-                 point_spring=None):
+                 simulation_mode=0
+                 ):
         """
         Create a mass-spring system provided an array of Bone objects.
         Every bone is modelled as two masses at the tip points, connected
         via a spring. The beginning mass of the bone is fixed, so that only the
         ending mass is jiggling.
 
-        Note that if point_spring is not None, the provided boolean will be used.
+        Simulation mode decides which simulation implementation to be used.
+        If 0, the default simulation is used. If 1, point-spring simulation
+        will be used. Please do not use simulation_mode=1 if there's no point
+        springs.
         """
-        self.skeleton = skeleton
-        self.prev_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False) 
-        print("WARNING: The prev_bone_locations are set at rest locations initially. \
-              However it should be set before the beginning of the animation because rest position might not be animated at all",
-              " Please call init_pose() before animation.")
+        assert type(point_spring) == bool, f"Expected point_spring parameter to be boolean. Got {type(point_spring)}."
+        if simulation_mode == 1:
+            assert point_spring, "Please set point_spring mode if you want to use simulation mode 1."
+        
         # TODO: If what you're returning is actually the JOINT locations, why are you
         # calling these variables and functions as BONE locations? What is a location of
         # a bone afterall?
+        self.skeleton = skeleton
+        self.prev_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False) 
+        print(">> WARNING: The prev_bone_locations are set at rest locations initially. \
+              However it should be set before the beginning of the animation because rest position might not be animated at all",
+              " Please call init_pose() before animation.")
+       
+        self.POINT_SPRINGS = point_spring
+        self.simulation_mode = simulation_mode
         
         self.helper_idxs = helper_idxs
-        helper_bones = np.array(skeleton.rest_bones)[helper_idxs]
- 
         self.ms_system = MassSpringSystem(dt)
     
-        print("WARNING: Masses should be initiated NOT at the rest pose but the first keyframe pose \
-              to be simulated in between the frames")
-
-        if point_spring is not None:
-            assert type(point_spring) == bool, f"Expected point_spring parameter to be boolean. Got {type(point_spring)}."
-            self.POINT_SPRINGS = point_spring
-        else:
-            self.POINT_SPRINGS = False
-            
-            
+        self.helper_lengths = []
+        helper_bones = np.array(skeleton.rest_bones)[helper_idxs]
         n_helper = len(helper_bones)
         for i in range(n_helper):
             helper_start = helper_bones[i].start_location
             helper_end = helper_bones[i].end_location
+            self.helper_lengths.append(np.linalg.norm(helper_end - helper_start))
             
-            mass1 = self.ms_system.add_mass(helper_start, mass=mass, dscale=mass_dscale)
-            mass2 = self.ms_system.add_mass(helper_end, mass=mass, dscale=mass_dscale)
+            if point_spring: # Add zero-length springs at the tip of the helper bone
+                free_mass = self.ms_system.add_mass(helper_end, mass=mass, dscale=mass_dscale)
+                fixed_mass = self.ms_system.add_mass(helper_end, mass=mass, dscale=mass_dscale)
+            else:            # Make the helper bone itself a spring
+                free_mass = self.ms_system.add_mass(helper_end, mass=mass, dscale=mass_dscale)
+                fixed_mass = self.ms_system.add_mass(helper_start, mass=mass, dscale=mass_dscale)
+
+            self.ms_system.connect_masses(free_mass, 
+                                          fixed_mass, 
+                                          stiffness = stiffness, 
+                                          damping   = damping,
+                                          dscale    = spring_dscale)
+            self.ms_system.fix_mass(fixed_mass) # Fix the mass that's added to the tip
             
-            self.ms_system.connect_masses(mass1, mass2, 
-                                          stiffness=stiffness, 
-                                          damping=damping,
-                                          dscale=spring_dscale)
-            self.ms_system.fix_mass(mass1)
-            
-            if point_spring is None:
-                if np.linalg.norm(helper_start - helper_end) < 1e-5:
-                    self.POINT_SPRINGS = True
-    
+            # Print warnings if the settings are conflicting.
+            if np.linalg.norm(helper_start - helper_end) < 1e-5:
+                if point_spring is False:
+                    print("> WARNING: Point springs found on the simulation. Consider setting point_spring to True.")
+            else:
+                if point_spring == True:
+                    print(">> WARNING: point_spring setting is true but there are non-zero springs in the simulation.")
+                if simulation_mode == 1:
+                    print(">> WARNING: Found non-zero point springs. Reverting the simulation mode back to 0...")
+                    self.simulation_mode = 0
+ 
         self.fixed_idx = self.ms_system.fixed_indices
         self.free_idx = self.ms_system.get_free_mass_indices()
         
+        assert len(self.free_idx) == n_helper, f"Expected each jiggle bone to have a single free mass. Got {len(self.free_idx)} masses for {n_helper} jiggle bones."
         
             
     
@@ -104,7 +120,7 @@ class HelperBonesHandler:
         return initial_pose_locations
     
     
-    def _adjust_masses(self):
+    def _adjust_masses(self, rigid_pose_locations):
         """
         Adjust the mass locations after simulating them, such that every bone 
         will preserve its original length.
@@ -113,21 +129,39 @@ class HelperBonesHandler:
         -------
         adjustments : list
             Depicts the amount of adjustment made on the mass locations.
-            It's a list of tuples, where every tuple is (mass_idx, adjust_vector)
+            It's a list of tuples, where every tuple is (helper_idx, adjust_vector)
         """
+        
         adjustments = [] # This is just an informative variable for debugging purposes
         
-        # Loop over the free masses in the system
-        for i in self.free_idx:
-            
-            m = self.ms_system.masses[i] 
-            assert m.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {m.mass}."
-            
-            adjust_vec = 0      
-            adjustments.append((i, adjust_vec))
+        if self.POINT_SPRINGS:
+            # Loop over the free masses in the system
+            for i, free_idx in enumerate(self.free_idx):
+                
+                free_mass = self.ms_system.masses[free_idx] 
+                assert free_mass.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {free_mass.mass}."
+                
+                # TODO: This is not the most robust way to do this. We should save the
+                # bone length at the beginning (also reduces calculations per frame)
+                helper_idx = self.helper_idxs[i]
+                original_length = self.helper_lengths[i]
+                bone_start = rigid_pose_locations[2*helper_idx] # There are 2 joint locations per bone
+                
+                direction = bone_start - free_mass.center
+                scale = np.linalg.norm(direction) - original_length
+                adjust_vec = direction * scale
+                adjustments.append((helper_idx, adjust_vec))
+                
+                # Change the free mass location aligned with the bone length.
+                self.ms_system.masses[free_idx].center = free_mass.center + adjust_vec
+                
+                # Sanity check
+                new_length = np.linalg.norm(bone_start - self.ms_system.masses[free_idx].center)
+                #assert np.abs(new_length-original_length) < 0.1, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {original_length}." 
+        else:
+            print(">> WARNING: Adjustment for non-point spring bones is not implemented yet.")
         
         return adjustments
-    
     
     
     
@@ -189,14 +223,14 @@ class HelperBonesHandler:
             fixed_mass_idx = self.fixed_idx[i]
             self.ms_system.translate_mass(fixed_mass_idx, translate_vec)
 
-            if self.POINT_SPRINGS:
+            if self.simulation_mode == 1:
                 self.ms_system.simulate_zero_length(dt)
             else:
                 self.ms_system.simulate(dt)
            
             # Step 1.2 - Adjust the simulation parameters such that helper bones will
             # preserve their original length
-            self._adjust_masses()
+            self._adjust_masses(rigidly_posed_locations)
             
             # Step 2 - Get current mass positions
             cur_mass_locations = self.ms_system.get_mass_locations()

@@ -50,7 +50,7 @@ def add_helper_bones(test_skeleton,
     return helper_idxs
 
 def lerp(arr1, arr2, ratio):
-    
+    # TODO: Please make it more robust? Like asserting array shapes etc...
     return ((1.0 - ratio) * arr1) + (ratio * arr2)
 
 # ---------------------------------------------------------------------------- 
@@ -58,9 +58,6 @@ def lerp(arr1, arr2, ratio):
 # ---------------------------------------------------------------------------- 
 TGF_PATH = IGL_DATA_PATH + "arm.tgf"
 joint_locations, kintree, _, _, _, _ = igl.read_tgf(TGF_PATH)
-
-helper_bone_endpoints = np.array([ joint_locations[2] + [0.0, 0.2, 0.0] ])
-helper_bone_parents = [2]
 
 pose = np.array([
                 [
@@ -89,9 +86,9 @@ pose = np.array([
                 ],
                 ])
 
-MODE = "Rigid" #"Rigid" or "Dynamic"
+MODE = "Dynamic" #"Rigid" or "Dynamic"
 
-POINT_SPRING = False # Set true for the point spring implementation (!) It's not working yet.
+POINT_SPRING = True 
 EXCLUDE_ROOT = True
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 
@@ -108,12 +105,16 @@ DAMPING = 50.
 # ---------------------------------------------------------------------------- 
 # Create rig and set helper bones
 # ---------------------------------------------------------------------------- 
+PARENT_IDX = 2
+helper_bone_endpoints = np.array([ joint_locations[PARENT_IDX] + [0.0, 0.2, 0.0] ])
+helper_bone_parents = [PARENT_IDX]
 
 test_skeleton = create_skeleton(joint_locations, kintree)
 helper_idxs = add_helper_bones(test_skeleton, helper_bone_endpoints, 
                                      helper_bone_parents,
-                                     #offset_ratio=0.0,
-                                     startpoints=helper_bone_endpoints-1e-6)
+                                     offset_ratio=0.5,
+                                     #startpoints=helper_bone_endpoints-1e-6
+                                     )
 
 helper_rig = HelperBonesHandler(test_skeleton, 
                                 helper_idxs,
