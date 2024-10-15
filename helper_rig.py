@@ -11,9 +11,14 @@ from mass_spring import MassSpringSystem
 
 class HelperBonesHandler:
     
-    def __init__(self, skeleton, helper_indices, 
-                 mass=1.0, stiffness=100, damping=1.0,
-                 mass_dscale=1.0, spring_dscale=1.0, dt=1./24,
+    def __init__(self, 
+                 skeleton, 
+                 helper_idxs, 
+                 mass=1.0, 
+                 stiffness=100, 
+                 damping=1.0,
+                 mass_dscale=1.0, 
+                 spring_dscale=1.0, dt=1./24,
                  point_spring=None):
         """
         Create a mass-spring system provided an array of Bone objects.
@@ -32,8 +37,8 @@ class HelperBonesHandler:
         # calling these variables and functions as BONE locations? What is a location of
         # a bone afterall?
         
-        self.helper_indices = helper_indices
-        helper_bones = np.array(skeleton.rest_bones)[helper_indices]
+        self.helper_idxs = helper_idxs
+        helper_bones = np.array(skeleton.rest_bones)[helper_idxs]
  
         self.ms_system = MassSpringSystem(dt)
     
@@ -130,7 +135,7 @@ class HelperBonesHandler:
         
         rigidly_posed_locations = self.skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=False)
         simulated_locations = rigidly_posed_locations.copy() 
-        for i, helper_idx in enumerate(self.helper_indices):
+        for i, helper_idx in enumerate(self.helper_idxs):
             
             # TODO: why don't you rename ms_system that doesn't sound like a meaningful name?
             # even system could be more meaningful though it might be close to a keyword
