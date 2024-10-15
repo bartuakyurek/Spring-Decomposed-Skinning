@@ -38,9 +38,9 @@ lattice_faces = lattice_mesh[3]
 # Create masses. Connect masses together. Fixate some of the masses
 # -----------------------------------------------------------------------------
 # Initiate a mass spring system container
-TIME_STEP = 1. / (24*2)
-DAMPING = 10.0
-SPRING_DSCALE = 1.0
+TIME_STEP = 1. / 30 # Time step of 1/24 is too large for the system, make it at least 30 frames per second.
+DAMPING = 5.0       # Setting it 0.0 or more than 25.0 explodes the system.
+SPRING_DSCALE = 1.0 # This is for scaling the spring force, better be set to 1.0 for no scale (it's handy for finetuning sometimes).
 GRAVITY = [0.0, -9.81, 0.0]
 
 # Initiate the mass spring system
