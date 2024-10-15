@@ -30,22 +30,23 @@ class MassVisual(scene.visuals.Compound):
                  *args, **kwargs): 
         
         scene.visuals.Compound.__init__(self, [], *args, **kwargs)
+        
         self.unfreeze()
 
         if type(center) is not np.ndarray:
             center = np.array(center)
-    
-        self.center = np.reshape(center, (1,-1))
+        if center.shape == (3,):
+            center = np.reshape(center, (1,-1))
+
+        self.center = center
         self.sphere = scene.visuals.Markers(
                                             pos = self.center,
                                             spherical=True,
                                             size=size,
                                             antialias=0,
                                             face_color=Color("#e88834"),
-                                            edge_color='white',
                                             parent=self
                                             )
-        
         self.editable = editable
         self._selectable = selectable
         self._on_select_callback = on_select_callback
@@ -53,6 +54,12 @@ class MassVisual(scene.visuals.Compound):
 
         self.freeze()
 
+    def select(self):
+        print(">> INFO: Selected called...")
+        if self.selectable:
+            self.sphere.set_data(edge_color="white")
+            if self._on_select_callback is not None:
+                self._on_select_callback(self._callback_argument)
 
 class Canvas(scene.SceneCanvas):
     """ A simple test canvas for drawing demo """
@@ -70,14 +77,44 @@ class Canvas(scene.SceneCanvas):
         self.view.camera = 'arcball'
         self.view.camera.set_range(x=[-5, 5])
 
+        self.selected_object = None
         self.objects = []
         self.freeze()
 
     def add_mass_visuals(self, locations):
-
         for pt in locations:
             mass_vis = MassVisual(center=pt, parent=self.view.scene)
             self.objects.append(mass_vis)
+        return
+
+    def on_mouse_press(self, event):
+        
+        tr = self.scene.node_transform(self.view.scene)
+        pos = tr.map(event.pos)
+        self.view.interactive = False
+        selected = self.visual_at(event.pos)
+        self.view.interactive = True
+
+        # Deselect previously selected
+        if self.selected_object is not None:
+            self.selected_object.select(False)
+            self.selected_object = None
+        
+        # Left click
+        if event.button == 1:
+            if selected is not None:
+                print(">> WARNING: Implement what happens after selection")
+                
+                # update transform to selected object
+                #self.selected_object = selected.parent
+                #tr = self.scene.node_transform(self.selected_object)
+                #pos = tr.map(event.pos)
+                self.selected_object.select()
+            else:
+                print(">> INFO: You clicked on empty space.")
+        # Right click
+        if event.button == 2: 
+            print(">> WARNING: Right click doesn't do anything.")
 
 if __name__ == '__main__' and sys.flags.interactive == 0:
 
