@@ -156,7 +156,7 @@ class Spring:
         
         if verbose:
             if np.linalg.norm(self.m1.velocity) + np.linalg.norm(self.m2.velocity) < tol: 
-                print(f">>> Balance reached at distance {np.round(distance,6)} with spring rest length {np.round(self.rest_length,6)}")
+                print(f">>> Equilibrium reached at distance {np.round(distance,6)} with spring rest length {np.round(self.rest_length,6)}")
             
         assert not np.any(np.abs(force) > 1e10), f"WARNING: System got unstable with force {force}, stopping execution..."
         return force
