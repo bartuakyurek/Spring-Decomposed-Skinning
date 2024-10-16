@@ -100,7 +100,7 @@ MASS = 1.
 STIFFNESS = 20.
 MASS_DSCALE = 1.0        # Range [0.0, 1.0] Scales mass velocity
 SPRING_DSCALE = 1.0      # Range [0.0, 1.0]
-DAMPING = 50.            
+DAMPING = 5.            
 
 # ---------------------------------------------------------------------------- 
 # Create rig and set helper bones
