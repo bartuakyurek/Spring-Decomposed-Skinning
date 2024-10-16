@@ -153,30 +153,36 @@ plotter.open_movie(RESULT_PATH + "/igl-skeleton.mp4")
 
 n_poses = pose.shape[0]
 trans = None # TODO: No relative translation yet...
-for rep in range(N_REPEAT):
-    init_locations = helper_rig.init_pose(theta=pose[0], trans=trans, degrees=DEGREES)
-    for pose_idx in range(n_poses):
-        for frame_idx in range(FRAME_RATE):
-            
-            if pose_idx: # If not the first pose
-                theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
-            else:        # Lerp with the last pose for boomerang
-                theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
-                
-                if rep==0 and frame_idx==0 and rep==0:
-                    rigid_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
-                    assert np.linalg.norm(init_locations - rigid_locations) < 1e-20, "ERROR: Initial pose does not match with helper bone's initial settings. Please fix it first in order not to run into stabilization errors."
-             
-            if MODE == "Rigid":
-                rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
-                skel_mesh.points = rigid_bone_locations
-            else:
-                simulated_bone_locations = helper_rig.update(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
-                skel_mesh.points = simulated_bone_locations
-    
-            # Write a frame. This triggers a render.
-            plotter.write_frame()
 
+try:
+    for rep in range(N_REPEAT):
+        init_locations = helper_rig.init_pose(theta=pose[0], trans=trans, degrees=DEGREES)
+        for pose_idx in range(n_poses):
+            for frame_idx in range(FRAME_RATE):
+                
+                if pose_idx: # If not the first pose
+                    theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
+                else:        # Lerp with the last pose for boomerang
+                    theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
+                    
+                    if rep==0 and frame_idx==0 and rep==0:
+                        rigid_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
+                        assert np.linalg.norm(init_locations - rigid_locations) < 1e-20, "ERROR: Initial pose does not match with helper bone's initial settings. Please fix it first in order not to run into stabilization errors."
+                 
+                if MODE == "Rigid":
+                    rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
+                    skel_mesh.points = rigid_bone_locations
+                else:
+                    simulated_bone_locations = helper_rig.update(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
+                    skel_mesh.points = simulated_bone_locations
+        
+                # Write a frame. This triggers a render.
+                plotter.write_frame()
+except AssertionError:
+    print(">>>> Caught assertion, stopping execution...")
+    plotter.close()
+    raise
+    
 # Closes and finalizes movie
 plotter.close()
 plotter.deep_clean()
