@@ -78,7 +78,7 @@ class Particle:
             # If gravity is provided via an array:
             else: 
                 if type(gravity) is list or type(gravity) is np.ndarray:
-                    assert len(gravity) == 3, f"Expected gravity to have length 3, got {len(self.gravity)}"
+                    assert len(gravity) == 3, f"Expected gravity to have length 3, got {len(gravity)}"
                     self.gravity = np.array(gravity)
         # If gravity is set to False:
         else:
