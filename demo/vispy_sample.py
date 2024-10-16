@@ -109,7 +109,7 @@ class Canvas(scene.SceneCanvas):
         if self.selected_object is not None:
             self.selected_object.select(False)
             self.selected_object = None
-        
+
         # Left click
         if event.button == 1:
             if selected is not None:
