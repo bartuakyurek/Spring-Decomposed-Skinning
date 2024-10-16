@@ -148,16 +148,18 @@ class HelperBonesHandler:
                 bone_start = rigid_pose_locations[2*helper_idx] # There are 2 joint locations per bone
                 
                 direction = bone_start - free_mass.center
-                scale = np.linalg.norm(direction) - original_length
-                adjust_vec = direction * scale
+                d_norm = np.linalg.norm(direction) 
+                scale = d_norm - original_length
+                adjust_vec = (direction/d_norm) * scale # Normalize direction and scale it
                 adjustments.append((helper_idx, adjust_vec))
                 
+               
                 # Change the free mass location aligned with the bone length.
                 self.ms_system.masses[free_idx].center = free_mass.center + adjust_vec
                 
                 # Sanity check
                 new_length = np.linalg.norm(bone_start - self.ms_system.masses[free_idx].center)
-                assert np.abs(new_length-original_length) < 0.1, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {original_length}." 
+                assert np.abs(new_length - original_length) < 1e-4, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {original_length}." 
         else:
             print(">> WARNING: Adjustment for non-point spring bones is not implemented yet.")
         

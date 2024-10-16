@@ -92,7 +92,7 @@ POINT_SPRING = True
 EXCLUDE_ROOT = True
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 
-N_REPEAT = 20
+N_REPEAT = 10
 FRAME_RATE = 60 #24
 TIME_STEP = 1./FRAME_RATE  
 
