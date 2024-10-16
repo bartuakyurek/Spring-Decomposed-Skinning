@@ -27,39 +27,51 @@ filename = "horizontal-chain"
 obj_path = data_path + filename + ".obj"
 json_path = data_path + filename +".json"
 
-# Open and read the JSON file
-with open(json_path, 'r') as file:
-    data = json.load(file)
-    fixed_pts = data['b']
-    k = data['k']
-    
-# -----------------------------------------------------------------------------
-# Create masses. Connect masses together. Fixate some of the masses
-# -----------------------------------------------------------------------------
-# Initiate a mass spring system container
-dt = 1. / 24
-mass_spring_system = MassSpringSystem(dt)
-
 lattice_mesh = igl.read_obj(obj_path)
 lattice_verts = lattice_mesh[0]
 lattice_faces = lattice_mesh[3]
 num_masses = lattice_verts.shape[0]
 
+# Open and read the JSON file
+with open(json_path, 'r') as file:
+    data = json.load(file)
+    fixed_pts = data['b']
+    k = data['k']
+
+# -----------------------------------------------------------------------------
+# Create masses. Connect masses together. Fixate some of the masses
+# -----------------------------------------------------------------------------
+# Declare parameters
+TIME_STEP = dt = 1. / 30 
+MASS = 10.0
+STIFFNESS = k 
+DAMPING = 1.0        
+MASS_DSCALE = 1.0     # This slows down the system
+SPRING_DSCALE = 1.    # This is for scaling the spring force
+GRAVITY = False #np.array([-9.81, 0.0, 0.0]) 
+# Set it based on plotter.camera_position = 'zx'
+# Where z is the horizontal axis and x is the vertical  
+# axis in the current plotter.
+
+# Initiate a mass spring system container
+mass_spring_system = MassSpringSystem(dt)
+
 # Add masses at vertex locations
 for i in range(num_masses):
-    mass_weight = 1
     mass_spring_system.add_mass(mass_coordinate=lattice_verts[i], 
-                                mass=mass_weight, 
-                                gravity=False)
+                                mass=MASS, 
+                                gravity=GRAVITY,
+                                dscale=MASS_DSCALE)
 
 # Add springs at the edges
 for face in lattice_faces:
     for f in range(len(face)-1):
-        spring_scale = 0.25
         # For stability, either increase it to 10~ if the system is not moving, 
         # or decrease it < 1.0 if the system is overflowing
         # In this test, try setting it 0.25, you'll see how system overflows slowly 
-        mass_spring_system.connect_masses(int(face[f]), int(face[f+1]), stiffness=k, dscale=spring_scale)
+        mass_spring_system.connect_masses(int(face[f]), int(face[f+1]), 
+                                          stiffness=STIFFNESS, 
+                                          dscale=SPRING_DSCALE)
 
 # Fix certain masses' motion
 mass_spring_system.fix_mass(num_masses-1)
@@ -96,7 +108,7 @@ def callback(step):
         print(">> Simulation started.")
         print(f">> Step {step} - Force applied.")
         SELECTED_MASS = 2 
-        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.01,0.01]))
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.01,0.1]))
     
     if ((step+1) % 50) == 0:
         print(">> Step ", step+1)
