@@ -42,13 +42,13 @@ with open(json_path, 'r') as file:
 # Create masses. Connect masses together. Fixate some of the masses
 # -----------------------------------------------------------------------------
 # Declare parameters
-TIME_STEP = dt = 1. / 30 
+TIME_STEP = dt = 1. / 24 
 MASS = 10.0
 STIFFNESS = k 
-DAMPING = 1.0        
-MASS_DSCALE = 1.0     # This slows down the system
-SPRING_DSCALE = 1.    # This is for scaling the spring force
-GRAVITY = False #np.array([-9.81, 0.0, 0.0]) 
+DAMPING = 10.0        
+MASS_DSCALE = 0.5     # This slows down the system
+SPRING_DSCALE = 5.    # This is for scaling the spring force
+GRAVITY = np.array([-9.81, 0.0, 0.0]) 
 # Set it based on plotter.camera_position = 'zx'
 # Where z is the horizontal axis and x is the vertical  
 # axis in the current plotter.
@@ -104,11 +104,14 @@ for spring_mesh in spring_meshes:
 def callback(step):
     
     # Step 1 - Apply forces (if any) and simulate
-    if(step < 1):
+    if step == 0:
         print(">> Simulation started.")
         print(f">> Step {step} - Force applied.")
         SELECTED_MASS = 2 
-        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.01,0.1]))
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.1,0.1]))
+    if step == 60:
+        SELECTED_MASS = 9
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.1,-0.25]))
     
     if ((step+1) % 50) == 0:
         print(">> Step ", step+1)
@@ -134,7 +137,7 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(dt * 1000) 
-n_simulation_steps = 600
+n_simulation_steps = 300
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 
 plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)
