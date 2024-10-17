@@ -36,7 +36,11 @@ class HelperBonesHandler:
         will be used. Please do not use simulation_mode=1 if there's no point
         springs.
         """
-        assert type(point_spring) == bool, f"Expected point_spring parameter to be boolean. Got {type(point_spring)}."
+        # ---------------------------------------------------------------------
+        # Precomputation type checks
+        # ---------------------------------------------------------------------
+        assert type(point_spring) == bool, f"Expected point_spring parameter to \
+                                             be boolean. Got {type(point_spring)}."
         if simulation_mode == 1:
             assert point_spring, "Please set point_spring mode if you want to use simulation mode 1."
         
@@ -44,14 +48,15 @@ class HelperBonesHandler:
         # calling these variables and functions as BONE locations? What is a location of
         # a bone afterall?
         self.skeleton = skeleton
-        self.prev_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False) 
-        print(">> WARNING: The prev_bone_locations are set at rest locations initially. \
-              However it should be set before the beginning of the animation because rest position might not be animated at all",
-              " Please call init_pose() before animation.")
+        self.prev_bone_locations = None
+        
+        #skeleton.get_rest_bone_locations(exclude_root=False) 
+        #print(">> WARNING: The prev_bone_locations are set at rest locations initially. \
+        #          Please call init_pose() before animation.")
        
         self.POINT_SPRINGS = point_spring
         self.FIXED_SCALE = fixed_scale
-        self.simulation_mode = simulation_mode
+        self.SIMULATION_MODE = simulation_mode
         
         self.helper_idxs = helper_idxs
         self.ms_system = MassSpringSystem(dt)
@@ -81,20 +86,27 @@ class HelperBonesHandler:
             # Print warnings if the settings are conflicting.
             if np.linalg.norm(helper_start - helper_end) < 1e-5:
                 if point_spring is False:
-                    print("> WARNING: Point springs found on the simulation. Consider setting point_spring to True.")
+                    print("> WARNING: Point springs found on the simulation.\
+                             Consider setting point_spring to True.")
             else:
                 if point_spring == True:
-                    print(">> WARNING: point_spring setting is true but there are non-zero springs in the simulation.")
+                    print(">> WARNING: point_spring setting is true but there \
+                              are non-zero springs in the simulation.")
                 if simulation_mode == 1:
-                    print(">> WARNING: Found non-zero point springs. Reverting the simulation mode back to 0...")
-                    self.simulation_mode = 0
+                    print(">> WARNING: Found non-zero point springs. Reverting \
+                              the simulation mode back to 0...")
+                    self.SIMULATION_MODE = 0
  
         self.fixed_idx = self.ms_system.fixed_indices
         self.free_idx = self.ms_system.get_free_mass_indices()
         
-        assert len(self.free_idx) == n_helper, f"Expected each jiggle bone to have a single free mass. Got {len(self.free_idx)} masses for {n_helper} jiggle bones."
+        # ---------------------------------------------------------------------
+        # Post-computation sanity checks 
+        # ---------------------------------------------------------------------
+        assert len(self.free_idx) == n_helper, f"Expected each jiggle bone to have a single \
+                                                 free mass. Got {len(self.free_idx)} masses \
+                                                 for {n_helper} jiggle bones."
         
-            
     
     def init_pose(self, theta, trans, degrees):
         """
@@ -113,14 +125,26 @@ class HelperBonesHandler:
         Returns
         -------
         None.
-
         """
+
         initial_pose_locations = self.skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=False)
         assert self.prev_bone_locations.shape == initial_pose_locations.shape
     
         self.prev_bone_locations = initial_pose_locations
         return initial_pose_locations
     
+    def reset_rig(self):
+        """
+        Reset the spring rig simulation.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.prev_bone_locations = None
+        print(">> TODO: reset mass-spring forces and locations too.")
+        return
     
     def _adjust_masses(self, rigid_pose_locations):
         """
@@ -143,8 +167,6 @@ class HelperBonesHandler:
                 free_mass = self.ms_system.masses[free_idx] 
                 assert free_mass.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {free_mass.mass}."
                 
-                # TODO: This is not the most robust way to do this. We should save the
-                # bone length at the beginning (also reduces calculations per frame)
                 helper_idx = self.helper_idxs[i]
                 original_length = self.helper_lengths[i]
                 bone_start = rigid_pose_locations[2*helper_idx] # There are 2 joint locations per bone
@@ -154,8 +176,7 @@ class HelperBonesHandler:
                 scale = d_norm - original_length
                 adjust_vec = (direction/d_norm) * scale # Normalize direction and scale it
                 adjustments.append((helper_idx, adjust_vec))
-                
-               
+                   
                 # Change the free mass location aligned with the bone length.
                 self.ms_system.masses[free_idx].center = free_mass.center + adjust_vec
                 
@@ -214,6 +235,9 @@ class HelperBonesHandler:
             # if you had a chaing of helper bones that are affecting each other? i.e.
             # The start of the child helper bone would be changed in previous frame, are your posed_bpnes
             # taking this into account? No.Maybe you would change theta trans parameters before skeleton.pose_bones
+            if self.prev_bone_locations is None:
+                self.prev_bone_locations = rigidly_posed_locations
+            
             diff = rigidly_posed_locations - self.prev_bone_locations
             helper_end_idx = (2 * helper_idx) + 1 # since bone locations have 2 joints per bone, multiply helper_bone_idx by 2 
             translate_vec = diff[helper_end_idx]  # TODO: then why don't you have a better data structure? Maybe dict could 
@@ -227,7 +251,7 @@ class HelperBonesHandler:
             fixed_mass_idx = self.fixed_idx[i]
             self.ms_system.translate_mass(fixed_mass_idx, translate_vec)
 
-            if self.simulation_mode == 1:
+            if self.SIMULATION_MODE == 1:
                 self.ms_system.simulate_zero_length(dt)
             else:
                 self.ms_system.simulate(dt)
