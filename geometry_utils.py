@@ -8,14 +8,16 @@ Created on Thu Oct 17 10:50:19 2024
 import numpy as np
 from sanity_check import _check_or_convert_numpy
 
-def get_perpendicular(axis):
+def get_perpendicular(axis, scale=1.0):
     
+    # Rescale the vector with respect to provided scale
+    # (normalize first, then scale)
     
     return np.zeros(3)
 
 def generate_zigzag(start_point : np.ndarray, 
                     end_point   : np.ndarray,
-                    n_extrema    : int = 10,
+                    n_zigzag    : int = 10,
                     height      : float = 1.0,
                     offset_percent  : float = 10.0,
                     ):
@@ -29,7 +31,7 @@ def generate_zigzag(start_point : np.ndarray,
         The location vector of the starting point of this zigzag.
     end_point : np.ndarray
         The location vector of the ending point of this zigzag.
-    n_extrema : int, optional
+    n_zigzag : int, optional
         Number of zigzag lines to be produced. The default is 10.
     height : float, optional
         Height of the zigzag lines that is the halfway between the
@@ -59,11 +61,11 @@ def generate_zigzag(start_point : np.ndarray,
     end_point   = _check_or_convert_numpy(end_point)
     assert start_point.shape == end_point.shape, f"Provided endpoints must have the same shape. Got {start_point.shape} and {end_point.shape}"
     assert offset_percent >= 0.0 and offset_percent <= 100.0, f"Provided offset percentage is expected to be in range [0, 100], got {offset_percent}."
-    assert type(n_extrema) is int, f"Expected n_extrema to be type int, got {type(n_extrema)}." 
+    assert type(n_zigzag) is int, f"Expected n_zigzag to be type int, got {type(n_zigzag)}." 
     # -------------------------------------------------------------------------
     # Create arrays to hold zigzag data
     # -------------------------------------------------------------------------
-    
+    n_extrema = int(n_zigzag * 2)                   # One up one down per zigzag
     tot_points = n_extrema + 4
     zigzag_edges = np.empty((tot_points-1, 2)) 
     zigzag_edges[:,0] = np.arange(tot_points-1)     # Create zigzag edges
@@ -86,9 +88,9 @@ def generate_zigzag(start_point : np.ndarray,
     # -------------------------------------------------------------------------
     # Compute zigzag points
     # -------------------------------------------------------------------------
-    n_maxima = int(np.floor(n_extrema / 2)) 
-    n_minima = int(np.ceil(n_extrema / 2))
-    assert n_extrema == n_minima + n_maxima
+    n_maxima = int(n_zigzag) 
+    n_minima = int(n_zigzag)
+    assert n_extrema == (n_maxima + n_minima), ">> Caught unexpected error."
     
     zig_roots = np.linspace(start_point + offset_vec, 
                             end_point - offset_vec, 
@@ -97,33 +99,29 @@ def generate_zigzag(start_point : np.ndarray,
     assert n_extrema == len(zig_roots)-2, ">> Caught unexpected error."
     
     # If number of zigzag is greater than zero, compute the extrema
-    if n_extrema > 0:
-        if n_extrema % 2 == 0: # Even number of zigzag extrema 
-            maxima_idxs = np.arange(1, n_extrema+1, step=2)
-            minima_idxs = np.arange(2, n_extrema+1, step=2)
-        else:                  # Odd number of zigzag extrema 
-            maxima_idxs = np.arange(1, n_extrema+2, step=2)
-            minima_idxs = np.arange(2, n_extrema+1, step=2)
-            
-            print(maxima_idxs, f"max {n_maxima} \n")
-            print(minima_idxs, f"min {n_minima}..\n")
-            assert len(maxima_idxs) == n_maxima
-            assert len(minima_idxs) == n_minima
-        #maxima_pts = np.empty((n_maxima, 3))
-        #minima_pts = np.empty((n_minima, 3))
+    if n_zigzag > 0:
+        maxima_idxs = np.arange(1, n_extrema+1, step=2)
+        minima_idxs = np.arange(2, n_extrema+2, step=2)
+        assert len(maxima_idxs) == n_maxima       # Sanity check
+        assert len(minima_idxs) == n_minima       # Sanity check
+        
+        maxima_pts = zigzag_points[maxima_idxs]
+        minima_pts = zigzag_points[minima_idxs]
+        assert maxima_pts.shape == (n_maxima, 3), ">> Caught unexpected error."
+        assert minima_pts.shape == (n_minima, 3), ">> Caught unexpected error."
     
-    zigzag_points[1:-1] = zig_roots  # Insert the computed zigzag data
-    # -------------------------------------------------------------------------
+        # Compute the perpendicular vector to relocate the extrema
+        zig_vec = get_perpendicular(zigzag_axis, height)
+        maxima_pts += zig_vec
+        minima_pts += zig_vec
+        zig_roots[maxima_idxs] = maxima_pts
+        zig_roots[minima_idxs] = minima_pts
     
-    # -------------------------------------------------------------------------
+    # Insert the computed zigzag data
+    zigzag_points[1:-1] = zig_roots  
     
-    print(offset_vec)
-    print(zig_roots.shape,"\n", zig_roots)
-    print(n_maxima, n_minima)
     # Sanity check: the vector must be perpendicular to zigzag axis
     assert True
-    
-   
     
     # -------------------------------------------------------------------------
     # Return
@@ -133,34 +131,36 @@ def generate_zigzag(start_point : np.ndarray,
 
 if __name__ == "__main__":
     
+    # TODO:  Write a testing function to test the same procedure.
     
     print(">> Testing with no zigzag...")
     start_origin = [0, 0, 0]
     end_x = [10, 0, 0]
-    generate_zigzag(start_origin, end_x, n_extrema=0)
+    pts, edges = generate_zigzag(start_origin, end_x, n_zigzag=0)
+    
     
     print(">> Testing with single zigzag...")
     start_origin = [0, 0, 0]
     end_x = [10, 0, 0]
-    generate_zigzag(start_origin, end_x, n_extrema=1)
+    generate_zigzag(start_origin, end_x, n_zigzag=1)
     
     print(">> Testing with odd points...")
     N_odd = 5
     start_origin = [0, 0, 0]
     end_x = [10, 0, 0]
-    generate_zigzag(start_origin, end_x, n_extrema=N_odd)
+    generate_zigzag(start_origin, end_x, n_zigzag=N_odd)
     
     print(">> Testing with even points...")
     N_even = 10
     start_origin = [0, 0, 0]
     end_x = [10, 0, 0]
-    generate_zigzag(start_origin, end_x, n_extrema=N_even)
+    generate_zigzag(start_origin, end_x, n_zigzag=N_even)
     
     print(">> Testing with different tips...")
     N_even = 10
     start_origin = [0, 0, 0]
     end_x = [5, 0, 0]
-    generate_zigzag(start_origin, end_x, n_extrema=N_even)
+    generate_zigzag(start_origin, end_x, n_zigzag=N_even)
     
     
     #print(">> Testing with 0 percent offset...")
