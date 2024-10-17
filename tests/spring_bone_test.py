@@ -93,15 +93,15 @@ POINT_SPRING = True
 EXCLUDE_ROOT = True
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 
-N_REPEAT = 10
-FRAME_RATE = 60 #24
+N_REPEAT = 4
+FRAME_RATE = 24 #24
 TIME_STEP = 1./FRAME_RATE  
 
 MASS = 1.
-STIFFNESS = 200.
-MASS_DSCALE = 0.1        # Range [0.0, 1.0] Scales mass velocity
-SPRING_DSCALE = 10.0      # Range [0.0, 1.0]
+STIFFNESS = 300.
 DAMPING = 50.            
+MASS_DSCALE = 0.6       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 # ---------------------------------------------------------------------------- 
 # Create rig and set helper bones
@@ -151,7 +151,7 @@ line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 # (note that you need to re-run other skeleton tests)
 
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-plotter.open_movie(RESULT_PATH + "/igl-skeleton.mp4")
+plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPING}-mds{MASS_DSCALE}-sds{SPRING_DSCALE}.mp4")
 
 n_poses = pose.shape[0]
 trans = None # TODO: No relative translation yet...
