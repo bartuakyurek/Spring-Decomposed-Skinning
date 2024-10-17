@@ -8,8 +8,38 @@ Created on Thu Oct 17 10:50:19 2024
 import numpy as np
 from sanity_check import _check_or_convert_numpy
 
-def get_perpendicular(vec, scale=1.0):
+def scale_vector(vec, scale):
+    
+    scaled_vec = vec / np.linalg.norm(vec)
+    scaled_vec *= scale
+    assert np.linalg.norm(scaled_vec) - scale < 1e-12,  f">> Caught unexpected error. The scaled vector\
+                                                             does not preserve its intended length {scale},\
+                                                             it has norm {np.linalg.norm(scaled_vec)}."
+    return scaled_vec
 
+def get_perpendicular(vec, scale=1.0):
+    """
+    Simple function to obtain a perpendicular vector. 
+
+    Parameters
+    ----------
+    vec : np.ndarray or list
+        3D vector which will be perpendicular to the returned vector. It's
+        expected to be a non-zero vector.
+    scale : float, optional
+        Determines the length of the returned vector. The default is 1.0.
+
+    Raises
+    ------
+    ValueError
+        DESCRIPTION.
+
+    Returns
+    -------
+    perp : np.ndarray
+        3D vector that is perpendicular to the given vector. Two of its 
+        dimensions are 1.0.
+    """
     x, y, z = vec
     
     if x != 0:
@@ -26,13 +56,18 @@ def get_perpendicular(vec, scale=1.0):
     
     # Sanity check: the vector must be perpendicular to given vector
     assert np.dot(perp, vec) < 1e-20, ">> Caught unexpected error. Returned vector must be perpendicular to given vector."
-    return perp
+    
+    if scale != 0.0:
+        scaled_perp = scale_vector(perp, scale)
+    else:
+        raise ValueError(">> Provided scale must be nonzero.") 
+    return scaled_perp
 
 def generate_zigzag(start_point : np.ndarray, 
                     end_point   : np.ndarray,
                     n_zigzag    : int = 10,
-                    height      : float = 1.0,
-                    offset_percent  : float = 10.0,
+                    height      : float = 0.1,
+                    offset_percent  : float = 10.0
                     ):
     """
     Generate a zigzag pattern between two points. Returns the vertex and
@@ -95,7 +130,7 @@ def generate_zigzag(start_point : np.ndarray,
     assert np.dot(axis_norm, axis_norm) > 1e-20, f"Please provide valid endpoints. Endpoints must have different coordinates, got {start_point}, and {end_point}."
     
     tot_offset = axis_norm * (offset_percent / 100) # Then convert it to a vector.
-    offset_vec = (tot_offset / 2) * (zigzag_axis/axis_norm)  
+    offset_vec = scale_vector(zigzag_axis, scale=(tot_offset / 2))
     
     zigzag_points = np.empty((tot_points, 3))       # Initialize zigzag points
     zigzag_points[0] = start_point                  # with start and end locations.
@@ -154,23 +189,24 @@ def _test_zigzags(start, end, n_zigzag, offset_percent):
         vec_end = pts[edge[1]]
         ax.plot([vec_start[0], vec_end[0]], 
                 [vec_start[1], vec_end[1]],
-                zs=[vec_start[2], vec_end[2]]
-                )
-
-    
+                zs=[vec_start[2], vec_end[2]])
     plt.show()
+    return
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     
-    # TODO:  Write a testing function to test the same procedure.
-    offset_percents = [0, 1, 10, 25, 99, 100]
+    # Aggregate different parameter values
+    offset_percents = [0, 1, 10, 25, 100]
     n_zigzags = [0, 1, 2, 5, 10]
+    
+    # Set starting and ending points (one zigzag for manual, one zigzag for random)
     origin = [0, 0, 0]
     end = [10, 0, 0]
     random_start = np.random.randn(3)
     random_end   = np.random.randn(3)
 
+    # Call the test procedure with the preset parameters
     for offset in offset_percents:
         for n in n_zigzags:
             print(f">> Testing with {n} zigzag...")
