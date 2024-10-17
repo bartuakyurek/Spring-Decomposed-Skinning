@@ -22,7 +22,8 @@ class HelperBonesHandler:
                  damping=1.0,
                  mass_dscale=1.0, 
                  spring_dscale=1.0, dt=1./24,
-                 simulation_mode=0
+                 simulation_mode=0,
+                 fixed_scale=True,
                  ):
         """
         Create a mass-spring system provided an array of Bone objects.
@@ -49,6 +50,7 @@ class HelperBonesHandler:
               " Please call init_pose() before animation.")
        
         self.POINT_SPRINGS = point_spring
+        self.FIXED_SCALE = fixed_scale
         self.simulation_mode = simulation_mode
         
         self.helper_idxs = helper_idxs
@@ -232,7 +234,8 @@ class HelperBonesHandler:
            
             # Step 1.2 - Adjust the simulation parameters such that helper bones will
             # preserve their original length
-            self._adjust_masses(rigidly_posed_locations)
+            if self.FIXED_SCALE:
+                self._adjust_masses(rigidly_posed_locations)
             
             # Step 2 - Get current mass positions
             cur_mass_locations = self.ms_system.get_mass_locations()
