@@ -23,23 +23,21 @@ _DEFAULT_DAMPING = 0.5
 _DEFAULT_MASS = 2.5
 _DEFAULT_SPRING_SCALE = 1.
 _DEFAULT_MASS_SCALE = 1.
+
 class Particle:
     def __init__(self, 
                  coordinate, 
-                 orientation=[0., 1., 0.], 
                  mass=_DEFAULT_MASS, 
                  dscale=_DEFAULT_MASS_SCALE,
                  radius=0.05,
                  gravity=False):
         """
-        
+        Point particle class to represent masses in a mass spring system.
 
         Parameters
         ----------
-        coordinate : TYPE
-            DESCRIPTION.
-        orientation : TYPE, optional
-            DESCRIPTION. The default is [0., 1., 0.].
+        coordinate : np.ndarray
+            3D coordinate of the particle.
         mass : TYPE, optional
             DESCRIPTION. The default is _DEFAULT_MASS.
         dscale : TYPE, optional
@@ -57,7 +55,6 @@ class Particle:
 
         """
         MAX_ALLOWED_MASS = 999
-        assert np.any(orientation), f"Particle orientation vector must have nonzero length. Provided direction is {orientation}."
         assert mass < MAX_ALLOWED_MASS, f"Provided mass {mass} is greater than maximum allowed mass {MAX_ALLOWED_MASS}"
         
         self.mass = mass
@@ -66,7 +63,6 @@ class Particle:
         
         self.center = np.array(coordinate, dtype=float)
         self.prev_center = np.array(coordinate, dtype=float)  # WARNING: it might be misleading cause prev center must be set manually 
-        self.orientation = np.array(orientation, dtype=float) # Used for rendering the mass sphere
         
         self.velocity = np.zeros(_SPACE_DIMS_)
         self.springs = []
