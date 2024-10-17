@@ -140,14 +140,14 @@ def generate_zigzag(start_point : np.ndarray,
     zigzag_points[1:-1] = zig_roots
     return zigzag_points, zigzag_edges
 
-def _test_zigzags(start, end, n_zigzag):
-    pts, edges = generate_zigzag(start, end, n_zigzag)
+def _test_zigzags(start, end, n_zigzag, offset_percent):
+    pts, edges = generate_zigzag(start, end, n_zigzag, offset_percent=offset_percent)
     
     print("Points:\n", np.round(pts,4))
     print("Edges:\n", edges)
     
     ax = plt.figure().add_subplot(projection='3d')
-    ax.set_title(f"Zigzag line with {n_zigzag} zigzags.")
+    ax.set_title(f"Zigzag line with {n_zigzag} zigzags and {offset_percent}% offset.")
     
     for edge in edges:
         vec_start = pts[edge[0]]
@@ -164,20 +164,22 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     
     # TODO:  Write a testing function to test the same procedure.
-    
-    n_zigzags = [0, 1, 2, 3, 4, 5, 10]
+    offset_percents = [0, 1, 10, 25, 99, 100]
+    n_zigzags = [0, 1, 2, 5, 10]
     origin = [0, 0, 0]
     end = [10, 0, 0]
-    
-    for n in n_zigzags:
-        print(f">> Testing with {n} zigzag...")
-        _test_zigzags(start=origin, end=end, n_zigzag=n)
-    
+    random_start = np.random.randn(3)
+    random_end   = np.random.randn(3)
 
-    #print(">> Testing with 0 percent offset...")
-
-    #print(">> Testing with 100 percent offset...")
-    # Expecting zigzag to not appear at all 
+    for offset in offset_percents:
+        for n in n_zigzags:
+            print(f">> Testing with {n} zigzag...")
+            _test_zigzags(start=origin, end=end, 
+                          n_zigzag=n, offset_percent=offset)
+            
+            _test_zigzags(start=random_start, end=random_end, 
+                          n_zigzag=n, offset_percent=offset)
+    
     
 
     
