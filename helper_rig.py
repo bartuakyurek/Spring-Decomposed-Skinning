@@ -50,10 +50,6 @@ class HelperBonesHandler:
         self.skeleton = skeleton
         self.prev_bone_locations = None
         
-        #skeleton.get_rest_bone_locations(exclude_root=False) 
-        #print(">> WARNING: The prev_bone_locations are set at rest locations initially. \
-        #          Please call init_pose() before animation.")
-       
         self.POINT_SPRINGS = point_spring
         self.FIXED_SCALE = fixed_scale
         self.SIMULATION_MODE = simulation_mode
@@ -130,7 +126,8 @@ class HelperBonesHandler:
         initial_pose_locations = self.skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=False)
         assert self.prev_bone_locations.shape == initial_pose_locations.shape
     
-        self.prev_bone_locations = initial_pose_locations
+        if self.prev_bone_locations is None:
+            self.prev_bone_locations = initial_pose_locations
         return initial_pose_locations
     
     def reset_rig(self):
@@ -219,11 +216,8 @@ class HelperBonesHandler:
         assert type(degrees) == bool, f"Expected degrees parameter to have type bool, got {type(degrees)}"
         assert type(exclude_root) == bool, f"Expected exclude_root parameter to have type bool, got {type(exclude_root)}"
 
-        # TODO: exclude_root=False is intentional! Do not delete it! But also it's not
-        # a good design if you're not using the same parameter name, your intention is unclear
-        # so maybe you could remove this exclude_root option all together and handle it elsewhere
-        
-        rigidly_posed_locations = self.skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=False)
+    
+        rigidly_posed_locations = self.init_pose(theta, trans, degrees=degrees)
         simulated_locations = rigidly_posed_locations.copy() 
         for i, helper_idx in enumerate(self.helper_idxs):
             
@@ -234,10 +228,7 @@ class HelperBonesHandler:
             # WARNING: You're taking the difference data from the rigid skeleton, but what happens
             # if you had a chaing of helper bones that are affecting each other? i.e.
             # The start of the child helper bone would be changed in previous frame, are your posed_bpnes
-            # taking this into account? No.Maybe you would change theta trans parameters before skeleton.pose_bones
-            if self.prev_bone_locations is None:
-                self.prev_bone_locations = rigidly_posed_locations
-            
+            # taking this into account? No.Maybe you would change theta trans parameters before skeleton.pose_bones            
             diff = rigidly_posed_locations - self.prev_bone_locations
             helper_end_idx = (2 * helper_idx) + 1 # since bone locations have 2 joints per bone, multiply helper_bone_idx by 2 
             translate_vec = diff[helper_end_idx]  # TODO: then why don't you have a better data structure? Maybe dict could 
