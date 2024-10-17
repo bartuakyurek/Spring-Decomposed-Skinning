@@ -93,7 +93,7 @@ class HelperBonesHandler:
                               the simulation mode back to 0...")
                     self.SIMULATION_MODE = 0
  
-        self.fixed_idx = self.simulator.fixed_indices
+        self.fixed_idxs = self.simulator.fixed_indices
         self.free_idx = self.simulator.get_free_mass_indices()
         
         # ---------------------------------------------------------------------
@@ -194,12 +194,15 @@ class HelperBonesHandler:
         Parameters
         ----------
         theta : np.ndarray
-            DESCRIPTION.
+            Axis-angle representation of relative rotations for each bone.
         degrees : bool 
-            DESCRIPTION.
+            Set True if the provided theta is in degrees, False if in radians.
         exclude_root : bool
-            DESCRIPTION.
-
+            Set True if you don't want to get the invisible root bone locations.
+            Otherwise set False if you also want root bone's endpoints for rendering.
+            
+            TODO: it should be removed in future releases and renderer should decide
+            how to render the root node.
         Returns
         -------
         simulated_locations : np.ndarray
@@ -208,6 +211,10 @@ class HelperBonesHandler:
             array has shape (2*(n_bones-1), 3) where every consecutive points 
             are defining two endpoints of a bone, where bone is a line segment.
         """
+        
+        # ---------------------------------------------------------------------
+        # Precomputation checks
+        # ---------------------------------------------------------------------
         if type(theta) is list:
             theta = np.array(theta)
         elif type(theta) is not np.ndarray:
@@ -215,30 +222,25 @@ class HelperBonesHandler:
         assert type(degrees) == bool, f"Expected degrees parameter to have type bool, got {type(degrees)}"
         assert type(exclude_root) == bool, f"Expected exclude_root parameter to have type bool, got {type(exclude_root)}"
 
+        # ---------------------------------------------------------------------
+        # Loop over the helper bones
+        # ---------------------------------------------------------------------
         rigidly_posed_locations = self.init_pose(theta, trans, degrees=degrees)
         simulated_locations = rigidly_posed_locations.copy() 
         for i, helper_idx in enumerate(self.helper_idxs):
             
-            # TODO: why don't you rename ms_system that doesn't sound like a meaningful name?
-            # even system could be more meaningful though it might be close to a keyword
-            # maybe self.simulator could work.
-            
             # WARNING: You're taking the difference data from the rigid skeleton, but what happens
-            # if you had a chaing of helper bones that are affecting each other? i.e.
+            # if you had a chain of helper bones that are affecting each other? i.e.
             # The start of the child helper bone would be changed in previous frame, are your posed_bpnes
-            # taking this into account? No.Maybe you would change theta trans parameters before skeleton.pose_bones            
+            # taking this into account? 
             diff = rigidly_posed_locations - self.prev_bone_locations
             helper_end_idx = (2 * helper_idx) + 1 # since bone locations have 2 joints per bone, multiply helper_bone_idx by 2 
-            translate_vec = diff[helper_end_idx]  # TODO: then why don't you have a better data structure? Maybe dict could 
-                                                  # work to access diff[helper_idx]["end"] or diff[helper_idx].end_location to
-                                                  # access the bone.
-            
-            # Step 1 - Translate the endpoint of the current helper bone
+            translate_vec = diff[helper_end_idx]  # TODO: maybe have a better data structure? Maybe dict could work e.g. diff[helper_idx]["end"]
             # TODO: are you handling the chained helper bones? like the start of
             # the children bone should be relocated in that case, 
-            # and FK needed to be  re-called?
-            fixed_mass_idx = self.fixed_idx[i]
-            self.simulator.translate_mass(fixed_mass_idx, translate_vec)
+            
+            # Step 1 - Translate the endpoint of the current helper bone
+            self.simulator.translate_mass(self.fixed_idxs[i], translate_vec)
 
             if self.SIMULATION_MODE == 1:
                 self.simulator.simulate_zero_length(dt)
@@ -256,7 +258,9 @@ class HelperBonesHandler:
             
             simulated_locations[helper_end_idx] = free_mass_locations[i]
             self.prev_bone_locations = simulated_locations
-                    
+        # ---------------------------------------------------------------------
+        # Return checks
+        # ---------------------------------------------------------------------
         if exclude_root:
             return simulated_locations[2:]
         return simulated_locations
