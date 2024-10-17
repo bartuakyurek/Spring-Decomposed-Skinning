@@ -88,19 +88,20 @@ pose = np.array([
 
 MODE = "Dynamic" #"Rigid" or "Dynamic"
 
-FIXED_SCALE = False
+FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = True 
 EXCLUDE_ROOT = True
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 
-N_REPEAT = 4
+N_REPEAT = 10
+N_REST = N_REPEAT - 5
 FRAME_RATE = 24 #24
 TIME_STEP = 1./FRAME_RATE  
 
 MASS = 1.
 STIFFNESS = 300.
 DAMPING = 50.            
-MASS_DSCALE = 0.6       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 # ---------------------------------------------------------------------------- 
@@ -158,19 +159,15 @@ trans = None # TODO: No relative translation yet...
 
 try:
     for rep in range(N_REPEAT):
-        init_locations = helper_rig.init_pose(theta=pose[0], trans=trans, degrees=DEGREES)
         for pose_idx in range(n_poses):
             for frame_idx in range(FRAME_RATE):
                 
-                if pose_idx: # If not the first pose
-                    theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
-                else:        # Lerp with the last pose for boomerang
-                    theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
-                    
-                    if rep==0 and frame_idx==0 and rep==0:
-                        rigid_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
-                        assert np.linalg.norm(init_locations - rigid_locations) < 1e-20, "ERROR: Initial pose does not match with helper bone's initial settings. Please fix it first in order not to run into stabilization errors."
-                 
+                if rep < N_REST:  
+                    if pose_idx: # If not the first pose
+                        theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
+                    else:        # Lerp with the last pose for boomerang
+                        theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
+                        
                 if MODE == "Rigid":
                     rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
                     skel_mesh.points = rigid_bone_locations
