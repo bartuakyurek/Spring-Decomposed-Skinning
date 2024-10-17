@@ -11,6 +11,7 @@ DISCLAIMER:
 
 """
 import sys
+import time
 import numpy as np
 
 from vispy import scene
@@ -22,9 +23,7 @@ class MassVisual(scene.visuals.Compound):
 
     def __init__(self, 
                  center, 
-                 color,
                  size=10.0, 
-                 editable=True,
                  selectable=True,
                  on_select_callback=None,
                  callback_argument=None,
@@ -40,21 +39,20 @@ class MassVisual(scene.visuals.Compound):
             center = np.reshape(center, (1,-1))
 
         self.center = center
-        self.markers = scene.visuals.Markers(
+        self.default_color =  Color("orange")
+        self.select_color = Color("yellow")
+        self.marker = scene.visuals.Markers(
                                             pos = self.center,
                                             spherical=True,
                                             size=size,
                                             antialias=0,
-                                            face_color=Color(color),
+                                            face_color=self.default_color,
                                             parent=self
                                             #*args, **kwargs
                                             )
+        # We need to set interactive True to enable picking.
+        self.marker.interactive = True
         
-        scene.visuals.Compound.add_subvisual(self, self.markers)
-        self.picking_filter = MarkerPickingFilter()
-        self.markers.attach(self.picking_filter)
-
-        self.editable = editable
         self._selectable = selectable
         self._on_select_callback = on_select_callback
         self._callback_argument = callback_argument
@@ -62,52 +60,69 @@ class MassVisual(scene.visuals.Compound):
         self.freeze()
 
     def select(self):
-        print(">> INFO: Selected called...")
-        if self.selectable:
-            self.sphere.set_data(edge_color="white")
+        print(">> INFO: Select() called...")
+        if self._selectable:
+            print(">> INFO: Updating selected colors...")
+            
+            # Note that you need to provide position data for set_data to work.
+            # Otherwise setting colors does not work. 
+            self.marker.set_data(pos=self.center, 
+                                 face_color=self.select_color)
+    
             if self._on_select_callback is not None:
                 self._on_select_callback(self._callback_argument)
-
-
+    
+    def deselect(self):
+        print(">> INFO: Deselect() called...")
+        if self._selectable:
+            print(">> INFO: Updating deselect colors...")
+            
+            # Note that you need to provide position data for set_data to work.
+            self.marker.set_data(pos=self.center,
+                                 face_color=self.default_color)
+        return
 
 class Canvas(scene.SceneCanvas):
     """ A simple test canvas for drawing demo """
     
-    def __init__(self, width=800, height=800, bgcolor='#dcd5ef'):
+    def __init__(self, width=800, height=800, bgcolor='#e8ebef'):
        
-        scene.SceneCanvas.__init__(self, keys='interactive',
+        scene.SceneCanvas.__init__(self, 
+                                   keys='interactive',
                                    size=(width, height), 
                                    bgcolor=bgcolor,
                                    show=True)
 
         self.unfreeze()
-
+ 
         self.view = self.central_widget.add_view()
         self.view.camera = 'arcball'
         self.view.camera.set_range(x=[-5, 5])
 
+        scene.visuals.XYZAxis(parent=self.view.scene)
+        
         self.selected_object = None
         self.objects = []
         self.freeze()
 
-    def add_mass_visuals(self, locations, color="#e88834"):
+    def add_mass_visuals(self, locations):
         for pt in locations:
-            mass_vis = MassVisual(center=pt, color=color, parent=self.view.scene)
+            mass_vis = MassVisual(center=pt, parent=self.view.scene)
             self.objects.append(mass_vis)
         return
     
     def on_mouse_press(self, event):
- 
+        
         tr = self.scene.node_transform(self.view.scene)
         pos = tr.map(event.pos)
 
         self.view.interactive = False
-        selected = self.visual_at(event.pos)
+        selected = self.visual_at(event.pos)     
         self.view.interactive = True
 
         # Deselect previously selected
         if self.selected_object is not None:
-            self.selected_object.select(False)
+            self.selected_object.deselect()
             self.selected_object = None
 
         # Left click
@@ -121,13 +136,14 @@ class Canvas(scene.SceneCanvas):
                 pos = tr.map(event.pos)
 
                 self.selected_object.select()
+                self.update()
             else:
                 print(">> INFO: You clicked on empty space.")
         # Right click
         if event.button == 2: 
             print(">> WARNING: Right click doesn't do anything.")
 
-
+    """
     def on_mouse_move(self, event):
 
         if event.button == 1:
@@ -145,15 +161,16 @@ class Canvas(scene.SceneCanvas):
                     self.view.camera.viewbox_mouse_event)
         else:
             pass
+    """
 
 if __name__ == '__main__' and sys.flags.interactive == 0:
 
     canvas = Canvas()
 
     canvas.add_mass_visuals([
-                            [0.0, 0.0, 1.0],
-                            [2.0, 0.0, 1.0],
-                            [0.0, 1.0, 0.0],
+                            [0.0, 0.0, 1.5],
+                            #[2.0, 0.0, 1.5],
+                            #[0.0, -1.5, 0.0],
                             ])
     
     #random_points = np.random.rand(20, 3) * 10
