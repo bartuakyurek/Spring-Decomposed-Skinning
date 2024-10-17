@@ -12,6 +12,7 @@ just for decorative purposes so it's left for a future extension.
 @author: bartu
 """
 import numpy as np
+from sanity_check import _check_or_convert_numpy
 from geometry_utils import scale_vector, get_perpendicular
 
 def generate_zigzag(start_point : np.ndarray, 

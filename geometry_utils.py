@@ -6,7 +6,6 @@ Created on Thu Oct 17 10:50:19 2024
 @author: bartu
 """
 import numpy as np
-from sanity_check import _check_or_convert_numpy
 
 def scale_vector(vec, scale):
     """
