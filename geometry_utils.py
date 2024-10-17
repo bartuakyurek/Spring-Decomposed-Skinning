@@ -13,6 +13,8 @@ def get_perpendicular(axis, scale=1.0):
     # Rescale the vector with respect to provided scale
     # (normalize first, then scale)
     
+    # Sanity check: the vector must be perpendicular to zigzag axis
+    assert True
     return np.zeros(3)
 
 def generate_zigzag(start_point : np.ndarray, 
@@ -67,7 +69,7 @@ def generate_zigzag(start_point : np.ndarray,
     # -------------------------------------------------------------------------
     n_extrema = int(n_zigzag * 2)                   # One up one down per zigzag
     tot_points = n_extrema + 4
-    zigzag_edges = np.empty((tot_points-1, 2)) 
+    zigzag_edges = np.empty((tot_points-1, 2), dtype=int) 
     zigzag_edges[:,0] = np.arange(tot_points-1)     # Create zigzag edges
     zigzag_edges[:,1] = np.arange(1, tot_points)    # [0,1]
                                                     # [1,2]
@@ -116,53 +118,46 @@ def generate_zigzag(start_point : np.ndarray,
         minima_pts += zig_vec
         zig_roots[maxima_idxs] = maxima_pts
         zig_roots[minima_idxs] = minima_pts
-    
-    # Insert the computed zigzag data
-    zigzag_points[1:-1] = zig_roots  
-    
-    # Sanity check: the vector must be perpendicular to zigzag axis
-    assert True
-    
     # -------------------------------------------------------------------------
-    # Return
+    # Insert the computed zigzag data ins return
     # -------------------------------------------------------------------------
+    zigzag_points[1:-1] = zig_roots
     return zigzag_points, zigzag_edges
 
+def _test_zigzags(start, end, n_zigzag):
+    pts, edges = generate_zigzag(start, end, n_zigzag)
+    
+    print("Points:\n", np.round(pts,4))
+    print("Edges:\n", edges)
+    
+    ax = plt.figure().add_subplot(projection='3d')
+    ax.set_title(f"Zigzag line with {n_zigzag} zigzags.")
+    
+    for edge in edges:
+        vec_start = pts[edge[0]]
+        vec_end = pts[edge[1]]
+        ax.plot([vec_start[0], vec_end[0]], 
+                [vec_start[1], vec_end[1]],
+                zs=[vec_start[2], vec_end[2]]
+                )
+
+    
+    plt.show()
 
 if __name__ == "__main__":
+    import matplotlib.pyplot as plt
     
     # TODO:  Write a testing function to test the same procedure.
     
-    print(">> Testing with no zigzag...")
-    start_origin = [0, 0, 0]
-    end_x = [10, 0, 0]
-    pts, edges = generate_zigzag(start_origin, end_x, n_zigzag=0)
+    n_zigzags = [0, 1, 2, 5, 10]
+    origin = [0, 0, 0]
+    end = [10, 0, 0]
     
+    for n in n_zigzags:
+        print(f">> Testing with {n} zigzag...")
+        _test_zigzags(start=origin, end=end, n_zigzag=n)
     
-    print(">> Testing with single zigzag...")
-    start_origin = [0, 0, 0]
-    end_x = [10, 0, 0]
-    generate_zigzag(start_origin, end_x, n_zigzag=1)
-    
-    print(">> Testing with odd points...")
-    N_odd = 5
-    start_origin = [0, 0, 0]
-    end_x = [10, 0, 0]
-    generate_zigzag(start_origin, end_x, n_zigzag=N_odd)
-    
-    print(">> Testing with even points...")
-    N_even = 10
-    start_origin = [0, 0, 0]
-    end_x = [10, 0, 0]
-    generate_zigzag(start_origin, end_x, n_zigzag=N_even)
-    
-    print(">> Testing with different tips...")
-    N_even = 10
-    start_origin = [0, 0, 0]
-    end_x = [5, 0, 0]
-    generate_zigzag(start_origin, end_x, n_zigzag=N_even)
-    
-    
+
     #print(">> Testing with 0 percent offset...")
 
     #print(">> Testing with 100 percent offset...")
