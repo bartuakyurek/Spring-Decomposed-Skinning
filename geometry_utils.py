@@ -10,20 +10,19 @@ from sanity_check import _check_or_convert_numpy
 
 def scale_vector(vec, scale):
     """
-    
+    A basic function to scale a vector into desired norm.
 
     Parameters
     ----------
-    vec : TYPE
-        DESCRIPTION.
-    scale : TYPE
-        DESCRIPTION.
+    vec : np.ndarray
+        A vector who will be rescaled.
+    scale : float
+        A scalar to determine the new norm of the given vector.
 
     Returns
     -------
-    scaled_vec : TYPE
-        DESCRIPTION.
-
+    scaled_vec : np.ndarray
+        A vector with the same shape of the input, that has norm [scale].
     """
     
     scaled_vec = vec / np.linalg.norm(vec)
