@@ -55,7 +55,7 @@ class HelperBonesHandler:
         self.SIMULATION_MODE = simulation_mode
         
         self.helper_idxs = helper_idxs
-        self.ms_system = MassSpringSystem(dt)
+        self.simulator = MassSpringSystem(dt)
     
         self.helper_lengths = []
         helper_bones = np.array(skeleton.rest_bones)[helper_idxs]
@@ -66,18 +66,18 @@ class HelperBonesHandler:
             self.helper_lengths.append(np.linalg.norm(helper_end - helper_start))
             
             if point_spring: # Add zero-length springs at the tip of the helper bone
-                free_mass = self.ms_system.add_mass(helper_end, mass=mass, dscale=mass_dscale)
-                fixed_mass = self.ms_system.add_mass(helper_end, mass=mass, dscale=mass_dscale)
+                free_mass = self.simulator.add_mass(helper_end, mass=mass, dscale=mass_dscale)
+                fixed_mass = self.simulator.add_mass(helper_end, mass=mass, dscale=mass_dscale)
             else:            # Make the helper bone itself a spring
-                free_mass = self.ms_system.add_mass(helper_end, mass=mass, dscale=mass_dscale)
-                fixed_mass = self.ms_system.add_mass(helper_start, mass=mass, dscale=mass_dscale)
+                free_mass = self.simulator.add_mass(helper_end, mass=mass, dscale=mass_dscale)
+                fixed_mass = self.simulator.add_mass(helper_start, mass=mass, dscale=mass_dscale)
 
-            self.ms_system.connect_masses(free_mass, 
+            self.simulator.connect_masses(free_mass, 
                                           fixed_mass, 
                                           stiffness = stiffness, 
                                           damping   = damping,
                                           dscale    = spring_dscale)
-            self.ms_system.fix_mass(fixed_mass) # Fix the mass that's added to the tip
+            self.simulator.fix_mass(fixed_mass) # Fix the mass that's added to the tip
             
             # Print warnings if the settings are conflicting.
             if np.linalg.norm(helper_start - helper_end) < 1e-5:
@@ -93,8 +93,8 @@ class HelperBonesHandler:
                               the simulation mode back to 0...")
                     self.SIMULATION_MODE = 0
  
-        self.fixed_idx = self.ms_system.fixed_indices
-        self.free_idx = self.ms_system.get_free_mass_indices()
+        self.fixed_idx = self.simulator.fixed_indices
+        self.free_idx = self.simulator.get_free_mass_indices()
         
         # ---------------------------------------------------------------------
         # Post-computation sanity checks 
@@ -124,8 +124,7 @@ class HelperBonesHandler:
         """
 
         initial_pose_locations = self.skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=False)
-        assert self.prev_bone_locations.shape == initial_pose_locations.shape
-    
+        
         if self.prev_bone_locations is None:
             self.prev_bone_locations = initial_pose_locations
         return initial_pose_locations
@@ -161,7 +160,7 @@ class HelperBonesHandler:
             # Loop over the free masses in the system
             for i, free_idx in enumerate(self.free_idx):
                 
-                free_mass = self.ms_system.masses[free_idx] 
+                free_mass = self.simulator.masses[free_idx] 
                 assert free_mass.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {free_mass.mass}."
                 
                 helper_idx = self.helper_idxs[i]
@@ -175,10 +174,10 @@ class HelperBonesHandler:
                 adjustments.append((helper_idx, adjust_vec))
                    
                 # Change the free mass location aligned with the bone length.
-                self.ms_system.masses[free_idx].center = free_mass.center + adjust_vec
+                self.simulator.masses[free_idx].center = free_mass.center + adjust_vec
                 
                 # Sanity check
-                new_length = np.linalg.norm(bone_start - self.ms_system.masses[free_idx].center)
+                new_length = np.linalg.norm(bone_start - self.simulator.masses[free_idx].center)
                 assert np.abs(new_length - original_length) < 1e-4, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {original_length}." 
         else:
             print(">> WARNING: Adjustment for non-point spring bones is not implemented yet.")
@@ -216,7 +215,6 @@ class HelperBonesHandler:
         assert type(degrees) == bool, f"Expected degrees parameter to have type bool, got {type(degrees)}"
         assert type(exclude_root) == bool, f"Expected exclude_root parameter to have type bool, got {type(exclude_root)}"
 
-    
         rigidly_posed_locations = self.init_pose(theta, trans, degrees=degrees)
         simulated_locations = rigidly_posed_locations.copy() 
         for i, helper_idx in enumerate(self.helper_idxs):
@@ -240,12 +238,12 @@ class HelperBonesHandler:
             # the children bone should be relocated in that case, 
             # and FK needed to be  re-called?
             fixed_mass_idx = self.fixed_idx[i]
-            self.ms_system.translate_mass(fixed_mass_idx, translate_vec)
+            self.simulator.translate_mass(fixed_mass_idx, translate_vec)
 
             if self.SIMULATION_MODE == 1:
-                self.ms_system.simulate_zero_length(dt)
+                self.simulator.simulate_zero_length(dt)
             else:
-                self.ms_system.simulate(dt)
+                self.simulator.simulate(dt)
            
             # Step 1.2 - Adjust the simulation parameters such that helper bones will
             # preserve their original length
@@ -253,7 +251,7 @@ class HelperBonesHandler:
                 self._adjust_masses(rigidly_posed_locations)
             
             # Step 2 - Get current mass positions
-            cur_mass_locations = self.ms_system.get_mass_locations()
+            cur_mass_locations = self.simulator.get_mass_locations()
             free_mass_locations = cur_mass_locations[self.free_idx]
             
             simulated_locations[helper_end_idx] = free_mass_locations[i]
