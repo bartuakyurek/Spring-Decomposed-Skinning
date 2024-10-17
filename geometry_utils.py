@@ -8,14 +8,25 @@ Created on Thu Oct 17 10:50:19 2024
 import numpy as np
 from sanity_check import _check_or_convert_numpy
 
-def get_perpendicular(axis, scale=1.0):
+def get_perpendicular(vec, scale=1.0):
+
+    x, y, z = vec
+    
+    if x != 0:
+        perp = np.array([-(y + z)/x, 1, 1])
+    elif y != 0:
+        perp = np.array([1, -(x + z)/y, 1])
+    elif z != 0:
+        perp = np.array([(1, 1, -(x + y)/z)])
+    else:
+        raise ValueError(f">> Cannot compute perpendicular vector for vector {vec}.")    
     
     # Rescale the vector with respect to provided scale
     # (normalize first, then scale)
     
-    # Sanity check: the vector must be perpendicular to zigzag axis
-    assert True
-    return np.zeros(3)
+    # Sanity check: the vector must be perpendicular to given vector
+    assert np.dot(perp, vec) < 1e-20, ">> Caught unexpected error. Returned vector must be perpendicular to given vector."
+    return perp
 
 def generate_zigzag(start_point : np.ndarray, 
                     end_point   : np.ndarray,
@@ -61,6 +72,7 @@ def generate_zigzag(start_point : np.ndarray,
     # -------------------------------------------------------------------------    
     start_point = _check_or_convert_numpy(start_point)
     end_point   = _check_or_convert_numpy(end_point)
+    
     assert start_point.shape == end_point.shape, f"Provided endpoints must have the same shape. Got {start_point.shape} and {end_point.shape}"
     assert offset_percent >= 0.0 and offset_percent <= 100.0, f"Provided offset percentage is expected to be in range [0, 100], got {offset_percent}."
     assert type(n_zigzag) is int, f"Expected n_zigzag to be type int, got {type(n_zigzag)}." 
@@ -80,6 +92,8 @@ def generate_zigzag(start_point : np.ndarray,
                
     zigzag_axis = end_point - start_point           # Convert offset percent
     axis_norm = np.linalg.norm(zigzag_axis)         # to an actual distance.
+    assert np.dot(axis_norm, axis_norm) > 1e-20, f"Please provide valid endpoints. Endpoints must have different coordinates, got {start_point}, and {end_point}."
+    
     tot_offset = axis_norm * (offset_percent / 100) # Then convert it to a vector.
     offset_vec = (tot_offset / 2) * (zigzag_axis/axis_norm)  
     
@@ -107,15 +121,17 @@ def generate_zigzag(start_point : np.ndarray,
         assert len(maxima_idxs) == n_maxima       # Sanity check
         assert len(minima_idxs) == n_minima       # Sanity check
         
-        maxima_pts = zigzag_points[maxima_idxs]
-        minima_pts = zigzag_points[minima_idxs]
+        maxima_pts = zig_roots[maxima_idxs]
+        minima_pts = zig_roots[minima_idxs]
         assert maxima_pts.shape == (n_maxima, 3), ">> Caught unexpected error."
         assert minima_pts.shape == (n_minima, 3), ">> Caught unexpected error."
-    
+        # At this point you could also assert every point lies on the axis line
+        # as a sanity check but that'd be overkill for now.
+
         # Compute the perpendicular vector to relocate the extrema
         zig_vec = get_perpendicular(zigzag_axis, height)
         maxima_pts += zig_vec
-        minima_pts += zig_vec
+        minima_pts -= zig_vec
         zig_roots[maxima_idxs] = maxima_pts
         zig_roots[minima_idxs] = minima_pts
     # -------------------------------------------------------------------------
@@ -149,7 +165,7 @@ if __name__ == "__main__":
     
     # TODO:  Write a testing function to test the same procedure.
     
-    n_zigzags = [0, 1, 2, 5, 10]
+    n_zigzags = [0, 1, 2, 3, 4, 5, 10]
     origin = [0, 0, 0]
     end = [10, 0, 0]
     
