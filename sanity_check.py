@@ -16,7 +16,7 @@ def _check_or_convert_numpy(arr):
     if type(arr) is list:
         arr = np.array(arr)
     assert type(arr) == np.ndarray, f"Expected type np.ndarray, got {type(arr)}"
-   return arr
+    return arr
 
 def _assert_vec3(arr):
     # Verify that a given array has (3,1) or (3,) shape as a 3D vector.
