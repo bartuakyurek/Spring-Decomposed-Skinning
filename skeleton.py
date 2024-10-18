@@ -21,7 +21,6 @@ class Bone():
             assert type(parent) == Bone, f"parent parameter is expected to be type Bone, got {type(parent)}"
             
         self.end_location = np.array(endpoint_location)
-        self.offset = np.zeros(3)
         if parent is None:
             self.start_location = np.zeros(3)
             self.visible = False # Root bone is an invisible one, determining global transformation
@@ -32,16 +31,18 @@ class Bone():
         # TODO:shall we use these while computing FK? If not shall we delete these properties?
         self.rotation = Rotation.from_euler('xyz', angles=[0, 0, 0]) # Relative rotation
         self.t = np.zeros(3)                                         # Relative translation
-      
+        # self.t is like an offset from the parent bone (right?)
+        
         self.parent = parent
         self.children = []
         
     def set_start_location(self, start_location):
-        # TODO: We should protect start_location to be set by outsiders 
-        #self.offset = start_location - self.start_location
+        # This self.t would fail to give translation because endpoint is not
+        # translated. So I'm keeping it off for now.
+        # self.t += start_location - self.start_location
         self.start_location = start_location
-        self.offset = self.parent.end_location - self.start_location
-        
+        #self.offset = self.parent.end_location - self.start_location
+        # above doesn't work when we set bone start location different than 
         
     def set_parent(self, parent_node):
         self.parent = parent_node
