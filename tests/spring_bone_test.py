@@ -99,11 +99,13 @@ pose = np.array([
                  [0.,0.,0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
+                 [0.,0.,0.],
                 ],
                 [
                  [0.,0.,0.],
                  [0.,0.,0.],
                  [0., 10., 40.],
+                 [0.,0.,0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
@@ -117,14 +119,15 @@ pose = np.array([
                  [0.,0.,0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
+                 [0.,0.,0.],
                 ],
                 ])
 
-MODE = "Dynamic" #"Rigid" or "Dynamic"
+MODE = "Dynamic " #"Rigid" or "Dynamic"
 
 FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
-POINT_SPRING = True 
-EXCLUDE_ROOT = True
+POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 
 N_REPEAT = 10
@@ -160,12 +163,18 @@ helper_idxs = add_helper_bones(test_skeleton,
 #    hp_endpoints.append(endpt * 2)
     
 another_helper_idxs = add_helper_bones(test_skeleton,
-                                       helper_bone_endpoints * 2, 
+                                       helper_bone_endpoints * 1.25, 
                                        helper_bone_parents = helper_idxs,
                                        offset_ratio=0.0,
                                        )
 
-all_helper_idxs = helper_idxs + another_helper_idxs
+another_helper_idxs2 = add_helper_bones(test_skeleton,
+                                       helper_bone_endpoints * 2, 
+                                       helper_bone_parents = another_helper_idxs,
+                                       offset_ratio=0.0,
+                                       )
+
+all_helper_idxs = helper_idxs + another_helper_idxs + another_helper_idxs2
 helper_rig = HelperBonesHandler(test_skeleton, 
                                 all_helper_idxs,
                                 mass          = MASS, 
