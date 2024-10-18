@@ -14,6 +14,7 @@ DISCLAIMER: The simulation code is heavily based on these sources:
 """
 import numpy as np
 import pyvista as pv
+from numpy import linalg as LA
 
 from sanity_check import _is_equal
 from global_vars import _SPACE_DIMS_, VERBOSE
@@ -113,7 +114,7 @@ class Spring:
         self.k = stiffness
         self.kd = damping
         self.distance_scale = dscale
-        self.rest_length = np.linalg.norm(beginning_mass.center - ending_mass.center)
+        self.rest_length = LA.norm(beginning_mass.center - ending_mass.center)
         
         if verbose:
             if self.rest_length < 1e-20:
@@ -124,7 +125,7 @@ class Spring:
         
     def get_force_on_mass(self, mass : Particle, tol=1e-12, verbose=VERBOSE):
         
-        distance = np.linalg.norm(self.m1.center - self.m2.center)
+        distance = LA.norm(self.m1.center - self.m2.center)
         spring_force_amount  = (distance - self.rest_length) * self.k * self.distance_scale
         
         # Avoid division by zero
@@ -133,9 +134,9 @@ class Spring:
             
         # Find the spring direction and normalize it (if it's not a zero vector like in point springs)
         normalized_dir = (self.m2.center - self.m1.center) / distance
-        if np.linalg.norm(normalized_dir) > 1e-20: # If the direction is not a zero vector
-            assert np.linalg.norm(normalized_dir) < 1.0+tol, f"ERROR: Expected normalized direction provided {normalized_dir} is not normalized."
-            assert np.linalg.norm(normalized_dir) > 1.0-tol, f"ERROR: Expected normalized direction provided {normalized_dir} is not normalized."
+        if LA.norm(normalized_dir) > 1e-20: # If the direction is not a zero vector
+            assert LA.norm(normalized_dir) < 1.0+tol, f"Expected normalized direction. Provided {normalized_dir} has norm {LA.norm(normalized_dir)}."
+            assert LA.norm(normalized_dir) > 1.0-tol, f"Expected normalized direction. Provided {normalized_dir} has norm {LA.norm(normalized_dir)}."
         
         # Find speed of contraction/expansion for damping force
         s1 = np.dot(self.m1.velocity, normalized_dir)
@@ -151,7 +152,7 @@ class Spring:
             print(">> WARNING: Unexpected case occured, given mass location does not exist for this spring. No force is exerted.")
         
         if verbose:
-            if np.linalg.norm(self.m1.velocity) + np.linalg.norm(self.m2.velocity) < tol: 
+            if LA.norm(self.m1.velocity) + LA.norm(self.m2.velocity) < tol: 
                 print(f">>> Equilibrium reached at distance {np.round(distance,6)} with spring rest length {np.round(self.rest_length,6)}")
             
         assert not np.any(np.abs(force) > 1e10), f"WARNING: System got unstable with force {force}, stopping execution..."
@@ -315,7 +316,7 @@ class MassSpringSystem:
         return mass_locations
     
     def get_spring_meshes(self):
-        # TODO: return a zigzag mesh instead of a straight line
+        # TODO: is this function even used? we should remove it.
         meshes = []
         for line in self.connections:
             mass_first = self.masses[line[0]]
