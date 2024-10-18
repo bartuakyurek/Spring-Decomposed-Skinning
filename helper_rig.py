@@ -226,10 +226,11 @@ class HelperBonesHandler:
         # ---------------------------------------------------------------------
         # Precomputation checks
         # ---------------------------------------------------------------------
-        if type(theta) is list:
-            theta = np.array(theta)
-        elif type(theta) is not np.ndarray:
-            print(f"WARNING: Theta is expected to be either list or np.ndarray type, got {type(theta)}.")
+        if type(theta) is not np.ndarray:
+            if type(theta) is list:
+                theta = np.array(theta)
+            else:
+                print(f"WARNING: Theta is expected to be either list or np.ndarray type, got {type(theta)}.")
         assert type(degrees) == bool, f"Expected degrees parameter to have type bool, got {type(degrees)}"
         assert type(exclude_root) == bool, f"Expected exclude_root parameter to have type bool, got {type(exclude_root)}"
 
@@ -242,26 +243,21 @@ class HelperBonesHandler:
             
             # WARNING: You're taking the difference data from the rigid skeleton, but what happens
             # if you had a chain of helper bones that are affecting each other? i.e.
-            # The start of the child helper bone would be changed in previous frame, are your posed_bpnes
-            # taking this into account? 
             diff = rigidly_posed_locations - self.prev_bone_locations
             helper_end_idx = (2 * helper_idx) + 1 # since bone locations have 2 joints per bone, multiply helper_bone_idx by 2 
-            translate_vec = diff[helper_end_idx]  # TODO: maybe have a better data structure? Maybe dict could work e.g. diff[helper_idx]["end"]
-            # TODO: are you handling the chained helper bones? like the start of
-            # the children bone should be relocated in that case, 
+            translate_vec = diff[helper_end_idx]  
+            # TODO: maybe have a better data structure? Maybe dict could work e.g. diff[helper_idx]["end"]
             
             # Step 1 - Translate the endpoint of the current helper bone
             self.simulator.translate_mass(self.fixed_idxs[i], translate_vec)
-
-
-            self.simulate_rig(dt) # TODO: isn't this a confusing call?
+            self.simulate_rig(dt) # TODO: isn't it confusing considering you also tackle with self.simulator?
            
-            # Step 1.2 - Adjust the simulation parameters such that helper bones will
-            # preserve their original length
+            # Step 1.2 - Adjust the simulation parameters such that helper
+            #  bones preserve their original length.
             if self.FIXED_SCALE:
                 self._adjust_masses(rigidly_posed_locations)
             
-            # Step 2 - Get current mass positions
+            # Step 2 - Get simulated mass positions
             cur_mass_locations = self.simulator.get_mass_locations()
             free_mass_locations = cur_mass_locations[self.free_idxs] 
             #fixed_mass_locations = cur_mass_locations[self.fixed_idxs]
