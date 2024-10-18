@@ -6,6 +6,7 @@ Created on Sat Oct 12 10:05:05 2024
 @author: bartu
 """
 import numpy as np
+from numpy import linalg as LA
 from skeleton import Skeleton, Bone
 from mass_spring import MassSpringSystem
 
@@ -59,7 +60,8 @@ class HelperBonesHandler:
         # calling these variables and functions as BONE locations? What is a location of
         # a bone afterall?
         self.skeleton = skeleton
-        self.prev_bone_locations = None
+        self.prev_sim_locations = None
+        self.prev_rigid_locations = None
         
         self.POINT_SPRINGS = point_spring
         self.FIXED_SCALE = fixed_scale
@@ -136,8 +138,12 @@ class HelperBonesHandler:
 
         initial_pose_locations = self.skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=False)
         
-        if self.prev_bone_locations is None:
-            self.prev_bone_locations = initial_pose_locations
+        if self.prev_sim_locations is None:
+            self.prev_sim_locations = initial_pose_locations
+            
+        if self.prev_rigid_locations is None:
+            self.prev_rigid_locations = initial_pose_locations
+            
         return initial_pose_locations
     
     def reset_rig(self):
@@ -149,7 +155,7 @@ class HelperBonesHandler:
         None.
 
         """
-        self.prev_bone_locations = None
+        self.prev_sim_locations = None
         print(">> TODO: reset mass-spring forces and locations too.")
         return
     
@@ -222,7 +228,6 @@ class HelperBonesHandler:
             array has shape (2*(n_bones-1), 3) where every consecutive points 
             are defining two endpoints of a bone, where bone is a line segment.
         """
-        
         # ---------------------------------------------------------------------
         # Precomputation checks
         # ---------------------------------------------------------------------
@@ -234,20 +239,27 @@ class HelperBonesHandler:
         assert type(degrees) == bool, f"Expected degrees parameter to have type bool, got {type(degrees)}"
         assert type(exclude_root) == bool, f"Expected exclude_root parameter to have type bool, got {type(exclude_root)}"
 
+
         # ---------------------------------------------------------------------
         # Loop over the helper bones
         # ---------------------------------------------------------------------
         rigidly_posed_locations = self.init_pose(theta, trans, degrees=degrees)
         simulated_locations = rigidly_posed_locations.copy() # TODO: You should update the startpoints w.r.t prev simulation
+        
+        # WARNING: You're taking the difference data from the rigid skeleton, but what happens
+        # if you had a chain of helper bones that are affecting each other? i.e.
+        diff = rigidly_posed_locations - self.prev_sim_locations
+        #diff = rigidly_posed_locations - self.prev_rigid_locations
+        
         for i, helper_idx in enumerate(self.helper_idxs):
-            
-            # WARNING: You're taking the difference data from the rigid skeleton, but what happens
-            # if you had a chain of helper bones that are affecting each other? i.e.
-            diff = rigidly_posed_locations - self.prev_bone_locations
             helper_end_idx = (2 * helper_idx) + 1 # since bone locations have 2 joints per bone, multiply helper_bone_idx by 2 
-            translate_vec = diff[helper_end_idx]  
-            # TODO: maybe have a better data structure? Maybe dict could work e.g. diff[helper_idx]["end"]
-            
+            translate_vec = diff[helper_end_idx]  # TODO: maybe have a better data structure? Maybe dict could work e.g. diff[helper_idx]["end"]
+            # TODO: how to handle an offset? For now, we assume there's no offset between parent and this bone.
+            #offset = self.skeleton.rest_bones[helper_idx].offset
+            #if LA.norm(offset) < 1e-18:
+            #    print(">> WARNING: Found nonzero bone offset {offset}, make sure its intentional.")
+            #translate_vec += offset
+                        
             # Step 1 - Translate the endpoint of the current helper bone
             self.simulator.translate_mass(self.fixed_idxs[i], translate_vec)
             self.simulate_rig(dt) # TODO: isn't it confusing considering you also tackle with self.simulator?
@@ -264,7 +276,12 @@ class HelperBonesHandler:
             
             #simulated_locations[helper_end_idx-1] = fixed_mass_locations[i]
             simulated_locations[helper_end_idx] = free_mass_locations[i] 
-            self.prev_bone_locations = simulated_locations
+            
+            # TODO: move the start locations of children based on the parent end 
+            # and child's offset.
+            
+            self.prev_sim_locations = simulated_locations
+            self.prev_rigid_locations = rigidly_posed_locations.copy()
         # ---------------------------------------------------------------------
         # Return checks
         # ---------------------------------------------------------------------
