@@ -85,7 +85,7 @@ def lerp(arr1, arr2, ratio):
     return ((1.0 - ratio) * arr1) + (ratio * arr2)
 
 # ---------------------------------------------------------------------------- 
-# Set skeletal animation data
+# Set skeletal animation data (TODO: Can we do it in another script and retrieve the data with 1-2 lines?)
 # ---------------------------------------------------------------------------- 
 TGF_PATH = IGL_DATA_PATH + "arm.tgf"
 joint_locations, kintree, _, _, _, _ = igl.read_tgf(TGF_PATH)
@@ -156,24 +156,20 @@ helper_idxs = add_helper_bones(test_skeleton,
                                #startpoints=helper_bone_endpoints-1e-6
                                )
 
-# Add helpers to the tip of the helpers 
-#hp_endpoints = []
-#for idx in helper_idxs:
-#    endpt = test_skeleton.rest_bones[idx].end_location
-#    hp_endpoints.append(endpt * 2)
-    
+# Add helpers to the tip of the previously added helpers 
 another_helper_idxs = add_helper_bones(test_skeleton,
                                        helper_bone_endpoints * 1.25, 
                                        helper_bone_parents = helper_idxs,
                                        offset_ratio=0.0,
                                        )
-
+# TODO: This wasn't the way we supposed to add helpers. Can we change it to a single call?
 another_helper_idxs2 = add_helper_bones(test_skeleton,
                                        helper_bone_endpoints * 2, 
                                        helper_bone_parents = another_helper_idxs,
                                        offset_ratio=0.0,
                                        )
-
+# TODO: Again, can we change the adding of the helpers a single call by declaring
+#  the additional data manually in another script?
 all_helper_idxs = helper_idxs + another_helper_idxs + another_helper_idxs2
 helper_rig = HelperBonesHandler(test_skeleton, 
                                 all_helper_idxs,
