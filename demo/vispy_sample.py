@@ -63,11 +63,9 @@ class MassVisual(scene.visuals.Compound):
         print(">> INFO: Select() called...")
         if self._selectable:
             print(">> INFO: Updating selected colors...")
-            
             # Note that you need to provide position data for set_data to work.
-            # Otherwise setting colors does not work. 
-            self.marker.set_data(pos=self.center, 
-                                 face_color=self.select_color)
+            # Otherwise setting only the colors does not work. 
+            self.marker.set_data(pos=self.center, face_color=self.select_color)
     
             if self._on_select_callback is not None:
                 self._on_select_callback(self._callback_argument)
@@ -76,10 +74,8 @@ class MassVisual(scene.visuals.Compound):
         print(">> INFO: Deselect() called...")
         if self._selectable:
             print(">> INFO: Updating deselect colors...")
-            
             # Note that you need to provide position data for set_data to work.
-            self.marker.set_data(pos=self.center,
-                                 face_color=self.default_color)
+            self.marker.set_data(pos=self.center, face_color=self.default_color)
         return
 
 class Canvas(scene.SceneCanvas):
@@ -94,12 +90,9 @@ class Canvas(scene.SceneCanvas):
                                    show=True)
 
         self.unfreeze()
- 
         self.view = self.central_widget.add_view()
         self.view.camera = 'arcball'
         self.view.camera.set_range(x=[-5, 5])
-
-        scene.visuals.XYZAxis(parent=self.view.scene)
         
         self.selected_object = None
         self.objects = []
@@ -129,9 +122,9 @@ class Canvas(scene.SceneCanvas):
         if event.button == 1:
             if selected is not None:
                 print(">> WARNING: Implement what happens after selection")
-                
                 # update transform to selected object
                 self.selected_object = selected.parent
+                
                 tr = self.scene.node_transform(self.selected_object)
                 pos = tr.map(event.pos)
 
@@ -169,8 +162,8 @@ if __name__ == '__main__' and sys.flags.interactive == 0:
 
     canvas.add_mass_visuals([
                             [0.0, 0.0, 1.5],
-                            #[2.0, 0.0, 1.5],
-                            #[0.0, -1.5, 0.0],
+                            [2.0, 0.0, 1.5],
+                            [0.0, -1.5, 0.0],
                             ])
     
     #random_points = np.random.rand(20, 3) * 10
