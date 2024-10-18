@@ -262,6 +262,7 @@ class HelperBonesHandler:
            
         # Step 2.2 - Adjust the simulation parameters such that helper
         #  bones preserve their original length. (optional)
+        # TODO: Shouldn't it be after moving the child bones?
         if self.FIXED_SCALE:
             print(">> HOLD ON: THIS IS NOT SANITY CHECKED YET.")
             self._adjust_masses(rigidly_posed_locations)
