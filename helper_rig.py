@@ -10,6 +10,17 @@ from skeleton import Skeleton, Bone
 from mass_spring import MassSpringSystem
 
 class HelperBonesHandler:
+    
+    def _set_simulator(self, mode, dt):
+        self.simulator = MassSpringSystem(dt)
+        
+        if mode == 1:
+            self.simulate_rig = self.simulator.simulate_zero_length
+        elif mode == 0:
+            self.simulate_rig = self.simulator.simulate
+        else:
+            raise ValueError("Unexpected simulation mode. Please provide either 0 or 1.")
+    
     # TODO: We should be able to change the individual masses and stiffness, 
     # for optimization we should be able to provide an array of particle mass
     # that will update the individual Particle.mass in the system
@@ -52,11 +63,10 @@ class HelperBonesHandler:
         
         self.POINT_SPRINGS = point_spring
         self.FIXED_SCALE = fixed_scale
-        self.SIMULATION_MODE = simulation_mode
         
         self.helper_idxs = helper_idxs
-        self.simulator = MassSpringSystem(dt)
-    
+        self._set_simulator(simulation_mode, dt)
+            
         self.helper_lengths = []
         helper_bones = np.array(skeleton.rest_bones)[helper_idxs]
         n_helper = len(helper_bones)
@@ -86,21 +96,22 @@ class HelperBonesHandler:
                              Consider setting point_spring to True.")
             else:
                 if point_spring == True:
-                    print(">> WARNING: point_spring setting is true but there \
-                              are non-zero springs in the simulation.")
+                    print(">> WARNING: point_spring setting is true but helper \
+                              bone has a positive length. The point springs at the \
+                              tip will be invisible.")
                 if simulation_mode == 1:
                     print(">> WARNING: Found non-zero point springs. Reverting \
                               the simulation mode back to 0...")
                     self.SIMULATION_MODE = 0
  
         self.fixed_idxs = self.simulator.fixed_indices
-        self.free_idx = self.simulator.get_free_mass_indices()
+        self.free_idxs = self.simulator.get_free_mass_indices()
         
         # ---------------------------------------------------------------------
         # Post-computation sanity checks 
         # ---------------------------------------------------------------------
-        assert len(self.free_idx) == n_helper, f"Expected each jiggle bone to have a single \
-                                                 free mass. Got {len(self.free_idx)} masses \
+        assert len(self.free_idxs) == n_helper, f"Expected each jiggle bone to have a single \
+                                                 free mass. Got {len(self.free_idxs)} masses \
                                                  for {n_helper} jiggle bones."
         
     
@@ -158,7 +169,7 @@ class HelperBonesHandler:
         
         if self.POINT_SPRINGS:
             # Loop over the free masses in the system
-            for i, free_idx in enumerate(self.free_idx):
+            for i, free_idx in enumerate(self.free_idxs):
                 
                 free_mass = self.simulator.masses[free_idx] 
                 assert free_mass.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {free_mass.mass}."
@@ -226,7 +237,7 @@ class HelperBonesHandler:
         # Loop over the helper bones
         # ---------------------------------------------------------------------
         rigidly_posed_locations = self.init_pose(theta, trans, degrees=degrees)
-        simulated_locations = rigidly_posed_locations.copy() 
+        simulated_locations = rigidly_posed_locations.copy() # TODO: You should update the startpoints w.r.t prev simulation
         for i, helper_idx in enumerate(self.helper_idxs):
             
             # WARNING: You're taking the difference data from the rigid skeleton, but what happens
@@ -242,10 +253,8 @@ class HelperBonesHandler:
             # Step 1 - Translate the endpoint of the current helper bone
             self.simulator.translate_mass(self.fixed_idxs[i], translate_vec)
 
-            if self.SIMULATION_MODE == 1:
-                self.simulator.simulate_zero_length(dt)
-            else:
-                self.simulator.simulate(dt)
+
+            self.simulate_rig(dt) # TODO: isn't this a confusing call?
            
             # Step 1.2 - Adjust the simulation parameters such that helper bones will
             # preserve their original length
@@ -254,9 +263,11 @@ class HelperBonesHandler:
             
             # Step 2 - Get current mass positions
             cur_mass_locations = self.simulator.get_mass_locations()
-            free_mass_locations = cur_mass_locations[self.free_idx]
+            free_mass_locations = cur_mass_locations[self.free_idxs] 
+            #fixed_mass_locations = cur_mass_locations[self.fixed_idxs]
             
-            simulated_locations[helper_end_idx] = free_mass_locations[i]
+            #simulated_locations[helper_end_idx-1] = fixed_mass_locations[i]
+            simulated_locations[helper_end_idx] = free_mass_locations[i] 
             self.prev_bone_locations = simulated_locations
         # ---------------------------------------------------------------------
         # Return checks
