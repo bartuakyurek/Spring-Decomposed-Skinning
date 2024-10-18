@@ -21,6 +21,7 @@ class Bone():
             assert type(parent) == Bone, f"parent parameter is expected to be type Bone, got {type(parent)}"
             
         self.end_location = np.array(endpoint_location)
+        self.offset = np.zeros(3)
         if parent is None:
             self.start_location = np.zeros(3)
             self.visible = False # Root bone is an invisible one, determining global transformation
@@ -34,6 +35,13 @@ class Bone():
       
         self.parent = parent
         self.children = []
+        
+    def set_start_location(self, start_location):
+        # TODO: We should protect start_location to be set by outsiders 
+        #self.offset = start_location - self.start_location
+        self.start_location = start_location
+        self.offset = self.parent.end_location - self.start_location
+        
         
     def set_parent(self, parent_node):
         self.parent = parent_node
@@ -70,7 +78,7 @@ class Bone():
         if override:
             if VERBOSE:
                 print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
-            self.start_location = start_translated
+            self.set_start_location(start_translated)
             self.end_location = end_translated
             if keep_trans:
                 self.t += offset_vec
@@ -326,7 +334,7 @@ class Skeleton():
             else:
                 print(">> INFO: Startpoint of the bone is taken as the tip of the parent bone")
         else:
-            self.rest_bones[new_bone.idx].start_location = startpoint
+            self.rest_bones[new_bone.idx].set_start_location(startpoint)
         
         # Sanity check the created bone.idx corresponds to its index the bones list
         assert new_bone.idx == len(self.rest_bones)-1
