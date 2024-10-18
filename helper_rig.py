@@ -61,12 +61,11 @@ class HelperBonesHandler:
         # a bone afterall?
         self.skeleton = skeleton
         self.prev_sim_locations = None
-        self.prev_rigid_locations = None
         
         self.POINT_SPRINGS = point_spring
         self.FIXED_SCALE = fixed_scale
         
-        self.helper_idxs = helper_idxs
+        self.helper_idxs = np.array(helper_idxs, dtype=int)
         self._set_simulator(simulation_mode, dt)
             
         self.helper_lengths = []
@@ -140,10 +139,7 @@ class HelperBonesHandler:
         
         if self.prev_sim_locations is None:
             self.prev_sim_locations = initial_pose_locations
-            
-        if self.prev_rigid_locations is None:
-            self.prev_rigid_locations = initial_pose_locations
-            
+     
         return initial_pose_locations
     
     def reset_rig(self):
@@ -241,47 +237,51 @@ class HelperBonesHandler:
 
 
         # ---------------------------------------------------------------------
-        # Loop over the helper bones
+        # Compute the new mass positions and update helper bone locations
         # ---------------------------------------------------------------------
+        # Step 0 - Get the rigidly posed locations as the target
         rigidly_posed_locations = self.init_pose(theta, trans, degrees=degrees)
-        simulated_locations = rigidly_posed_locations.copy() # TODO: You should update the startpoints w.r.t prev simulation
+        simulated_locations = rigidly_posed_locations.copy() 
         
         # WARNING: You're taking the difference data from the rigid skeleton, but what happens
         # if you had a chain of helper bones that are affecting each other? i.e.
-        diff = rigidly_posed_locations - self.prev_sim_locations
-        #diff = rigidly_posed_locations - self.prev_rigid_locations
-        
+        diff = rigidly_posed_locations - self.prev_sim_locations # rigidly_posed_locations is the target. 
+        helper_end_idxs = (2 * self.helper_idxs) + 1 # bone locations have 2 joints per bone
+        translate_vec = diff[helper_end_idxs]  
+
+        # TODO: how to handle an offset? For now, we assume there's no offset between parent and this bone.
+        #offset = self.skeleton.rest_bones[helper_idx].offset
+        #translate_vec += offset
+
+        # Step 1 - Translate the fixed masses at the endpoint of each helper bone
         for i, helper_idx in enumerate(self.helper_idxs):
-            helper_end_idx = (2 * helper_idx) + 1 # since bone locations have 2 joints per bone, multiply helper_bone_idx by 2 
-            translate_vec = diff[helper_end_idx]  # TODO: maybe have a better data structure? Maybe dict could work e.g. diff[helper_idx]["end"]
-            # TODO: how to handle an offset? For now, we assume there's no offset between parent and this bone.
-            #offset = self.skeleton.rest_bones[helper_idx].offset
-            #if LA.norm(offset) < 1e-18:
-            #    print(">> WARNING: Found nonzero bone offset {offset}, make sure its intentional.")
-            #translate_vec += offset
-                        
-            # Step 1 - Translate the endpoint of the current helper bone
-            self.simulator.translate_mass(self.fixed_idxs[i], translate_vec)
-            self.simulate_rig(dt) # TODO: isn't it confusing considering you also tackle with self.simulator?
+            self.simulator.translate_mass(self.fixed_idxs[i], translate_vec[i])
+        
+        # Step 2 - Simulate the mass spring system with the new mass locations
+        self.simulate_rig(dt)
            
-            # Step 1.2 - Adjust the simulation parameters such that helper
-            #  bones preserve their original length.
-            if self.FIXED_SCALE:
-                self._adjust_masses(rigidly_posed_locations)
+        # Step 2.2 - Adjust the simulation parameters such that helper
+        #  bones preserve their original length. (optional)
+        if self.FIXED_SCALE:
+            print(">> HOLD ON: THIS IS NOT SANITY CHECKED YET.")
+            self._adjust_masses(rigidly_posed_locations)
             
-            # Step 2 - Get simulated mass positions
-            cur_mass_locations = self.simulator.get_mass_locations()
-            free_mass_locations = cur_mass_locations[self.free_idxs] 
-            #fixed_mass_locations = cur_mass_locations[self.fixed_idxs]
-            
-            #simulated_locations[helper_end_idx-1] = fixed_mass_locations[i]
-            simulated_locations[helper_end_idx] = free_mass_locations[i] 
-            
-            # TODO: move the start locations of children based on the parent end 
-            # and child's offset.
-            
-            self.prev_sim_locations = simulated_locations
-            self.prev_rigid_locations = rigidly_posed_locations.copy()
+        # Step 3 - Get simulated mass positions
+        cur_mass_locations = self.simulator.get_mass_locations()
+        free_mass_locations = cur_mass_locations[self.free_idxs] 
+        simulated_locations[helper_end_idxs] = free_mass_locations 
+        
+        # Step 4 - Adjust the bone starting points to parent's simulated end point
+        for i, helper_idx in enumerate(self.helper_idxs):            
+            bone = self.skeleton.rest_bones[helper_idx]
+            parent_end_idx = helper_idx * 2 + 1
+            for child in bone.children:
+                child_start_idx = child.idx * 2
+                simulated_locations[child_start_idx] = simulated_locations[parent_end_idx]
+                # TODO: how about if a child has an offset? we should add it.
+        
+        # Step 5 - Save the simulated locations for the next iteration
+        self.prev_sim_locations = simulated_locations
         # ---------------------------------------------------------------------
         # Return checks
         # ---------------------------------------------------------------------
