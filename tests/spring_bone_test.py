@@ -214,6 +214,24 @@ plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPIN
 n_poses = pose.shape[0]
 trans = None # TODO: No relative translation yet...
 
+# ---------------------------------------------------------------------------------
+# Helper routine to obtain posed mesh vertices
+# ---------------------------------------------------------------------------------
+def _get_mesh_points(mode, combine_points=True):
+    if mode == "Rigid":
+        rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
+        mesh_points = rigid_bone_locations
+    else:
+        simulated_bone_locations = helper_rig.update(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
+        mesh_points = simulated_bone_locations
+    
+    if combine_points:
+        mesh_points = np.reshape(mesh_points, (-1,3)) # Combine all the 3D points into one dimension
+    return mesh_points
+
+# ---------------------------------------------------------------------------------
+# Render Loop
+# ---------------------------------------------------------------------------------
 try:
     for rep in range(N_REPEAT):
         for pose_idx in range(n_poses):
@@ -224,21 +242,19 @@ try:
                         theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
                     else:        # Lerp with the last pose for boomerang
                         theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
-                        
-                if MODE == "Rigid":
-                    rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
-                    skel_mesh.points = rigid_bone_locations
-                else:
-                    simulated_bone_locations = helper_rig.update(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
-                    skel_mesh.points = simulated_bone_locations
-        
-                # Write a frame. This triggers a render.
-                plotter.write_frame()
+                         
+                mesh_points = _get_mesh_points(MODE, combine_points=True)
+                assert mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)
+                
+                skel_mesh.points = mesh_points # Update mesh points in the renderer.
+                plotter.write_frame()          # Write a frame. This triggers a render.
 except AssertionError:
     print(">>>> Caught assertion, stopping execution...")
     plotter.close()
     raise
     
-# Closes and finalizes movie
+# ---------------------------------------------------------------------------------
+# Quit the renderer and close the movie.
+# ---------------------------------------------------------------------------------
 plotter.close()
 plotter.deep_clean()
