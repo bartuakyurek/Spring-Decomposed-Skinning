@@ -158,8 +158,28 @@ class HelperBonesHandler:
     def _preserve_bone_length(self, bone_start : np.ndarray,  
                                     free_mass_idx  : int, 
                                     original_length : float ):
+        """
+        Given the original length and start-end locations of the bone, rescale 
+        the bone vector to its original length. The scaling is done at the bone 
+        tip. 
+
+        Parameters
+        ----------
+        bone_start : np.ndarray
+            3D vector of the bone start point.
+        free_mass_idx : int
+            Index of the free mass that we'll consider as the new bone length.
+        original_length : float
+            Original bone length that is from the T-pose. 
+
+        Returns
+        -------
+        adjust_vec : TYPE
+            DESCRIPTION.
+
+        """
         
-        assert type(free_mass_idx) is int, f"Expected free mass type int, got {type(free_mass_idx)}"
+        assert type(free_mass_idx) is int or np.int64, f"Expected free mass type int, got {type(free_mass_idx)}"
         
         free_mass = self.simulator.masses[free_mass_idx] 
         assert free_mass.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {free_mass.mass}."
@@ -176,38 +196,7 @@ class HelperBonesHandler:
         new_length = np.linalg.norm(bone_start - self.simulator.masses[free_mass_idx].center)
         assert np.abs(new_length - original_length) < 1e-4, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {original_length}." 
         
-        return adjust_vec
-    
-    def _adjust_masses(self, rigid_pose_locations):
-        """
-        Adjust the mass locations after simulating them, such that every bone 
-        will preserve its original length.
-
-        Returns
-        -------
-        adjustments : list
-            Depicts the amount of adjustment made on the mass locations.
-            It's a list of tuples, where every tuple is (helper_idx, adjust_vector)
-        """
-        
-        adjustments = [] # This is just an informative variable for debugging purposes
-        
-        if self.POINT_SPRINGS:
-            # Loop over the free masses in the system
-            for i, free_idx in enumerate(self.free_idxs):
-                
-                helper_idx = self.helper_idxs[i]
-                orig_length = self.helper_lengths[i]
-                bone_start = rigid_pose_locations[2*helper_idx] # There are 2 joint locations per bone
-                
-                adjust_vec = self._preserve_bone_length(bone_start, free_idx, orig_length)
-                adjustments.append((helper_idx, adjust_vec))
-        else:
-            print(">> WARNING: Adjustment for non-point spring bones is not implemented yet.")
-        
-        return adjustments
-    
-    
+        return adjust_vec, self.simulator.masses[free_mass_idx].center
     
     def update(self, theta, trans, degrees, exclude_root, dt=None):
         """
@@ -270,13 +259,6 @@ class HelperBonesHandler:
         # Step 2 - Simulate the mass spring system with the new mass locations
         self.simulate_rig(dt)
            
-        # Step 2.2 - Adjust the simulation parameters such that helper
-        #  bones preserve their original length. (optional)
-        # TODO: Shouldn't it be after moving the child bones?
-        if self.FIXED_SCALE:
-            print(">> HOLD ON: THIS IS NOT SANITY CHECKED YET.")
-            self._adjust_masses(rigidly_posed_locations)
-            
         # Step 3 - Get simulated mass positions
         cur_mass_locations = self.simulator.get_mass_locations()
         free_mass_locations = cur_mass_locations[self.free_idxs] 
@@ -285,12 +267,24 @@ class HelperBonesHandler:
         # Step 4 - Adjust the bone starting points to parent's simulated end point
         for i, helper_idx in enumerate(self.helper_idxs):            
             bone = self.skeleton.rest_bones[helper_idx]
-            parent_end_idx = helper_idx * 2 + 1
+            end_idx = helper_idx * 2 + 1
+            
+            # Adjust the bone to preserve its original length (optional)
+            if self.FIXED_SCALE:
+                free_idx = self.free_idxs[i]  # Warning: this assumes every bone has one free index (and one fixed) 
+                start_idx = helper_idx * 2    # TODO: could we change the data storage such that we don't have to remember to multiply by 2 every time?
+                orig_length = self.helper_lengths[i]         
+                bone_start = simulated_locations[start_idx]
+                _, new_endpoint = self._preserve_bone_length(bone_start, free_idx, orig_length)
+                simulated_locations[end_idx] = new_endpoint
+                
+            # Adjust the child bones' starting points
             for child in bone.children:
                 child_start_idx = child.idx * 2
-                simulated_locations[child_start_idx] = simulated_locations[parent_end_idx]
-                # TODO: how about if a child has an offset? we should add it.
-        
+                child_bone_start = simulated_locations[end_idx]         # Parent's endpoint is the new start point
+                simulated_locations[child_start_idx] = child_bone_start # Save the new start location
+                # TODO: how about if a child has an offset? we should add it to child_bone_start
+
         # Step 5 - Save the simulated locations for the next iteration
         self.prev_sim_locations = simulated_locations
         # ---------------------------------------------------------------------
