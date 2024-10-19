@@ -155,6 +155,29 @@ class HelperBonesHandler:
         print(">> TODO: reset mass-spring forces and locations too.")
         return
     
+    def _preserve_bone_length(self, bone_start : np.ndarray,  
+                                    free_mass_idx  : int, 
+                                    original_length : float ):
+        
+        assert type(free_mass_idx) is int, f"Expected free mass type int, got {type(free_mass_idx)}"
+        
+        free_mass = self.simulator.masses[free_mass_idx] 
+        assert free_mass.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {free_mass.mass}."
+        
+        direction = bone_start - free_mass.center
+        d_norm = np.linalg.norm(direction) 
+        scale = d_norm - original_length
+        adjust_vec = (direction/d_norm) * scale # Normalize direction and scale it
+        
+        # Change the free mass location aligned with the bone length.
+        self.simulator.masses[free_mass_idx].center = free_mass.center + adjust_vec
+        
+        # Sanity check
+        new_length = np.linalg.norm(bone_start - self.simulator.masses[free_mass_idx].center)
+        assert np.abs(new_length - original_length) < 1e-4, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {original_length}." 
+        
+        return adjust_vec
+    
     def _adjust_masses(self, rigid_pose_locations):
         """
         Adjust the mass locations after simulating them, such that every bone 
@@ -173,25 +196,12 @@ class HelperBonesHandler:
             # Loop over the free masses in the system
             for i, free_idx in enumerate(self.free_idxs):
                 
-                free_mass = self.simulator.masses[free_idx] 
-                assert free_mass.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {free_mass.mass}."
-                
                 helper_idx = self.helper_idxs[i]
-                original_length = self.helper_lengths[i]
+                orig_length = self.helper_lengths[i]
                 bone_start = rigid_pose_locations[2*helper_idx] # There are 2 joint locations per bone
                 
-                direction = bone_start - free_mass.center
-                d_norm = np.linalg.norm(direction) 
-                scale = d_norm - original_length
-                adjust_vec = (direction/d_norm) * scale # Normalize direction and scale it
+                adjust_vec = self._preserve_bone_length(bone_start, free_idx, orig_length)
                 adjustments.append((helper_idx, adjust_vec))
-                   
-                # Change the free mass location aligned with the bone length.
-                self.simulator.masses[free_idx].center = free_mass.center + adjust_vec
-                
-                # Sanity check
-                new_length = np.linalg.norm(bone_start - self.simulator.masses[free_idx].center)
-                assert np.abs(new_length - original_length) < 1e-4, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {original_length}." 
         else:
             print(">> WARNING: Adjustment for non-point spring bones is not implemented yet.")
         
