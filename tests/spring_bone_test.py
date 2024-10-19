@@ -125,8 +125,8 @@ pose = np.array([
 
 MODE = "Dynamic " #"Rigid" or "Dynamic"
 
-FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
-POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
+POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 
@@ -205,7 +205,7 @@ line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 # (note that you need to re-run other skeleton tests)
 
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPING}-mds{MASS_DSCALE}-sds{SPRING_DSCALE}.mp4")
+plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPING}-mds{MASS_DSCALE}-sds{SPRING_DSCALE}-fixedscale-{FIXED_SCALE}-pointspring-{POINT_SPRING}.mp4")
 
 n_poses = pose.shape[0]
 trans = None # TODO: No relative translation yet...
