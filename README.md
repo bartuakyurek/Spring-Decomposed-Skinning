@@ -2,6 +2,7 @@
  This repository demonstrates a dynamic deformation achieved by adding spring helper bones to an 
 existing geometric skinning pipeline. Note that it's a work in progress.
 
+![A chain of skeletal bones jiggles through a rigid motion.](./img/jiggle-chain.gif)
 
 
 ### TO-DO
