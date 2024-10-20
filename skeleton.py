@@ -9,7 +9,7 @@ from scipy.spatial.transform import Rotation
 import numpy as np
 import igl
 
-from skinning import compose_transform_matrix
+from linalg_utils import compose_transform_matrix
 from global_vars import VERBOSE
 
 class Bone():

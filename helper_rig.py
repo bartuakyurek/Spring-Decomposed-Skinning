@@ -198,7 +198,7 @@ class HelperBonesHandler:
         
         return adjust_vec, self.simulator.masses[free_mass_idx].center
     
-    def update(self, theta, trans, degrees, exclude_root, dt=None):
+    def pose_bones(self, theta, trans, degrees, exclude_root, dt=None):
         """
         Given the relative rotations, update the skeleton joints with mass-spring
         system and return the resulting joint locations.

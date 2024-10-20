@@ -8,53 +8,36 @@ IMPORTANT NOTES:
 
 """
 import igl
-import torch
 import numpy as np
-from scipy.spatial.transform import Rotation
+from skeleton import Skeleton
 
-def compose_transform_matrix(trans_vec, rot : Rotation ):
-    """
-    Compose a transformation matrix given the translation vector
-    and Rotation object.
-
-    Parameters
-    ----------
-    trans_vec : np.ndarray or list
-        3D translation vector to be inserted at the last column of 4x4 matrix.
-    rot : scipy.spatial.transform.Rotation
-        Rotation object of scipy.spatial.transform. This is internally
-        converted to 3x3 matrix to place in the 4x4 transformation matrix.
-
-    Returns
-    -------
-    M : np.ndarray
-        Transformation matrix composed by 3x3 rotation matrix and 3x1 translation
-        vector, with the last row being [0,0,0,1].
-
-    """
-    if type(trans_vec) is list:
-        trans_vec = np.array(trans_vec)
+# ---------------------------------------------------------------------------------
+# Helper routine to obtain posed mesh vertices
+# ---------------------------------------------------------------------------------
+def get_skel_points(skeleton, theta, trans, degrees, exclude_root, combine_points=True):
+   
+    bone_locations = skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=exclude_root)
     
-    if trans_vec.shape == (3,1):
-        trans_vec = trans_vec[:,0]
-        
-    assert type(trans_vec) == np.ndarray, f"Expected translation vector to have type np.ndarray, got {trans_vec.shape}."
-    assert trans_vec.shape == (3, ), f"Expected translation vector to have shape (3,) got {trans_vec.shape}"
-    
-    rot_mat = rot.as_matrix()
-    
-    # Convert absolute rotations and translations into a single transformation matrix
-    M = np.zeros((4,4))
-    M[:3, :3] = rot_mat     # Place rotation matrix
-    M[:3, -1] = trans_vec # Place translation vector
-    M[-1, -1] = 1.0  
-    # Sanity check that M transformation matrix last row must be [0 0 0 1] 
-    assert np.all(M[-1] == np.array([0.,0.,0.,1.])), f"Unexpected error occured at {M}."
-    return M
+    skel_mesh_points = bone_locations
+    if combine_points:
+        skel_mesh_points = np.reshape(bone_locations, (-1,3)) # Combine all the 3D points into one dimension
+   
+    return skel_mesh_points
 
+def _get_mesh_points(mode):
     
+    if mode == "Rigid":
+        posed_mesh_points = None
+    else:
+        posed_mesh_points = None
+        print("Warning: skinning not implemented yet...")
+    return posed_mesh_points
+
+
+
+""" 
 def skinning(verts, abs_rot, abs_trans, weights, skinning_type="LBS"):
-    """
+    
     Deform the vertices by provided transformations and selected skinning
     method.
 
@@ -82,7 +65,7 @@ def skinning(verts, abs_rot, abs_trans, weights, skinning_type="LBS"):
     -------
     V_deformed : np.ndarray
         Deformed vertices of shape (n_verts, 3)
-    """
+    
     
     V_deformed = None
     if skinning_type == "LBS" or skinning_type == "lbs":
@@ -92,16 +75,16 @@ def skinning(verts, abs_rot, abs_trans, weights, skinning_type="LBS"):
         print(f">> ERROR: This skinning type \"{skinning_type}\" is not supported yet.")
     
     return V_deformed
-
-
+"""
+"""
 # todo:  taken https://github.com/Dou-Yiming/Pose_to_SMPL/blob/main/smplpytorch/pytorch/rodrigues_layer.py
 def quat2mat(quat):
-    """Convert quaternion coefficients to rotation matrix.
+    Convert quaternion coefficients to rotation matrix.
     Args:
         quat: size = [batch_size, 4] 4 <===>(w, x, y, z)
     Returns:
         Rotation matrix corresponding to the quaternion -- size = [batch_size, 3, 3]
-    """
+    
     norm_quat = quat
     norm_quat = norm_quat / norm_quat.norm(p=2, dim=1, keepdim=True)
     w, x, y, z = norm_quat[:, 0], norm_quat[:, 1], norm_quat[:,
@@ -121,23 +104,10 @@ def quat2mat(quat):
     ],
                          dim=1).view(batch_size, 3, 3)
     return rotMat
-
+"""
+"""
 def batch_rodrigues(axisang):
-    """
-    DISCLAIMER: Taken from 
-    https://github.com/Dou-Yiming/Pose_to_SMPL/blob/main/smplpytorch/pytorch/rodrigues_layer.py
-
-    Parameters
-    ----------
-    axisang : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    rot_mat : TYPE
-        DESCRIPTION.
-
-    """
+    
     #axisang N x 3
     axisang_norm = torch.norm(axisang + 1e-8, p=2, dim=1)
     angle = torch.unsqueeze(axisang_norm, -1)
@@ -149,8 +119,8 @@ def batch_rodrigues(axisang):
     rot_mat = quat2mat(quat)
     rot_mat = rot_mat.view(rot_mat.shape[0], 9)
     return rot_mat
-
-
+"""
+"""
 def batch_axsang_to_quats(rot):
     assert rot.shape[1] == 3
 
@@ -205,35 +175,10 @@ def forward_kin(joint_pos,
                                                           relative_trans)
     
     return absolute_rot, absolute_trans
-    
-
+   """ 
+"""
 def LBS(V, W, J, JE, theta):
-    """
-    WARNING: Relative translation is not implemented yet.
 
-    Parameters
-    ----------
-    V : TYPE
-        Vertex locations in T-Pose.
-    W : TYPE
-        Vertex-bone binding weights V x J.
-    J : TYPE
-        Joint locations, J x 3.
-    JE : TYPE
-        Joint edges, i.e. kintree, J-1 x 2.
-    theta : TYPE
-        Joint axis-angle orientations in radians.
-
-    Returns
-    -------
-    T : TYPE
-        Absolute transformation matrices of bones (rather than relative transformations). 
-        Computed by Forward Kinematics.
-    V_posed : TYPE
-        Vertex world locations after posing the vertices of T-pose.
-
-    """
-    
     P = igl.directed_edge_parents(JE)
     abs_rot, abs_t = forward_kin(J, JE, P, theta)
     
@@ -256,9 +201,10 @@ def inverse_LBS(V_posed, W, J, JE, theta):
     
     unposed_V = LBS(V_posed, W, J, JE, -theta)
     return unposed_V
-
+"""
 if __name__ == "__main__":
     print(">> Testing skinning.py...")
+    
     """
     from smpl_torch_batch import SMPLModel
     from skeleton_data import get_smpl_skeleton

@@ -12,6 +12,8 @@ import numpy as np
 import pyvista as pv
 
 import __init__
+import skinning
+from data import poses
 from linalg_utils import lerp
 from helper_rig import HelperBonesHandler
 from global_vars import IGL_DATA_PATH, RESULT_PATH
@@ -24,52 +26,20 @@ from skeleton import Skeleton, create_skeleton, add_helper_bones
 TGF_PATH = IGL_DATA_PATH + "arm.tgf"
 joint_locations, kintree, _, _, _, _ = igl.read_tgf(TGF_PATH)
 arm_verts, _, _, arm_faces, _, _ =  igl.read_obj(IGL_DATA_PATH + "arm.obj")
+pose = poses.igl_arm_pose
 
-pose = np.array([
-                [
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0., 0., 0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                ],
-                [
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0., 10., 40.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                ],
-                [
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0., 0., 0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                ],
-                ])
-
+# ----------------------------------------------------------------------------
+# Declare parameters
+# ----------------------------------------------------------------------------
 MODE = "Dynamic " #"Rigid" or "Dynamic"
-
 FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-
 N_REPEAT = 10
 N_REST = N_REPEAT - 5
 FRAME_RATE = 24 #24
 TIME_STEP = 1./FRAME_RATE  
-
 MASS = 1.
 STIFFNESS = 300.
 DAMPING = 50.            
@@ -147,31 +117,6 @@ n_poses = pose.shape[0]
 trans = None # TODO: No relative translation yet...
 
 # ---------------------------------------------------------------------------------
-# Helper routine to obtain posed mesh vertices
-# ---------------------------------------------------------------------------------
-def _get_skel_points(mode, combine_points=True):
-    if mode == "Rigid":
-        rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
-        skel_mesh_points = rigid_bone_locations
-    else:
-        simulated_bone_locations = helper_rig.update(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
-        skel_mesh_points = simulated_bone_locations
-    
-    if combine_points:
-        skel_mesh_points = np.reshape(skel_mesh_points, (-1,3)) # Combine all the 3D points into one dimension
-    return skel_mesh_points
-
-def _get_mesh_points(mode):
-    
-    if mode == "Rigid":
-        posed_mesh_points = None
-    else:
-        posed_mesh_points = None
-        print("Warning: skinning not implemented yet...")
-        
-    return posed_mesh_points
-
-# ---------------------------------------------------------------------------------
 # Render Loop
 # ---------------------------------------------------------------------------------
 plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPING}-mds{MASS_DSCALE}-sds{SPRING_DSCALE}-fixedscale-{FIXED_SCALE}-pointspring-{POINT_SPRING}.mp4")
@@ -185,8 +130,11 @@ try:
                         theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
                     else:        # Lerp with the last pose for boomerang
                         theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
-                         
-                skel_mesh_points = _get_skel_points(MODE, combine_points=True)
+                
+                    if MODE == "Rigid": skeleton = test_skeleton
+                    else: skeleton = helper_rig
+                        
+                skel_mesh_points = skinning.get_skel_points(skeleton, theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT, combine_points=True)
                 assert skel_mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)
                 
                 skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.
