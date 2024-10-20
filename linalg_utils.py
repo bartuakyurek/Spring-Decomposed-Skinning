@@ -8,6 +8,11 @@ Created on Fri Sep 27 13:15:07 2024
 import torch
 import numpy as np
 
+def lerp(arr1, arr2, ratio):
+    # TODO: Please make it more robust? Like asserting array shapes etc...
+    return ((1.0 - ratio) * arr1) + (ratio * arr2)
+
+
 def batch_axsang_to_quats(rot):
     """
     Convert axis-angle rotation representations to quaternions.
