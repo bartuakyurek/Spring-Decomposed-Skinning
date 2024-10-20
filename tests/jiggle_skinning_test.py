@@ -23,6 +23,7 @@ from skeleton import Skeleton, create_skeleton, add_helper_bones
 # ---------------------------------------------------------------------------- 
 TGF_PATH = IGL_DATA_PATH + "arm.tgf"
 joint_locations, kintree, _, _, _, _ = igl.read_tgf(TGF_PATH)
+arm_verts, _, _, arm_faces, _, _ =  igl.read_obj(IGL_DATA_PATH + "arm.obj")
 
 pose = np.array([
                 [
@@ -123,6 +124,7 @@ helper_rig = HelperBonesHandler(test_skeleton,
 # Create plotter 
 # ---------------------------------------------------------------------------- 
 RENDER = True
+OPACITY = 0.5
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
 plotter.camera_position = 'zy'
 plotter.camera.azimuth = 90
@@ -139,6 +141,7 @@ line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 # (note that you need to re-run other skeleton tests)
 
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
+arm_mesh = add_mesh(plotter, arm_verts, arm_faces, opacity=OPACITY)
 
 n_poses = pose.shape[0]
 trans = None # TODO: No relative translation yet...
@@ -157,6 +160,16 @@ def _get_skel_points(mode, combine_points=True):
     if combine_points:
         skel_mesh_points = np.reshape(skel_mesh_points, (-1,3)) # Combine all the 3D points into one dimension
     return skel_mesh_points
+
+def _get_mesh_points(mode):
+    
+    if mode == "Rigid":
+        posed_mesh_points = None
+    else:
+        posed_mesh_points = None
+        print("Warning: skinning not implemented yet...")
+        
+    return posed_mesh_points
 
 # ---------------------------------------------------------------------------------
 # Render Loop
