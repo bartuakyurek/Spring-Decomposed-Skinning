@@ -47,6 +47,7 @@ plotter.camera_position = 'zy'
 plotter.camera.azimuth = -90
 
 skel_mesh = add_skeleton(plotter, J[0], kintree)
+smpl_mesh = add_mesh(plotter, V[0], F, opacity=0.6)
 # -----------------------------------------------------------------------------
 # Initiate mass-spring system container to be attached to animated rig
 # -----------------------------------------------------------------------------
@@ -109,7 +110,7 @@ for _ in range(n_repeats):
         
         # TODO: Update mesh points
         skel_mesh.points = J[frame]
-        
+        smpl_mesh.points = V[frame]
         # Write a frame. This triggers a render.
         plotter.write_frame()
 

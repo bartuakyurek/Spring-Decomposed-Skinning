@@ -14,7 +14,7 @@ import pyvista as pv
 import __init__
 from skeleton import Skeleton
 from helper_rig import HelperBonesHandler
-from pyvista_render_tools import add_skeleton
+from pyvista_render_tools import add_skeleton, add_mesh
 from global_vars import IGL_DATA_PATH, RESULT_PATH
 
 # ---------------------------------------------------------------------------- 
@@ -89,6 +89,7 @@ def lerp(arr1, arr2, ratio):
 # ---------------------------------------------------------------------------- 
 TGF_PATH = IGL_DATA_PATH + "arm.tgf"
 joint_locations, kintree, _, _, _, _ = igl.read_tgf(TGF_PATH)
+arm_verts, _, _, arm_faces, _, _ =  igl.read_obj(IGL_DATA_PATH + "arm.obj")
 
 pose = np.array([
                 [
@@ -189,6 +190,7 @@ helper_rig = HelperBonesHandler(test_skeleton,
 # Create plotter 
 # ---------------------------------------------------------------------------- 
 RENDER = True
+OPACITY = 0.9
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
 plotter.camera_position = 'zy'
 plotter.camera.azimuth = 90
@@ -205,7 +207,7 @@ line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 # (note that you need to re-run other skeleton tests)
 
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPING}-mds{MASS_DSCALE}-sds{SPRING_DSCALE}-fixedscale-{FIXED_SCALE}-pointspring-{POINT_SPRING}.mp4")
+arm_mesh = add_mesh(plotter, arm_verts, arm_faces, opacity=OPACITY)
 
 n_poses = pose.shape[0]
 trans = None # TODO: No relative translation yet...
@@ -213,21 +215,32 @@ trans = None # TODO: No relative translation yet...
 # ---------------------------------------------------------------------------------
 # Helper routine to obtain posed mesh vertices
 # ---------------------------------------------------------------------------------
-def _get_mesh_points(mode, combine_points=True):
+def _get_skel_points(mode, combine_points=True):
     if mode == "Rigid":
         rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
-        mesh_points = rigid_bone_locations
+        skel_mesh_points = rigid_bone_locations
     else:
         simulated_bone_locations = helper_rig.update(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
-        mesh_points = simulated_bone_locations
+        skel_mesh_points = simulated_bone_locations
     
     if combine_points:
-        mesh_points = np.reshape(mesh_points, (-1,3)) # Combine all the 3D points into one dimension
-    return mesh_points
+        skel_mesh_points = np.reshape(skel_mesh_points, (-1,3)) # Combine all the 3D points into one dimension
+    return skel_mesh_points
+
+def _get_mesh_points(mode):
+    
+    if mode == "Rigid":
+        posed_mesh_points = None
+    else:
+        posed_mesh_points = None
+        print("Warning: skinning not implemented yet...")
+        
+    return posed_mesh_points
 
 # ---------------------------------------------------------------------------------
 # Render Loop
 # ---------------------------------------------------------------------------------
+plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPING}-mds{MASS_DSCALE}-sds{SPRING_DSCALE}-fixedscale-{FIXED_SCALE}-pointspring-{POINT_SPRING}.mp4")
 try:
     for rep in range(N_REPEAT):
         for pose_idx in range(n_poses):
@@ -239,10 +252,10 @@ try:
                     else:        # Lerp with the last pose for boomerang
                         theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
                          
-                mesh_points = _get_mesh_points(MODE, combine_points=True)
-                assert mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)
+                skel_mesh_points = _get_skel_points(MODE, combine_points=True)
+                assert skel_mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)
                 
-                skel_mesh.points = mesh_points # Update mesh points in the renderer.
+                skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.
                 plotter.write_frame()          # Write a frame. This triggers a render.
 except AssertionError:
     print(">>>> Caught assertion, stopping execution...")
