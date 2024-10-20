@@ -24,14 +24,16 @@ from skeleton import Skeleton, create_skeleton, add_helper_bones
 # Set skeletal animation data (TODO: Can we do it in another script and retrieve the data with 1-2 lines?)
 # ---------------------------------------------------------------------------- 
 TGF_PATH = IGL_DATA_PATH + "arm.tgf"
+OBJ_PATH = IGL_DATA_PATH + "arm.obj"
+DMAT_PATH = IGL_DATA_PATH + "arm-weights.dmat"
 joint_locations, kintree, _, _, _, _ = igl.read_tgf(TGF_PATH)
-arm_verts, _, _, arm_faces, _, _ =  igl.read_obj(IGL_DATA_PATH + "arm.obj")
+arm_verts_rest, _, _, arm_faces, _, _ =  igl.read_obj(OBJ_PATH)
 pose = poses.igl_arm_pose
 
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODE = "Dynamic " #"Rigid" or "Dynamic"
+MODE = "Rigid" #"Rigid" or "Dynamic" TODO: could you use more robust way to set it?
 FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
@@ -47,7 +49,7 @@ MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow dow
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 # ---------------------------------------------------------------------------- 
-# Create rig and set helper bones
+# Create rig and add helper bones
 # ---------------------------------------------------------------------------- 
 PARENT_IDX = 2
 helper_bone_endpoints = np.array([ joint_locations[PARENT_IDX] + [0.0, 0.2, 0.0] ])
@@ -103,26 +105,48 @@ plotter.camera.view_angle = 90 # This works like zoom actually
 # ---------------------------------------------------------------------------- 
 # Add skeleton mesh based on T-pose locations
 # ---------------------------------------------------------------------------- 
-n_bones = len(test_skeleton.rest_bones)
-rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
-line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 # TODO: rename get_rest_bone_locations() to get_rest_bones() that will also return
 # line_segments based on exclude_root variable
 # (note that you need to re-run other skeleton tests)
+n_bones = len(test_skeleton.rest_bones)
+rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
+line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-arm_mesh = add_mesh(plotter, arm_verts, arm_faces, opacity=OPACITY)
+arm_mesh = add_mesh(plotter, arm_verts_rest, arm_faces, opacity=OPACITY)
 
-n_poses = pose.shape[0]
-trans = None # TODO: No relative translation yet...
-
+# ---------------------------------------------------------------------------- 
+# Bind T-pose vertices to unposed skeleton
+# ---------------------------------------------------------------------------- 
+if MODE == "Rigid":
+    weights = igl.read_dmat(DMAT_PATH)
+    # Add zero weights for the helper bone 
+    # TODO: could you just not use the helper bones for rigid animation?
+    n_verts, n_orig_bones = weights.shape
+    n_helpers = n_bones - n_orig_bones - 1 # TODO: Minus one is for the invisible root bone, we better remove this feature in order not to complicatte things 
+    zero_weights = np.zeros((n_verts, n_helpers))
+    weights = np.append(weights, zero_weights, axis=-1)
+elif MODE == "Dynamic":
+    weights = skinning.bind_weights(arm_verts_rest, rest_bone_locations)
+else:
+    print(f">> ERROR: Unexpected skinning mode {MODE}")
+    raise ValueError
+    
 # ---------------------------------------------------------------------------------
 # Render Loop
 # ---------------------------------------------------------------------------------
 plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPING}-mds{MASS_DSCALE}-sds{SPRING_DSCALE}-fixedscale-{FIXED_SCALE}-pointspring-{POINT_SPRING}.mp4")
+n_poses = pose.shape[0]
+trans = None
 try:
-    for rep in range(N_REPEAT):
-        for pose_idx in range(n_poses):
+    # TODO: refactor this render loop such that we don't have to check N_REST from the
+    # inside, rather we'll just render static image once we're done with animation
+    # (or we can insert more rest poses via editing the pose array)
+    # TODO: refactor the lerp() to be out of render loop such that poses will be precomputed
+    # for each frame, we'll only retrieve the current pose daha and skinning data for rendering
+    # these two refactoring should remove a conditional and a loop 
+    for rep in range(N_REPEAT):         # This can be refactored too as it's not related to render
+        for pose_idx in range(n_poses): # Loop keyframes, this could be refactored.
             for frame_idx in range(FRAME_RATE):
                 
                 if rep < N_REST:  

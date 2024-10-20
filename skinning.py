@@ -33,7 +33,46 @@ def _get_mesh_points(mode):
         print("Warning: skinning not implemented yet...")
     return posed_mesh_points
 
+def bind_weights(mesh_verts, skel_verts): 
+    """
+    Find the set of weights that will be the
+    skinning weights for the provided mesh vertices. Usually this method
+    is called at the T-pose, such that skinning function can take these 
+    T-pose binding weights to map the mesh from T-pose to the desired 
+    deformation. 
 
+    Parameters
+    ----------
+    mesh_verts : np.ndarray
+        Vertices of the mesh, has shape (n_verts, 3).
+    skel_verts : np.ndarray
+        Endpoint locations of the skeleton that has shape (n_bones * 2, 3).
+        It's assumed every bone has 2 endpoints such that every consecutive
+        [i][i+1] where i is an even number, represents a bone.
+        
+        Note that you need to convert SMPL joints to Skeleton class in your
+        pipeline before using this method; otherwise the input data will not
+        match with the implementation.
+
+    Returns
+    -------
+    weights : np.ndarray.
+        Binding weights has shape (n_verts, n_bones). Every row belongs to
+        a vertex in the mesh, and every column is dedicated to the bones, 
+        (be careful, bones not joints, those are used interchangibly in skeletal 
+        animation but in this pipeline every bone has 2 joints). 
+        
+        Every entry w=(v, b) is the weight w that is bound to vertex v and bone b. 
+        Meaning that vertex v, will inherit the transformation of bone b at
+        w amount. Usually w is in range [0.0, 1.0] for smooth vertex blending.
+        However setting it outside of this range is still theoretically possible.
+    """
+    assert type(mesh_verts) == np.ndarray
+    assert type(skel_verts) == np.ndarray
+    
+    weights = None
+    
+    return weights
 
 """ 
 def skinning(verts, abs_rot, abs_trans, weights, skinning_type="LBS"):
