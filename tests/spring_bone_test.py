@@ -12,77 +12,11 @@ import numpy as np
 import pyvista as pv
 
 import __init__
-from skeleton import Skeleton
+from linalg_utils import lerp
 from helper_rig import HelperBonesHandler
-from pyvista_render_tools import add_skeleton, add_mesh
 from global_vars import IGL_DATA_PATH, RESULT_PATH
-
-# ---------------------------------------------------------------------------- 
-# Declare helper functions
-# ---------------------------------------------------------------------------- 
-# TODO: Could we move these functions to skeleton class so that every other test
-# can utilize them?
-def create_skeleton(joint_locations, kintree):
-    test_skeleton = Skeleton(root_vec = joint_locations[0])
-    for edge in kintree:
-         parent_idx, bone_idx = edge
-         test_skeleton.insert_bone(endpoint = joint_locations[bone_idx], 
-                                   parent_idx = parent_idx)   
-    return test_skeleton
-
-# TODO: this could be a general function to add multiple bones because 
-# there's nothing specific about helper bones here.
-def add_helper_bones(test_skeleton, 
-                     helper_bone_endpoints, 
-                     helper_bone_parents,
-                     offset_ratio=0.0, 
-                     startpoints=[]):
-    """
-    Add one or multiple helper bones to an existing skeleton. 
-    
-    Parameters
-    ----------
-    test_skeleton : Skeleton
-        An existing skeleton to be modified via adding new bones.
-    helper_bone_endpoints : np.ndarray or list
-        Holds the 3D vectors that determines the location of helper bone tips.
-    helper_bone_parents : list
-        List of integers that indicate the index of the parent bones.
-    offset_ratio : float, optional
-        Determines the location of the helper bone with respect to its parent. 
-        When set to 1.0, the bone starts at the start point of its parent,
-        when set to 0.0 it starts at the tip of the parent. In between,
-        the bone is located somewhere along the parent bone. Note that this
-        option is not regarded if an explicit startpoint is given.
-        The default is 0.0, i.e. the bone starts at the tip of the parent.
-    startpoints : list, optional
-        List of 3D vectors that determines the starting locations of the 
-        helper bones. The default is [].
-
-    Returns
-    -------
-    helper_idxs : list
-        List of integers that are the indices of helper bones in the existing 
-        skeleton.
-    """
-    assert offset_ratio <= 1.0 and offset_ratio >= 0.0, f">>  Excpected offset_ratio to be in range [0, 1], got {offset_ratio}."
-    
-    n_helper = len(helper_bone_parents)
-    if len(startpoints)==0: startpoints = np.repeat([None],n_helper)
-    
-    helper_idxs = []
-    for i in range(n_helper):
-        bone_idx = test_skeleton.insert_bone( endpoint = helper_bone_endpoints[i],
-                                              parent_idx = helper_bone_parents[i],
-                                              offset_ratio = offset_ratio,
-                                              startpoint = startpoints[i]
-                                              )
-        helper_idxs.append(bone_idx)
-    return helper_idxs
-
-def lerp(arr1, arr2, ratio):
-    # TODO: Please make it more robust? Like asserting array shapes etc...
-    return ((1.0 - ratio) * arr1) + (ratio * arr2)
+from pyvista_render_tools import add_skeleton, add_mesh
+from skeleton import Skeleton, create_skeleton, add_helper_bones
 
 # ---------------------------------------------------------------------------- 
 # Set skeletal animation data (TODO: Can we do it in another script and retrieve the data with 1-2 lines?)
@@ -190,7 +124,7 @@ helper_rig = HelperBonesHandler(test_skeleton,
 # Create plotter 
 # ---------------------------------------------------------------------------- 
 RENDER = True
-OPACITY = 0.9
+OPACITY = 0.5
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
 plotter.camera_position = 'zy'
 plotter.camera.azimuth = 90
