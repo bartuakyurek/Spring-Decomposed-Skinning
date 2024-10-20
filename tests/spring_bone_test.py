@@ -151,7 +151,7 @@ def _get_skel_points(mode, combine_points=True):
         rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
         skel_mesh_points = rigid_bone_locations
     else:
-        simulated_bone_locations = helper_rig.update(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
+        simulated_bone_locations = helper_rig.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
         skel_mesh_points = simulated_bone_locations
     
     if combine_points:

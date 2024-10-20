@@ -17,3 +17,4 @@
 demo/vispy_sample_2d_circles.py
 demo/vispy_picking.py
 results/.DS_Store
+/tests/__pycache__
