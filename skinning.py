@@ -12,7 +12,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from skeleton import Skeleton
-from linalg_utils import get_rotation_mats
+from linalg_utils import get_rotation_mats, compose_transform_matrix
 
 # ---------------------------------------------------------------------------------
 # Helper routine to obtain posed mesh vertices
@@ -82,15 +82,28 @@ def LBS(V, W, abs_rot, abs_trans):
     assert W.shape[0] == V.shape[0], f"Expected weights and verts to have same length at dimension 0, i.e. weights has shape (n_verts, n_bones)\
                                                  and verts has shape (n_verts, 3), got shape {W.shape} and {V.shape}."
     n_verts, n_bones = W.shape
-    assert abs_rot.shape == (n_bones, 4), f"Expected absolute rotations to have shape ({n_bones}, 4), got {abs_rot.shape}."
+    assert abs_rot.shape == (n_bones, 4), f"Expected absolute rotations in quaternions to have shape ({n_bones}, 4), got {abs_rot.shape}."
     assert abs_trans.shape == (n_bones, 3), f"Expected absolute translations to have shape ({n_bones}, 3), got {abs_trans.shape}."
 
-    
     V_posed = np.zeros_like(V)    
+        
+    Ms = []
+    for bone in range(n_bones):
+        rot = Rotation.from_quat(abs_rot[bone])
+        M = compose_transform_matrix(abs_trans[bone], rot)
+        Ms.append(M)
+    
     R_mat = get_rotation_mats(abs_rot)
     for vertex in range(n_verts):
+        v_homo = np.ones(4)
+        v_homo[:3] = V[vertex]
         for bone in range(n_bones):
-            V_posed[vertex] += W[vertex, bone] * np.matmul(V[vertex], R_mat[bone]) + abs_trans[bone]
+            V_posed[vertex] += W[vertex, bone] * np.matmul(R_mat[bone], V[vertex]) + abs_trans[bone]
+            #transformed_vert = Ms[bone] @ v_homo # or np.matmul(v_homo, M.T) also works
+            assert np.abs(Ms[bone][-1,-1] - 1.0) < 1e-12, f"Matrix has to have 1.0 at the last dimension, got matrix {Ms[bone]}."
+            assert np.abs(v_homo[-1] - 1) < 1e-12, f"Homogeneous coordinates are expected to have 1.0 at the last dimension, got vector {v_homo}."
+            #assert np.abs(transformed_vert[-1] - 1.0) < 1e-3, f"transformed_vert has to have 1.0 at the last dimension, got vector {transformed_vert}"
+            #V_posed[vertex] += W[vertex, bone] * transformed_vert[:3]
             
     # TODO: convert for loops into matrix multiplications
     #tmp = V @ R_mat (n_bones,n_verts,3)

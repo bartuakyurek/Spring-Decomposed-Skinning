@@ -60,7 +60,7 @@ pose = np.array([
 MODE = "Dynamic " #"Rigid" or "Dynamic"
 
 FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
-POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 

@@ -48,7 +48,8 @@ def compose_transform_matrix(trans_vec, rot : Rotation ):
     
     if trans_vec.shape == (3,1):
         trans_vec = trans_vec[:,0]
-        
+    
+    assert type(rot) is Rotation, f"Expected Rotation class instance for rot variable, got {type(rot)}."
     assert type(trans_vec) == np.ndarray, f"Expected translation vector to have type np.ndarray, got {trans_vec.shape}."
     assert trans_vec.shape == (3, ), f"Expected translation vector to have shape (3,) got {trans_vec.shape}"
     
