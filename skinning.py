@@ -12,7 +12,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from skeleton import Skeleton
-from linalg_utils import get_rotation_mats, compose_transform_matrix
+from linalg_utils import get_transform_mats, compose_transform_matrix
 
 # ---------------------------------------------------------------------------------
 # Helper routine to obtain posed mesh vertices
@@ -84,34 +84,20 @@ def LBS(V, W, abs_rot, abs_trans):
     n_verts, n_bones = W.shape
     assert abs_rot.shape == (n_bones, 4), f"Expected absolute rotations in quaternions to have shape ({n_bones}, 4), got {abs_rot.shape}."
     assert abs_trans.shape == (n_bones, 3), f"Expected absolute translations to have shape ({n_bones}, 3), got {abs_trans.shape}."
+        
+    Ms = get_transform_mats(abs_trans, abs_rot)
+    V_homo = np.append(V, np.ones((n_verts,1)), axis=-1)
 
-    V_posed = np.zeros_like(V)    
-        
-    Ms = []
-    for bone in range(n_bones):
-        rot = Rotation.from_quat(abs_rot[bone])
-        M = compose_transform_matrix(abs_trans[bone], rot)
-        Ms.append(M)
-    
-    for vertex in range(n_verts):
-        v_homo = np.ones(4)
-        v_homo[:3] = V[vertex]
-        for bone in range(n_bones):
-            transformed_vert = Ms[bone] @ v_homo # or np.matmul(v_homo, M.T) also works
-            assert np.abs(Ms[bone][-1,-1] - 1.0) < 1e-12, f"Matrix has to have 1.0 at the last dimension, got matrix {Ms[bone]}."
-            assert np.abs(v_homo[-1] - 1) < 1e-12, f"Homogeneous coordinates are expected to have 1.0 at the last dimension, got vector {v_homo}."
-            #assert np.abs(transformed_vert[-1] - 1.0) < 1e-3, f"transformed_vert has to have 1.0 at the last dimension, got vector {transformed_vert}"
-            V_posed[vertex] += W[vertex, bone] * transformed_vert[:3]
-            
-    # TODO: convert for loops into matrix multiplications
-    #tmp = V @ R_mat (n_bones,n_verts,3)
-    #tmp2 = W.T @ tmp (n_bones,n_bones,3)
-    #tmp3 = tmp2 + abs_trans
-        
-    V_posed = np.array(V_posed)
+    # Pose vertices via matrix multiplications 
+    V_homo = np.expand_dims(V_homo, axis=-1) # shape (n_verts, 4, 1) for broadcasting 
+    weighted_transforms = np.tensordot(W, Ms, axes=(-1,0)) # shape (n_verts, 4, 4)
+    V_posed_homo = np.matmul(weighted_transforms, V_homo)  # shape (n_verts, 4, 1)
+    V_posed = V_posed_homo[:, :3, 0]
+   
     assert V_posed.shape == V.shape
     return V_posed
     
+
 
 def skinning(verts, abs_rot, abs_trans, weights, skinning_type="LBS"):
     """
