@@ -23,6 +23,17 @@ def get_rotation_mats(rot_quats):
         R_mats.append(rot.as_matrix())
     return np.array(R_mats)
 
+def get_transform_mats(trans, rotations):
+    assert len(trans) == len(rotations), f"Given lists must have same lengths. Got {len(trans)} and {len(rotations)}"
+
+    K = len(trans)
+    M = np.empty((K, 4, 4))
+    for i in range(K):
+        rot = Rotation.from_quat(rotations[i])
+        M[i] = compose_transform_matrix(trans[i], rot)
+        
+    return M
+    
 def compose_transform_matrix(trans_vec, rot : Rotation ):
     """
     Compose a transformation matrix given the translation vector
