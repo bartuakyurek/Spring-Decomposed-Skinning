@@ -137,7 +137,7 @@ else:
 # ---------------------------------------------------------------------------------
 plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPING}-mds{MASS_DSCALE}-sds{SPRING_DSCALE}-fixedscale-{FIXED_SCALE}-pointspring-{POINT_SPRING}.mp4")
 n_poses = pose.shape[0]
-trans = None
+trans = np.zeros((n_bones, 3))
 try:
     # TODO: refactor this render loop such that we don't have to check N_REST from the
     # inside, rather we'll just render static image once we're done with animation
@@ -157,7 +157,14 @@ try:
                 
                     if MODE == "Rigid": skeleton = test_skeleton
                     else: skeleton = helper_rig
-                        
+                
+                # TODO: we're repeating ourselves, could we separate pose bones and abs T parts?
+                abs_rot_quat, abs_trans = skeleton.get_absolute_transformations(theta, trans, DEGREES)
+                abs_rot_quat = abs_rot_quat[1:] # TODO: get rid of root bone convention
+                abs_trans = abs_trans[1:]       # TODO: get rid of root bone convention
+                mesh_points = skinning.skinning(arm_verts_rest, abs_rot_quat, abs_trans, weights, skinning_type="LBS")
+                arm_mesh.points = mesh_points
+                
                 skel_mesh_points = skinning.get_skel_points(skeleton, theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT, combine_points=True)
                 assert skel_mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)
                 

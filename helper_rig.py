@@ -116,6 +116,13 @@ class HelperBonesHandler:
                                                  for {n_helper} jiggle bones."
         
     
+    def get_absolute_transforms(self):
+        # input the posed bones (or why don't you save them?)
+        # and kintree (self.kintree)
+        # output the abs rot and trans.
+        print(">> Please implement this function...")
+        pass 
+    
     def init_pose(self, theta, trans, degrees):
         """
         Sets the previous bone locations to the given pose. This should be

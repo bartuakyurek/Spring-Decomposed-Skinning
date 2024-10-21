@@ -14,6 +14,15 @@ def lerp(arr1, arr2, ratio):
     # TODO: Please make it more robust? Like asserting array shapes etc...
     return ((1.0 - ratio) * arr1) + (ratio * arr2)
 
+def get_rotation_mats(rot_quats):
+    
+    assert len(rot_quats.shape) == 2 and rot_quats.shape[1]==4, f"Expected to rotation quaternions to have shape (n_rotations, 4), got {rot_quats.shape}."
+    R_mats = []
+    for i in range(rot_quats.shape[0]):
+        rot = Rotation.from_quat(rot_quats[i])
+        R_mats.append(rot.as_matrix())
+    return np.array(R_mats)
+
 def compose_transform_matrix(trans_vec, rot : Rotation ):
     """
     Compose a transformation matrix given the translation vector

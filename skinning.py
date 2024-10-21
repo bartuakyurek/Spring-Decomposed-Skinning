@@ -9,7 +9,10 @@ IMPORTANT NOTES:
 """
 import igl
 import numpy as np
+from scipy.spatial.transform import Rotation
+
 from skeleton import Skeleton
+from linalg_utils import get_rotation_mats
 
 # ---------------------------------------------------------------------------------
 # Helper routine to obtain posed mesh vertices
@@ -71,12 +74,36 @@ def bind_weights(mesh_verts, skel_verts):
     assert type(skel_verts) == np.ndarray
     
     weights = None
-    
+    print(">> WARNING: Bind_weigths() is not implemented yet...")
     return weights
 
-""" 
-def skinning(verts, abs_rot, abs_trans, weights, skinning_type="LBS"):
+
+def LBS(V, W, abs_rot, abs_trans):
+    assert W.shape[0] == V.shape[0], f"Expected weights and verts to have same length at dimension 0, i.e. weights has shape (n_verts, n_bones)\
+                                                 and verts has shape (n_verts, 3), got shape {W.shape} and {V.shape}."
+    n_verts, n_bones = W.shape
+    assert abs_rot.shape == (n_bones, 4), f"Expected absolute rotations to have shape ({n_bones}, 4), got {abs_rot.shape}."
+    assert abs_trans.shape == (n_bones, 3), f"Expected absolute translations to have shape ({n_bones}, 3), got {abs_trans.shape}."
+
     
+    V_posed = np.zeros_like(V)    
+    R_mat = get_rotation_mats(abs_rot)
+    for vertex in range(n_verts):
+        for bone in range(n_bones):
+            V_posed[vertex] += W[vertex, bone] * np.matmul(V[vertex], R_mat[bone]) + abs_trans[bone]
+            
+    # TODO: convert for loops into matrix multiplications
+    #tmp = V @ R_mat (n_bones,n_verts,3)
+    #tmp2 = W.T @ tmp (n_bones,n_bones,3)
+    #tmp3 = tmp2 + abs_trans
+        
+    V_posed = np.array(V_posed)
+    assert V_posed.shape == V.shape
+    return V_posed
+    
+
+def skinning(verts, abs_rot, abs_trans, weights, skinning_type="LBS"):
+    """
     Deform the vertices by provided transformations and selected skinning
     method.
 
@@ -104,17 +131,19 @@ def skinning(verts, abs_rot, abs_trans, weights, skinning_type="LBS"):
     -------
     V_deformed : np.ndarray
         Deformed vertices of shape (n_verts, 3)
+    """
     
-    
-    V_deformed = None
+   
     if skinning_type == "LBS" or skinning_type == "lbs":
         # Deform vertices based on Linear Blend Skinning
-        pass
+        return LBS(V         = verts, 
+                   W         = weights,
+                   abs_rot   = abs_rot, 
+                   abs_trans = abs_trans)
     else:
-        print(f">> ERROR: This skinning type \"{skinning_type}\" is not supported yet.")
-    
-    return V_deformed
-"""
+        raise ValueError(f">> ERROR: This skinning type \"{skinning_type}\" \
+                         is not supported yet.")
+
 """
 # todo:  taken https://github.com/Dou-Yiming/Pose_to_SMPL/blob/main/smplpytorch/pytorch/rodrigues_layer.py
 def quat2mat(quat):
