@@ -41,7 +41,7 @@ class MassVisual(scene.visuals.Compound):
 
         self.size = size
         self.center = center
-        self.drag_reference = np.zeros((1,3))  # 3D World coordinates
+        self.drag_reference = None  # Initiate to None if start_move() is forgotten to call
 
         self.DEFAULT_COLOR =  Color("orange")
         self.SELECT_COLOR = Color("yellow")
@@ -95,16 +95,16 @@ class MassVisual(scene.visuals.Compound):
             self.set_data(color=self.DEFAULT_COLOR)
         return
     
-    def start_move(self, mouse_pos):
-        self.drag_reference = mouse_pos[0:3] - self.center 
-        print(self.drag_reference)
+    def start_move(self, world_pos):
+        self.drag_reference = world_pos[0:3] - self.center 
+        return
 
-    def move(self, mouse_pos):
-        # TODO: translate the fixed mass ? 
-        if self.editable:
-            shift = mouse_pos[0:3] - self.drag_reference
+    def move(self, world_pos):
+        
+        if self.editable:  
+            shift = world_pos[0:3] - self.drag_reference
             self.set_data(center=shift)
-
+        return
 
 class Canvas(scene.SceneCanvas):
     """ A simple test canvas for drawing demo """
@@ -123,7 +123,6 @@ class Canvas(scene.SceneCanvas):
         self.view.camera.set_range(x=[-5, 5])
         
         self.selected_object = None
-        self.mouse_start_pos = [0, 0] # Mouse pixel coordinates on the 2D screen
         self.objects = []
         self.freeze()
 
@@ -134,13 +133,12 @@ class Canvas(scene.SceneCanvas):
         return
     
     def on_mouse_press(self, event):
-        
+        mouse_pos = event.pos 
+
         self.view.interactive = False
-        selected = self.visual_at(event.pos)     
+        selected = self.visual_at(mouse_pos)     
         self.view.interactive = True
 
-        tr = self.scene.node_transform(self.view.scene)
-        pos = tr.map(event.pos)
         # Deselect previously selected
         if self.selected_object is not None:
             self.selected_object.deselect()
@@ -152,8 +150,9 @@ class Canvas(scene.SceneCanvas):
                 self.selected_object = selected.parent
                 self.selected_object.select()
 
-                self.selected_object.start_move(pos)
-                self.mouse_start_pos = event.pos
+                tr = self.scene.node_transform(self.selected_object)
+                world_pos = tr.map(mouse_pos)
+                self.selected_object.start_move(world_pos)
             else:
                 print(">> INFO: You clicked on empty space.")
         # Right click
@@ -169,13 +168,10 @@ class Canvas(scene.SceneCanvas):
                     self.view.camera.viewbox_mouse_event)
                 
                 # update transform to selected object
-               
                 tr = self.scene.node_transform(self.selected_object)
-                pos = tr.map(event.pos)
-                #trail = event.trail()
-                #print(event.pos.shape)
-                #print(event.trail(), "..")
-                self.selected_object.move(pos)
+                world_pos = tr.map(event.pos)
+             
+                self.selected_object.move(world_pos)
             else:
                 self.view.camera._viewbox.events.mouse_move.connect(
                     self.view.camera.viewbox_mouse_event)
