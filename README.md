@@ -1,6 +1,7 @@
 # Spring Decomposed Dynamic Skinning
  This repository demonstrates a dynamic deformation achieved by adding spring helper bones to an 
-existing geometric skinning pipeline. Note that it's a work in progress.
+existing geometric skinning pipeline. Note that it's a work in progress. Currently you can run either 
+the files under ./tests/ or ./demo/ directories, e.g. ``python ./tests/spring_bone_test.py``.
 
 ![A chain of skeletal bones jiggles through a rigid motion.](./img/jiggle-chain.gif)
 
@@ -18,6 +19,8 @@ every frame of animation given a sequence of meshes for every frame (note that i
 
 - Use optimal rigid motion for springs transforms
 
-- Bind vertices to bones for skinning weights 
+[ok] Bind vertices to bones for skinning weights 
 
 - Visualize skinning deformation 
+
+- Update instructions to use this repo
