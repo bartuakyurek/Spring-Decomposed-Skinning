@@ -9,7 +9,10 @@ import torch
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-
+def get_midpoint(vec1, vec2):
+    #return (vec2 - vec1) * 0.5 + vec1
+    return lerp(vec1, vec2, 0.5) 
+    
 def lerp(arr1, arr2, ratio):
     # TODO: Please make it more robust? Like asserting array shapes etc...
     return ((1.0 - ratio) * arr1) + (ratio * arr2)
