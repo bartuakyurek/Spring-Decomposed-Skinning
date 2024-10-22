@@ -30,7 +30,7 @@ import __init__
 import skinning
 from data import poses
 from linalg_utils import lerp
-from helper_rig import HelperBonesHandler
+from helper_handler import HelperBonesHandler
 from global_vars import IGL_DATA_PATH, RESULT_PATH
 from pyvista_render_tools import add_skeleton
 from skeleton import Skeleton, create_skeleton, add_helper_bones
@@ -132,12 +132,13 @@ def render_loop():
         for pose_idx in range(n_poses): # Loop keyframes, this could be refactored.
             for frame_idx in range(FRAME_RATE):
                 
+                # TODO: add function to animation utils, prep_poses_from_keyframes()
+                # to prepare poses for every frame beforehand.
                 if pose_idx: # If not the first pose
                         theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
                 else:        # Lerp with the last pose for boomerang
                         theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
-                
-                
+                      
                 if MODE=="Rigid":
                     posed_locations = skinning.get_skel_points(test_skeleton, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
                 else:
@@ -145,7 +146,7 @@ def render_loop():
                
                 abs_rot_quat, abs_trans = helper_rig.get_absolute_transformations(posed_locations)
                 loc = test_skeleton.compute_bone_locations(abs_rot_quat, abs_trans)
-                print(">> Difference: ", np.linalg.norm(loc-posed_locations))
+                if frame_idx == 1: print(">> Difference: ", np.linalg.norm(loc-posed_locations))
                
                 skel_mesh_points = loc[2:] # TODO: get rig of root bone convention
                 assert skel_mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)

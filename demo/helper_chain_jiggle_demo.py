@@ -13,7 +13,7 @@ import pyvista as pv
 
 import __init__
 from skeleton import Skeleton
-from helper_rig import HelperBonesHandler
+from helper_handler import HelperBonesHandler
 from pyvista_render_tools import add_skeleton
 from global_vars import IGL_DATA_PATH, RESULT_PATH
 

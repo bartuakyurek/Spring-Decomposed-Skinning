@@ -15,7 +15,7 @@ import __init__
 import skinning
 from data import poses
 from linalg_utils import lerp
-from helper_rig import HelperBonesHandler
+from helper_handler import HelperBonesHandler
 from global_vars import IGL_DATA_PATH, RESULT_PATH
 from pyvista_render_tools import add_skeleton, add_mesh
 from skeleton import Skeleton, create_skeleton, add_helper_bones
