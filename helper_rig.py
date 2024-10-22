@@ -7,8 +7,12 @@ Created on Sat Oct 12 10:05:05 2024
 """
 import numpy as np
 from numpy import linalg as LA
+from scipy.spatial.transform import Rotation
+
 from skeleton import Skeleton, Bone
+from linalg_utils import get_midpoint
 from mass_spring import MassSpringSystem
+from optimal_rigid_motion import get_optimal_rigid_motion
 
 class HelperBonesHandler:
     
@@ -116,12 +120,50 @@ class HelperBonesHandler:
                                                  for {n_helper} jiggle bones."
         
     
-    def get_absolute_transforms(self):
-        # input the posed bones (or why don't you save them?)
-        # and kintree (self.kintree)
-        # output the abs rot and trans.
-        print(">> Please implement this function...")
-        pass 
+    def get_absolute_transformations(self, theta, trans, degrees):
+        """
+        
+
+        Parameters
+        ----------
+        theta : TYPE
+            DESCRIPTION.
+        trans : TYPE
+            DESCRIPTION.
+        degrees : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        abs_rot_quats: np.ndarray
+            Absoulute rotation as quaternions 
+        abs_trans: np.ndarray
+            3D vectors for absolute translation
+        """        
+        # TOOD: please make your data structure consistent.
+        posed_locations = self.skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=False)
+        n_bones = len(self.skeleton.rest_bones)
+        
+        source_points = np.empty((3,3))
+        target_points = np.empty((3,3))
+        abs_rot_quats = np.empty((n_bones, 4))
+        abs_trans =  np.empty((n_bones, 3))
+        for i, bone in enumerate(self.skeleton.rest_bones):
+            source_points[0] = bone.start_location
+            source_points[2] = bone.end_location
+            source_points[1] = get_midpoint(bone.end_location, bone.start_location)
+            
+            target_points[0] = target_start = posed_locations[2*i] 
+            target_points[2] = target_end = posed_locations[2*i+1]
+            target_points[1] = get_midpoint(target_start, target_end)
+            
+            R_mat, t = get_optimal_rigid_motion(source_points, target_points)
+            rot = Rotation.from_matrix(R_mat)
+            
+            abs_rot_quats[i] = rot.as_quat()
+            abs_trans[i] = t
+            
+        return abs_rot_quats, abs_trans
     
     def init_pose(self, theta, trans, degrees):
         """
@@ -254,11 +296,8 @@ class HelperBonesHandler:
         diff = rigidly_posed_locations - self.prev_sim_locations # rigidly_posed_locations is the target. 
         helper_end_idxs = (2 * self.helper_idxs) + 1 # bone locations have 2 joints per bone
         translate_vec = diff[helper_end_idxs]  
-
         # TODO: how to handle an offset? For now, we assume there's no offset between parent and this bone.
-        #offset = self.skeleton.rest_bones[helper_idx].offset
-        #translate_vec += offset
-
+ 
         # Step 1 - Translate the fixed masses at the endpoint of each helper bone
         for i, helper_idx in enumerate(self.helper_idxs):
             self.simulator.translate_mass(self.fixed_idxs[i], translate_vec[i])
