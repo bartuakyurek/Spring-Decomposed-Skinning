@@ -12,6 +12,12 @@ _DEBUG_ = True
 _TOLERANCE_ = 1e-8
 
 
+def _assert_normalized_weights(weights):
+    weights_sum = np.sum(weights, axis=0) # For each vertex sum weights of all bones
+    assert not np.any(weights_sum < 1-1e-12), "Expected weights for a vertex to sum up 1.0"
+    assert not np.any(weights_sum > 1+1e-12), "Expected weights for a vertex to sum up 1.0"
+   
+
 def _check_or_convert_numpy(arr):
     if type(arr) is list:
         arr = np.array(arr)
