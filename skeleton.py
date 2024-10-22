@@ -210,6 +210,44 @@ class Skeleton():
         absolute_rot, absolute_trans = vQ, vT
         return absolute_rot, absolute_trans
      
+    def compute_bone_locations(self, abs_rot_quat, abs_trans):
+        """
+        Given absolute rotation quaternions and translation vectors
+        compute the endpoints of the bones.
+        
+        Parameters
+        ----------
+        abs_rot_quat : np.ndarray
+            Has shape (n_bones, 4).
+        abs_trans : np.ndarray
+            Has shape (n_bones, 3).
+
+        Returns
+        -------
+        final_bone_locations : np.ndarray
+            Has shape (n_bones * 2). TODO: make it (n_bones, 2) and please exclude root from n_bones.
+            Here n_bones include root bone but it's often confusing. 
+
+        """
+        n_bones = len(self.rest_bones)
+        assert abs_rot_quat.shape == (n_bones, 4), f"Expected abs_rot_quat to have shape ({n_bones},4) got {abs_rot_quat.shape}."
+        assert abs_trans.shape == (n_bones, 3), f"Expected abs_rot_quat to have shape ({n_bones},3) got {abs_trans.shape}."
+        
+        final_bone_locations = np.empty((2*n_bones, 3))
+        for i, bone in enumerate(self.rest_bones):
+            rot = Rotation.from_quat(abs_rot_quat[i])
+            M = compose_transform_matrix(abs_trans[i], rot)
+            
+            s, e = np.ones((4,)), np.ones((4,))
+            s[:3] = bone.start_location
+            e[:3] = bone.end_location 
+            s_translated = (M @ s)[:3]
+            e_translated = (M @ e)[:3]
+            
+            final_bone_locations[2*i] = s_translated
+            final_bone_locations[2*i + 1] = e_translated
+        return final_bone_locations
+        
         
     def pose_bones(self, theta, trans=None, get_transforms=False, degrees=False, exclude_root=False): 
         """
@@ -258,20 +296,7 @@ class Skeleton():
         # ---------------------------------------------------------------------
         # Compute the final bone locations
         # ---------------------------------------------------------------------
-        final_bone_locations = np.empty((2*len(self.rest_bones), 3))
-        
-        for i, bone in enumerate(self.rest_bones):
-            rot = Rotation.from_quat(abs_rot_quat[i])
-            M = compose_transform_matrix(abs_trans[i], rot)
-            
-            s, e = np.ones((4,)), np.ones((4,))
-            s[:3] = bone.start_location
-            e[:3] = bone.end_location 
-            s_translated = (M @ s)[:3]
-            e_translated = (M @ e)[:3]
-            
-            final_bone_locations[2*i] = s_translated
-            final_bone_locations[2*i + 1] = e_translated
+        final_bone_locations = self.compute_bone_locations(abs_rot_quat, abs_trans)
         
         # ---------------------------------------------------------------------
         # Return the data with the requested settings
