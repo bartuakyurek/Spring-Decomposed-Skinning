@@ -387,7 +387,7 @@ class Skeleton():
         assert bone_idx < len(self.rest_bones), f">> Invalid bone index {bone_idx}. Please select an index less than {len(self.rest_bones)}"
         return self.rest_bones[bone_idx]
     
-    def get_rest_bone_locations(self, exclude_root):
+    def get_rest_bone_locations(self, exclude_root, indices=None):
         """
         Get the bone joint locations for the entire skeleton. Note that this is
         not the same as SMPL joint locations. In this skeleton, every bone has
@@ -407,11 +407,13 @@ class Skeleton():
             list of joint locations that are both endpoints of each bone. 
             so there are #n_bones * 2 endpoints in the returned list
         """
+        if indices is None: indices = np.arange(0, len(self.rest_bones), dtype=int)
         bone_endpoints = []
-        for bone in self.rest_bones:
+        for i in indices:
+            bone = self.rest_bones[i]
             if exclude_root and bone.parent is None:
                 continue # Skip the root node
-                
+            
             bone_endpoints.append(bone.start_location)
             bone_endpoints.append(bone.end_location)
             
