@@ -20,7 +20,7 @@ See https://igl.ethz.ch/projects/ARAP/svd_rot.pdf for the implementation details
 # ================================================================================================================
 
 import numpy as np
-from sanity_check import __check_equality, __equate_shapes
+from sanity_check import _assert_equality
 from global_vars import _SPACE_DIMS_
 
 # ================================================================================================================
@@ -75,7 +75,7 @@ def get_centroid(point_coords, weights):
     weighted_point_sum = point_coords.T @ weights
     
     sanity_check = __naive_weighted_sum(point_coords, weights)
-    __check_equality(sanity_check, weighted_point_sum)
+    _assert_equality(sanity_check, weighted_point_sum)
     
     centroid = weighted_point_sum / total_weights
     assert centroid.shape == (_SPACE_DIMS_, )
@@ -83,7 +83,26 @@ def get_centroid(point_coords, weights):
     return centroid
 
 def get_optimal_rigid_motion(P, Q, W):
+    """
     
+
+    Parameters
+    ----------
+    P : TYPE
+        DESCRIPTION.
+    Q : TYPE
+        DESCRIPTION.
+    W : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    Rot : np.ndarray
+        Rotation matrix has shape (3, 3)
+    trans : np.ndarray
+        Translation vector has shape (3,)
+
+    """
     n_points, n_dims = __check_icp_set_shapes(P, Q, W)
     assert n_dims == _SPACE_DIMS_, f"Number of dimensions in given set must be equal to {_SPACE_DIMS_} in {_SPACE_DIMS_}D setting. (See _SPACE_DIMS_ declaration)"  
     if W.shape == (n_points, 1): W = W.squeeze()
@@ -108,7 +127,7 @@ def get_optimal_rigid_motion(P, Q, W):
     # S is the coveriance matrix
     S = X.T @ (W_diag @ Y) 
     sanity_check = X_col_major @ W_diag @ Y_col_major.T # Corresponds to matrix dimensions on notes 
-    __check_equality(S, sanity_check)
+    _assert_equality(S, sanity_check)
     
     # Step 4: Compute the SVD and the optimal rotation
     U, Sigma, Vh = np.linalg.svd(S, full_matrices=True)
@@ -119,27 +138,17 @@ def get_optimal_rigid_motion(P, Q, W):
     
     S_sanity = U @ (np.diag(Sigma) @ Vh)
     assert S_sanity.shape == S.shape, f"Sanity Check Failed! SVD Reconstructed matrix has shape {S_sanity.shape}, expected {S.shape}"
-    __check_equality(S[0], S_sanity[0])
-    __check_equality(S[1], S_sanity[1])
-    __check_equality(S[2], S_sanity[2])
-    
+    _assert_equality(S[0], S_sanity[0])
+    _assert_equality(S[1], S_sanity[1])
+    _assert_equality(S[2], S_sanity[2])
     
     # What np.linalg.svd returns, is the transposed of what we need in step 4 in the notes.
-    V = Vh.T
-    
+    V = Vh.T 
     det_vu = np.linalg.det(V @ U.T)
     I = np.eye(n_dims)
-    #I = np.ones((n_dims, n_dims))
     I[-1, -1] = det_vu
     Rot = (V @ I) @ U.T
    
-    #if det_vu < 0:
-        #[U,S,V] = svd(R)
-        #multiply 3rd column of V by -1
-    #    print("INFO: Negative determinant.")
-    #    V[:,-1] *= -1
-    #    R = V @ I @ U.T
-    
     # Step 5: Compute the optimal translation
     trans = Q_centroid - (Rot @ P_centroid)
 
