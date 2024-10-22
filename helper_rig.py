@@ -120,18 +120,14 @@ class HelperBonesHandler:
                                                  for {n_helper} jiggle bones."
         
     
-    def get_absolute_transformations(self, theta, trans, degrees):
+    def get_absolute_transformations(self, posed_locations):
         """
         
-
         Parameters
         ----------
-        theta : TYPE
-            DESCRIPTION.
-        trans : TYPE
-            DESCRIPTION.
-        degrees : TYPE
-            DESCRIPTION.
+        # TOOD: please make your data structure consistent. posed_locations
+        has shape (n_bones * 2)... instead it can have (n_bones, 2) shape
+        for readability.
 
         Returns
         -------
@@ -140,8 +136,7 @@ class HelperBonesHandler:
         abs_trans: np.ndarray
             3D vectors for absolute translation
         """        
-        # TOOD: please make your data structure consistent.
-        posed_locations = self.skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=False)
+        
         n_bones = len(self.skeleton.rest_bones)
         
         source_points = np.empty((3,3))
