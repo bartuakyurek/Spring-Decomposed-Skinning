@@ -46,8 +46,8 @@ pose = poses.igl_arm_pose
 # Declare parameters
 # ----------------------------------------------------------------------------
 MODE = "Dynamic" #"Rigid" or "Dynamic" TODO: could you use more robust way to set it?
-FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
-POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length 
+POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 N_REPEAT = 10
@@ -144,6 +144,8 @@ def render_loop():
                 else:
                     posed_locations = skinning.get_skel_points(helper_rig, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
                
+                # WARNING: If there's scaling in the bones, these transformations will not handle it! 
+                # So it works under FIXED_SCALE = True case.
                 abs_rot_quat, abs_trans = helper_rig.get_absolute_transformations(posed_locations)
                 loc = test_skeleton.compute_bone_locations(abs_rot_quat, abs_trans)
                 if frame_idx == 1: print(">> Difference: ", np.linalg.norm(loc-posed_locations))
