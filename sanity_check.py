@@ -54,7 +54,8 @@ def _is_equal(first_vec, second_vec, tolerance=_TOLERANCE_):
 
 def _assert_equality(first_set, second_set, tolerance=_TOLERANCE_):
     # Used as a sanity check for naive vs. fast implementations of the same linear algebra operations.
-    first_set, second_set = _equate_shapes(first_set, second_set)
+    # The line above introduces too much hassle 
+    #first_set, second_set = _equate_shapes(first_set, second_set)
     assert first_set.shape == second_set.shape, f"Two sets must have equal shapes. Provided are {first_set.shape} and {second_set.shape}"
     
     diff = first_set - second_set
