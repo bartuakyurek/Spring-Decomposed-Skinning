@@ -145,10 +145,10 @@ def render_loop():
                 abs_rot_quat = abs_rot_quat # TODO: get rid of root bone convention
                 abs_trans = abs_trans       # TODO: get rid of root bone convention
                 loc = skeleton.compute_bone_locations(abs_rot_quat, abs_trans)
-    
-                skel_mesh_points = loc[2:]
-                
-                #skel_mesh_points = skinning.get_skel_points(skeleton, theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT, combine_points=True)
+                ground_truth = skinning.get_skel_points(skeleton, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
+                print(">> Difference: ", np.linalg.norm(loc-ground_truth))
+               
+                skel_mesh_points = loc[2:] # TODO: get rig of root bone convention
                 assert skel_mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)
                 
                 skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.
