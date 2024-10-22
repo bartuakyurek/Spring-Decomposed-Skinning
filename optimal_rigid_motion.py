@@ -9,6 +9,13 @@ i.e. a spatial transformation is applied to P1, the transformed P1' is a better
 fit for the P2 than original P1. If P2 is the rigidly transformed version of
 P1, this transformation directly maps P1 --> P2.
 
+Note that it doesn't necessarily mean the source will be snapped on the target.
+However, if the target set is indeed a rigidly transformed version of the
+source set, this file should return one to one correspondence.
+
+[!] WARNING: optimal rigid motion works best when the point sets have at 
+least 3 points. It may fail with sets with 2 points.
+
 It's based on the As Rigid As Possible deformation's SVD based implementation.
 See https://igl.ethz.ch/projects/ARAP/svd_rot.pdf for the implementation details.
 
