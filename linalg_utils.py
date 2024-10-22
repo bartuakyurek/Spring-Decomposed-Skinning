@@ -7,7 +7,59 @@ Created on Fri Sep 27 13:15:07 2024
 """
 import torch
 import numpy as np
+from numpy import linalg as LA
 from scipy.spatial.transform import Rotation
+
+
+def min_distance(point, line_segment):
+    """
+    Get the shortest distance from a point to a line segment.
+
+    Parameters
+    ----------
+    point : np.ndarray
+        Vector that corresponds to the 3D location of the point, has shape (3,)
+        or (3,1).
+    line_segment : np.ndarray
+        Array that holds to endpoints of a line segment, has shape (2,3)
+
+    Returns
+    -------
+    shortest_distance : float
+        Shortest distance from given point to given line segment.
+
+    """
+    assert type(point) is np.ndarray, f"Expected point type to be numpy ndarray, got {type(point)}."
+    assert type(line_segment) is np.ndarray, f"Expected line_segment type to be numpy ndarray, got {type(line_segment)}."
+    assert point.shape == (3,) or point.shape == (3,1), f"Expected point to have shape (3,) or (3,1). Got {point.shape}."
+    assert line_segment.shape == (2,3), f"Expected line segment to have shape (2,3) got {line_segment.shape}."
+    
+    head, tail = line_segment
+    shortest_distance = -999
+
+    AB = head - tail   # Vector of the line segment
+    BE = point - head  
+    AE = point - tail
+    
+    AB_BE = np.dot(AB, BE) 
+    AB_AE = np.dot(AB, AE)
+    
+    # Case 1, if closer to head
+    if AB_BE > 0: 
+        shortest_distance = LA.norm(point - head)
+
+    # Case 2, if closer to tail
+    elif AB_AE < 0: 
+        shortest_distance = LA.norm(point - tail)
+    
+    # Case 3, if in between, find the perpendicular distance
+    else:
+        AB_norm = np.dot(AB, AB)        
+        perp = np.cross(AB, AE)
+        perp = perp / AB_norm  
+        shortest_distance = LA.norm(perp)
+    
+    return shortest_distance
 
 def get_midpoint(vec1, vec2):
     #return (vec2 - vec1) * 0.5 + vec1
@@ -78,44 +130,34 @@ def compose_transform_matrix(trans_vec, rot : Rotation ):
     assert np.all(M[-1] == np.array([0.,0.,0.,1.])), f"Unexpected error occured at {M}."
     return M
 
-"""
-def batch_axsang_to_quats(rot):
-   
-    Convert axis-angle rotation representations to quaternions.
-    
-    Parameters
-    ----------
-    rot : np.ndarray
-        axis-angle rotation vector of shape (batch, 3).
 
-    Returns
-    -------
-    np.ndarray
-        quaternions representing the provided axis-angle rotations.
-
-    assert len(rot.shape) <= 2, f"Expected rotation vector to have (3, ) or (batch, 3) shape, got {rot.shape}."
+if __name__ == "__main__":
+    print(">> Testing min_distance()...")
     
-    if len(rot.shape) == 1:
-        assert rot.shape == (3, ), f"Expected rotation vector to have (3, ) or (batch, 3) shape, got {rot.shape}."
-        rot = np.expand_dims(rot, 0)
-        
-    else:
-        assert rot.shape[1] == 3, f"Expected rotation vector to have (3, ) or (batch, 3) shape, got {rot.shape}."
-        assert type(rot) == np.ndarray
-        
-        roll = rot[:, 0] / 2.
-        pitch = rot[:, 1] / 2.
-        yaw = rot[:, 2] / 2.
-        
-        sin = np.sin
-        cos = np.cos
-        stack = np.stack
-       
-        qx = sin(roll) * cos(pitch) * cos(yaw)
-        qy = cos(roll) * sin(pitch) * cos(yaw)
-        qz = cos(roll) * cos(pitch) * sin(yaw)
-        qw = cos(roll) * cos(pitch) * cos(yaw)
-        
-        return stack((qx, qy, qz, qw)).transpose()
-"""
-  
+    # -------------------------------------------------------------------------
+    point = np.array([2., 1.5, 0.])
+    line_segment = np.array([[2., 1., 0.],
+                             [2., 2., 0.]])
+    
+    dist = min_distance(point, line_segment)
+    print("Min distance found: ", dist, " expected: 0.0")
+    
+    # -------------------------------------------------------------------------
+    point = np.array([2., 0.5, 0.])
+    line_segment = np.array([[2., 1., 0.],
+                             [2., 2., 0.]])
+    
+    dist = min_distance(point, line_segment)
+    print("Min distance found: ", dist, " expected: 0.5")
+    # -------------------------------------------------------------------------
+    
+    point = np.array([1., 0.0, 0.])
+    line_segment = np.array([[2., 1., 0.],
+                             [2., 2., 0.]])
+    
+    dist = min_distance(point, line_segment)
+    print("Min distance found: ", dist, f" expected: {np.sqrt(2)}")
+    # -------------------------------------------------------------------------
+    
+    
+    
