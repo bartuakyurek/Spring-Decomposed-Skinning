@@ -21,12 +21,15 @@ dt = 1. / 24
 mass_spring_system = MassSpringSystem(dt)
 
 # Add masses to container and connect them, and fix some of them.
-n_masses =  2
-mass = 1.
-k = 100
-mass_spring_system.add_mass(mass_coordinate=np.array([0,0,0]), mass=mass)
-mass_spring_system.add_mass(mass_coordinate=np.array([0,0.5,0.0]), mass=mass)
-mass_spring_system.connect_masses(0, 1, stiffness=k)
+n_masses = 2
+MASS = 1.
+STIFFNESS = 5e2
+DAMPING = 1.
+ENABLE_GRAVITY=True # If you'll enable gravity, make sure the spring length is not so small
+
+mass_spring_system.add_mass(mass_coordinate=np.array([0,0,0]), mass=MASS, gravity=ENABLE_GRAVITY)
+mass_spring_system.add_mass(mass_coordinate=np.array([0.4,0,0.0]), mass=MASS, gravity=ENABLE_GRAVITY)
+mass_spring_system.connect_masses(0, 1, stiffness=STIFFNESS, damping=DAMPING)
 mass_spring_system.fix_mass(0)
     
 # Add masses with their initial locations to PyVista Plotter
@@ -47,7 +50,7 @@ def callback(step):
         print(">> Simulation started.")
         print(f">> {step} Force applied.")
         SELECTED_MASS = 1 
-        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.2,0.3,0.0]))
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.,0.0]))
         
     if ((step+1) % 50) == 0:
         print(">> Step ", step)
@@ -66,12 +69,12 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(dt * 1000) 
-n_simulation_steps = 200
+n_simulation_steps = 600
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 
 plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)
-plotter.camera_position = 'xz' 
-
+plotter.camera_position = 'xz'
+plotter.camera.view_angle = 90.0
 plotter.show()
 
 

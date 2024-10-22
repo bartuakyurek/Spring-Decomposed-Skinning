@@ -12,49 +12,14 @@ import numpy as np
 import pyvista as pv
 
 import __init__
-from src.skeleton import Skeleton
+from src.utils.linalg_utils import lerp
 from src.helper_handler import HelperBonesHandler
-from src.render.pyvista_render_tools import add_skeleton
 from src.global_vars import IGL_DATA_PATH, RESULT_PATH
+from src.render.pyvista_render_tools import add_skeleton, add_mesh
+from src.skeleton import Skeleton, create_skeleton, add_helper_bones
 
 # ---------------------------------------------------------------------------- 
-# Declare helper functions
-# ---------------------------------------------------------------------------- 
-# TODO: Could we move these functions to skeleton class so that every other test
-# can utilize them?
-def create_skeleton(joint_locations, kintree):
-    test_skeleton = Skeleton(root_vec = joint_locations[0])
-    for edge in kintree:
-         parent_idx, bone_idx = edge
-         test_skeleton.insert_bone(endpoint = joint_locations[bone_idx], 
-                                   parent_idx = parent_idx)   
-    return test_skeleton
-
-def add_helper_bones(test_skeleton, 
-                     helper_bone_endpoints, 
-                     helper_bone_parents,
-                     offset_ratio=0.0, 
-                     startpoints=[]):
-    
-    n_helper = len(helper_bone_parents)
-    if len(startpoints)==0: startpoints = np.repeat([None],n_helper)
-    
-    helper_idxs = []
-    for i in range(n_helper):
-        bone_idx = test_skeleton.insert_bone( endpoint = helper_bone_endpoints[i],
-                                              parent_idx = helper_bone_parents[i],
-                                              offset_ratio = offset_ratio,
-                                              startpoint = startpoints[i]
-                                              )
-        helper_idxs.append(bone_idx)
-    return helper_idxs
-
-def lerp(arr1, arr2, ratio):
-    # TODO: Please make it more robust? Like asserting array shapes etc...
-    return ((1.0 - ratio) * arr1) + (ratio * arr2)
-
-# ---------------------------------------------------------------------------- 
-# Set skeletal animation data
+# Set skeletal animation data (TODO: Can we do it in another script and retrieve the data with 1-2 lines?)
 # ---------------------------------------------------------------------------- 
 TGF_PATH = IGL_DATA_PATH + "arm.tgf"
 joint_locations, kintree, _, _, _, _ = igl.read_tgf(TGF_PATH)
@@ -67,11 +32,15 @@ pose = np.array([
                  [0.,0.,0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
+                 [0.,0.,0.],
+                 [0.,0.,0.],
                 ],
                 [
                  [0.,0.,0.],
                  [0.,0.,0.],
                  [0., 10., 40.],
+                 [0.,0.,0.],
+                 [0.,0.,0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
@@ -83,14 +52,16 @@ pose = np.array([
                  [0.,0.,0.],
                  [0.,0.,0.],
                  [0.,0.,0.],
+                 [0.,0.,0.],
+                 [0.,0.,0.],
                 ],
                 ])
 
-MODE = "Dynamic" #"Rigid" or "Dynamic"
+MODE = "Dynamic " #"Rigid" or "Dynamic"
 
 FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
-POINT_SPRING = True 
-EXCLUDE_ROOT = True
+POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 
 N_REPEAT = 10
@@ -112,14 +83,30 @@ helper_bone_endpoints = np.array([ joint_locations[PARENT_IDX] + [0.0, 0.2, 0.0]
 helper_bone_parents = [PARENT_IDX]
 
 test_skeleton = create_skeleton(joint_locations, kintree)
-helper_idxs = add_helper_bones(test_skeleton, helper_bone_endpoints, 
-                                     helper_bone_parents,
-                                     offset_ratio=0.5,
-                                     #startpoints=helper_bone_endpoints-1e-6
-                                     )
+helper_idxs = add_helper_bones(test_skeleton, 
+                               helper_bone_endpoints, 
+                               helper_bone_parents,
+                               offset_ratio=0.5,
+                               #startpoints=helper_bone_endpoints-1e-6
+                               )
 
+# Add helpers to the tip of the previously added helpers 
+another_helper_idxs = add_helper_bones(test_skeleton,
+                                       helper_bone_endpoints * 1.25, 
+                                       helper_bone_parents = helper_idxs,
+                                       offset_ratio=0.0,
+                                       )
+# TODO: This wasn't the way we supposed to add helpers. Can we change it to a single call?
+another_helper_idxs2 = add_helper_bones(test_skeleton,
+                                       helper_bone_endpoints * 2, 
+                                       helper_bone_parents = another_helper_idxs,
+                                       offset_ratio=0.0,
+                                       )
+# TODO: Again, can we change the adding of the helpers a single call by declaring
+#  the additional data manually in another script?
+all_helper_idxs = helper_idxs + another_helper_idxs + another_helper_idxs2
 helper_rig = HelperBonesHandler(test_skeleton, 
-                                helper_idxs,
+                                all_helper_idxs,
                                 mass          = MASS, 
                                 stiffness     = STIFFNESS,
                                 damping       = DAMPING,
@@ -152,11 +139,29 @@ line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 # (note that you need to re-run other skeleton tests)
 
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPING}-mds{MASS_DSCALE}-sds{SPRING_DSCALE}.mp4")
 
 n_poses = pose.shape[0]
 trans = None # TODO: No relative translation yet...
 
+# ---------------------------------------------------------------------------------
+# Helper routine to obtain posed mesh vertices
+# ---------------------------------------------------------------------------------
+def _get_skel_points(mode, combine_points=True):
+    if mode == "Rigid":
+        rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
+        skel_mesh_points = rigid_bone_locations
+    else:
+        simulated_bone_locations = helper_rig.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
+        skel_mesh_points = simulated_bone_locations
+    
+    if combine_points:
+        skel_mesh_points = np.reshape(skel_mesh_points, (-1,3)) # Combine all the 3D points into one dimension
+    return skel_mesh_points
+
+# ---------------------------------------------------------------------------------
+# Render Loop
+# ---------------------------------------------------------------------------------
+plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPING}-mds{MASS_DSCALE}-sds{SPRING_DSCALE}-fixedscale-{FIXED_SCALE}-pointspring-{POINT_SPRING}.mp4")
 try:
     for rep in range(N_REPEAT):
         for pose_idx in range(n_poses):
@@ -167,21 +172,19 @@ try:
                         theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
                     else:        # Lerp with the last pose for boomerang
                         theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
-                        
-                if MODE == "Rigid":
-                    rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
-                    skel_mesh.points = rigid_bone_locations
-                else:
-                    simulated_bone_locations = helper_rig.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
-                    skel_mesh.points = simulated_bone_locations
-        
-                # Write a frame. This triggers a render.
-                plotter.write_frame()
+                         
+                skel_mesh_points = _get_skel_points(MODE, combine_points=True)
+                assert skel_mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)
+                
+                skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.
+                plotter.write_frame()          # Write a frame. This triggers a render.
 except AssertionError:
     print(">>>> Caught assertion, stopping execution...")
     plotter.close()
     raise
     
-# Closes and finalizes movie
+# ---------------------------------------------------------------------------------
+# Quit the renderer and close the movie.
+# ---------------------------------------------------------------------------------
 plotter.close()
 plotter.deep_clean()

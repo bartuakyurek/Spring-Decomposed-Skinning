@@ -19,37 +19,44 @@ from src.mass_spring import MassSpringSystem
 # -----------------------------------------------------------------------------
 
 data_path = "../data/Mass-Spring/"
-filename = "net" #"horizontal-chain"
+filename = "horizontal-chain"
 obj_path = data_path + filename + ".obj"
 json_path = data_path + filename +".json"
 
-# Open and read the JSON file
-with open(json_path, 'r') as file:
-    data = json.load(file)
-    fixed_pts = data['b']
-    m = data['m']
-    k = data['k']
-   
+# Load the locations and connectivity for mass-springs.
 lattice_mesh = igl.read_obj(obj_path)
 lattice_verts = lattice_mesh[0]
 lattice_faces = lattice_mesh[3]
 
+# Open and read the JSON file for mass-spring parameters.
+with open(json_path, 'r') as file:
+    data = json.load(file)
+    fixed_pts = data['b']
+    k = data['k']
+
 # -----------------------------------------------------------------------------
 # Create masses. Connect masses together. Fixate some of the masses
 # -----------------------------------------------------------------------------
-# Initiate a mass spring system container
-TIME_STEP = 1. / 30 # Time step of 1/24 is too large for the system, make it at least 30 frames per second.
-DAMPING = 5.0       # Setting it 0.0 or more than 25.0 explodes the system.
-SPRING_DSCALE = 1.0 # This is for scaling the spring force, better be set to 1.0 for no scale (it's handy for finetuning sometimes).
-GRAVITY = [0.0, -9.81, 0.0]
+# Declare parameters
+TIME_STEP = 1. / 30  # dt
+MASS = 10.0
+STIFFNESS = 500 # k = 500
+DAMPING = 150.0       # Setting it 0.0 explodes the system.
+MASS_DSCALE = 0.5     # This slows down the system
+SPRING_DSCALE = 5.    # This is for scaling the spring force
+GRAVITY = np.array([0.0, 0.0, -9.81]) 
 
-# Initiate the mass spring system
+# Initiate a mass spring system container
 mass_spring_system = MassSpringSystem(TIME_STEP)
 
 # Add masses at vertex locations
 n_masses = lattice_verts.shape[0]
 for i in range(n_masses):
-    mass_spring_system.add_mass(mass_coordinate=lattice_verts[i], mass=m, gravity=GRAVITY)
+    
+    mass_spring_system.add_mass(mass_coordinate=lattice_verts[i], 
+                                mass=MASS, 
+                                gravity=GRAVITY,
+                                dscale=MASS_DSCALE)
 
 # Add springs at the edges
 for face in lattice_faces:
@@ -58,11 +65,11 @@ for face in lattice_faces:
         # or decrease it < 1.0 if the system is overflowing
         # In this test, try setting it 0.25, you'll see how system overflows slowly 
         mass_spring_system.connect_masses(int(face[f]), int(face[f+1]), 
-                                          stiffness=k, 
-                                          dscale=SPRING_DSCALE,
-                                          damping=DAMPING)
+                                          stiffness=STIFFNESS, 
+                                          dscale=SPRING_DSCALE)
 
 # Fix certain masses' motion
+#mass_spring_system.fix_mass(n_masses-1)
 for idx in fixed_pts:
     mass_spring_system.fix_mass(idx-1)
 
@@ -91,19 +98,25 @@ for spring_mesh in spring_meshes:
 # -----------------------------------------------------------------------------
 def callback(step):
     
-    # Step 1 - Apply forces (if any) and simulate
-    """
+    prev_mass_locations = mass_spring_system.get_mass_locations()
+    
+    # Step 0 - Apply forces (if any) 
     if(step < 1):
         print(">> Simulation started.")
         print(f">> Force applied at step {step}.")
         SELECTED_MASS = 2 
-        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.0,0.01,0.01]))
-    """
-    if ((step+1) % 50) == 0:
-        print(">> Step ", step)
+        mass_spring_system.translate_mass(SELECTED_MASS, np.array([0.,0.,0.]))
         
-    mass_spring_system.simulate()
-
+    if ((step+1) % 50) == 0:
+        print(">> Step ", step+1)
+        
+    # Step 1 - Simulate the system
+    try:
+        mass_spring_system.simulate()
+    except AssertionError:
+        plotter.close()
+        raise
+        
     # Step 2 - Get current mass positions and update rendered particles
     cur_mass_locations = mass_spring_system.get_mass_locations()
     mass_point_cloud.points = cur_mass_locations 
@@ -119,12 +132,11 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(TIME_STEP * 1000) 
-n_simulation_steps = 400
+n_simulation_steps = 500
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 
 plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)
-plotter.camera_position = 'xy'
-plotter.camera.view_angle = 30.0
+plotter.camera_position = 'xz'
 plotter.show()
 
 

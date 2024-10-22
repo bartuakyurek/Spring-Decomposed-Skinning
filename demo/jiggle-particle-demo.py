@@ -9,7 +9,7 @@ import numpy as np
 import pyvista as pv
 
 import __init__
-from mass_spring import MassSpringSystem
+from src.mass_spring import MassSpringSystem
         
 # -------------------------------- MAIN ---------------------------------------
 # -----------------------------------------------------------------------------

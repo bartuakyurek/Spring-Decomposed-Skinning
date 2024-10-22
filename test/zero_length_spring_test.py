@@ -5,7 +5,6 @@ Created on Fri Oct  4 06:06:11 2024
 
 @author: bartu
 """
-import igl
 import numpy as np
 import pyvista as pv
 
@@ -22,31 +21,20 @@ dt = 1. / 24
 mass_spring_system = MassSpringSystem(dt)
 
 # Add masses at vertex locations
-sphere_mesh = pv.Sphere(radius=1.0)
-vertices = sphere_mesh.points
-faces = sphere_mesh.regular_faces
-edges = igl.edges(faces)
-for i in range(len(vertices)):
+spring_location = np.array([0.,0.,0.])
+for i in range(2):
     mass_weight = 1
-    mass_spring_system.add_mass(mass_coordinate=vertices[i], mass=mass_weight)
-    
-    
-for i in range(len(vertices)):
-    mass_spring_system.add_mass(mass_coordinate=vertices[i], mass=mass_weight) 
-    #mass_spring_system.fix_mass(i)
-    # These masses should be invisible 
-    # TODO: add invisibility option to second mass 
+    mass_spring_system.add_mass(mass_coordinate=spring_location, mass=mass_weight)
 
-# Connect every vertex to zero length spring
-for i in range(len(vertices)):
-    mass_spring_system.connect_masses(int(i), int(len(vertices)+i), stiffness=100)
-    
-    
+# Connect masses with springs and
+# fix either one of the masses connected to zero-length spring
+mass_spring_system.connect_masses(int(0), int(1), stiffness=100)
+mass_spring_system.fix_mass(0)
 
-# Apply rigid transformation (rotation, translation) to the whole mesh
-t = np.array([0.4, 0.1, -0.2])
-for i in range(len(vertices)):
-    mass_spring_system.translate_mass(i, t)
+
+# Apply rigid transformation (rotation, translation) to fixed mass
+t = np.array([0.1, 0.1, -0.2])
+#mass_spring_system.translate_mass(0, t)
 
 
 # -----------------------------------------------------------------------------
@@ -58,7 +46,7 @@ RENDER = True
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
 
 initial_mass_locations = mass_spring_system.get_mass_locations()
-mass_point_cloud = pv.PolyData(initial_mass_locations, faces=sphere_mesh.faces)
+mass_point_cloud = pv.PolyData(initial_mass_locations)
 _ = plotter.add_mesh(mass_point_cloud, render_points_as_spheres=True,
                  show_vertices=True)
  
@@ -75,7 +63,16 @@ def callback(step):
     if ((step+1) % 50) == 0:
         print(">> Step ", step+1)
         
-    mass_spring_system.simulate()
+    FORCE_SCALE = 1. / 50 # Scale the np.random to apply a small force
+    if (step) % 25 == 0 and step < 250:
+        print(">> Force applied...")
+        mass_spring_system.translate_mass(0, np.random.randn(3) * FORCE_SCALE)
+
+    SIMULATION_TYPE = 0    # TODO: Refactor this.
+    if SIMULATION_TYPE == 0:
+        mass_spring_system.simulate()
+    else:
+     mass_spring_system.simulate_zero_length()
 
     # Step 2 - Get current mass positions and update rendered particles
     cur_mass_locations = mass_spring_system.get_mass_locations()
@@ -92,7 +89,7 @@ def callback(step):
 # Note that "duration" might be misleading, it is not the duration of callback but 
 # rather duration of timer that waits before calling the callback function.
 dt_milliseconds = int(dt * 1000) 
-n_simulation_steps = 50
+n_simulation_steps = 1500
 plotter.add_timer_event(max_steps=n_simulation_steps, duration=dt_milliseconds, callback=callback)
 
 plotter.enable_mesh_picking(left_clicking=True)#, pickable_window=False)

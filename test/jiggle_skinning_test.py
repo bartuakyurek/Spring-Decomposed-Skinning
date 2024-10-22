@@ -12,137 +12,46 @@ import numpy as np
 import pyvista as pv
 
 import __init__
-from src.skeleton import Skeleton
+from data import poses
+from src import skinning
+from src.utils.linalg_utils import lerp
 from src.helper_handler import HelperBonesHandler
-from src.render.pyvista_render_tools import add_skeleton
 from src.global_vars import IGL_DATA_PATH, RESULT_PATH
-
-# ---------------------------------------------------------------------------- 
-# Declare helper functions
-# ---------------------------------------------------------------------------- 
-# TODO: Could we move these functions to skeleton class so that every other test
-# can utilize them?
-def create_skeleton(joint_locations, kintree):
-    test_skeleton = Skeleton(root_vec = joint_locations[0])
-    for edge in kintree:
-         parent_idx, bone_idx = edge
-         test_skeleton.insert_bone(endpoint = joint_locations[bone_idx], 
-                                   parent_idx = parent_idx)   
-    return test_skeleton
-
-# TODO: this could be a general function to add multiple bones because 
-# there's nothing specific about helper bones here.
-def add_helper_bones(test_skeleton, 
-                     helper_bone_endpoints, 
-                     helper_bone_parents,
-                     offset_ratio=0.0, 
-                     startpoints=[]):
-    """
-    Add one or multiple helper bones to an existing skeleton. 
-    
-    Parameters
-    ----------
-    test_skeleton : Skeleton
-        An existing skeleton to be modified via adding new bones.
-    helper_bone_endpoints : np.ndarray or list
-        Holds the 3D vectors that determines the location of helper bone tips.
-    helper_bone_parents : list
-        List of integers that indicate the index of the parent bones.
-    offset_ratio : float, optional
-        Determines the location of the helper bone with respect to its parent. 
-        When set to 1.0, the bone starts at the start point of its parent,
-        when set to 0.0 it starts at the tip of the parent. In between,
-        the bone is located somewhere along the parent bone. Note that this
-        option is not regarded if an explicit startpoint is given.
-        The default is 0.0, i.e. the bone starts at the tip of the parent.
-    startpoints : list, optional
-        List of 3D vectors that determines the starting locations of the 
-        helper bones. The default is [].
-
-    Returns
-    -------
-    helper_idxs : list
-        List of integers that are the indices of helper bones in the existing 
-        skeleton.
-    """
-    assert offset_ratio <= 1.0 and offset_ratio >= 0.0, f">>  Excpected offset_ratio to be in range [0, 1], got {offset_ratio}."
-    
-    n_helper = len(helper_bone_parents)
-    if len(startpoints)==0: startpoints = np.repeat([None],n_helper)
-    
-    helper_idxs = []
-    for i in range(n_helper):
-        bone_idx = test_skeleton.insert_bone( endpoint = helper_bone_endpoints[i],
-                                              parent_idx = helper_bone_parents[i],
-                                              offset_ratio = offset_ratio,
-                                              startpoint = startpoints[i]
-                                              )
-        helper_idxs.append(bone_idx)
-    return helper_idxs
-
-def lerp(arr1, arr2, ratio):
-    # TODO: Please make it more robust? Like asserting array shapes etc...
-    return ((1.0 - ratio) * arr1) + (ratio * arr2)
+from src.render.pyvista_render_tools import add_skeleton, add_mesh
+from src.skeleton import Skeleton, create_skeleton, add_helper_bones
 
 # ---------------------------------------------------------------------------- 
 # Set skeletal animation data (TODO: Can we do it in another script and retrieve the data with 1-2 lines?)
 # ---------------------------------------------------------------------------- 
 TGF_PATH = IGL_DATA_PATH + "arm.tgf"
+OBJ_PATH = IGL_DATA_PATH + "arm.obj"
+DMAT_PATH = IGL_DATA_PATH + "arm-weights.dmat"
 joint_locations, kintree, _, _, _, _ = igl.read_tgf(TGF_PATH)
+arm_verts_rest, _, _, arm_faces, _, _ =  igl.read_obj(OBJ_PATH)
+pose = poses.igl_arm_pose
 
-pose = np.array([
-                [
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0., 0., 0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                ],
-                [
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0., 10., 40.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                ],
-                [
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0., 0., 0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                 [0.,0.,0.],
-                ],
-                ])
-
-MODE = "Dynamic " #"Rigid" or "Dynamic"
-
+# ----------------------------------------------------------------------------
+# Declare parameters
+# ----------------------------------------------------------------------------
+MODE = "Dynamic" #"Rigid" or "Dynamic" TODO: could you use more robust way to set it?
 FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-
 N_REPEAT = 10
 N_REST = N_REPEAT - 5
 FRAME_RATE = 24 #24
 TIME_STEP = 1./FRAME_RATE  
-
 MASS = 1.
 STIFFNESS = 300.
 DAMPING = 50.            
 MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
+ENVELOPE = 10. # For weights
+
 # ---------------------------------------------------------------------------- 
-# Create rig and set helper bones
+# Create rig and add helper bones
 # ---------------------------------------------------------------------------- 
 PARENT_IDX = 2
 helper_bone_endpoints = np.array([ joint_locations[PARENT_IDX] + [0.0, 0.2, 0.0] ])
@@ -189,6 +98,7 @@ helper_rig = HelperBonesHandler(test_skeleton,
 # Create plotter 
 # ---------------------------------------------------------------------------- 
 RENDER = True
+OPACITY = 0.5
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
 plotter.camera_position = 'zy'
 plotter.camera.azimuth = 90
@@ -197,40 +107,58 @@ plotter.camera.view_angle = 90 # This works like zoom actually
 # ---------------------------------------------------------------------------- 
 # Add skeleton mesh based on T-pose locations
 # ---------------------------------------------------------------------------- 
-n_bones = len(test_skeleton.rest_bones)
-rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
-line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 # TODO: rename get_rest_bone_locations() to get_rest_bones() that will also return
 # line_segments based on exclude_root variable
 # (note that you need to re-run other skeleton tests)
+n_bones = len(test_skeleton.rest_bones)
+rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
+line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPING}-mds{MASS_DSCALE}-sds{SPRING_DSCALE}.mp4")
+arm_mesh = add_mesh(plotter, arm_verts_rest, arm_faces, opacity=OPACITY)
 
-n_poses = pose.shape[0]
-trans = None # TODO: No relative translation yet...
-
-# ---------------------------------------------------------------------------------
-# Helper routine to obtain posed mesh vertices
-# ---------------------------------------------------------------------------------
-def _get_mesh_points(mode, combine_points=True):
-    if mode == "Rigid":
-        rigid_bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
-        mesh_points = rigid_bone_locations
-    else:
-        simulated_bone_locations = helper_rig.pose_bones(theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT)
-        mesh_points = simulated_bone_locations
+# ---------------------------------------------------------------------------- 
+# Bind T-pose vertices to unposed skeleton
+# ---------------------------------------------------------------------------- 
+weights = igl.read_dmat(DMAT_PATH)     # Read the weights for existing rigid rig
+n_verts, n_orig_bones = weights.shape
+n_helpers = n_bones - n_orig_bones - 1 # TODO: Minus one is for the invisible root bone, 
+                                       #       we better remove this feature in order not to complicatte things 
+if MODE == "Rigid":
+    helper_weights = np.zeros((n_verts, n_helpers))
+elif MODE == "Dynamic":
+    helper_bone_rest_locations = test_skeleton.get_rest_bone_locations(exclude_root=False, indices=all_helper_idxs)
+    helper_weights = skinning.bind_weights(arm_verts_rest, helper_bone_rest_locations, envelope=ENVELOPE)
+    print("WARNING: you're binding weights for every bone, not just helpers... please address this issue")
+    # TODO: you can sanity check your weights by _assert_normalized_weights() here as well
+    # but you may not want normalized weights for entire skeleton...
+    # TODO: we could put a scalar to tune the weights of the helper bones weights
+    #       especially if we're computing weights separately for helper bones.
+    # Note that since we're aiming a framework to be on top of the existing animation
+    # we don't want to change the existing rig's weights anyway. So it's better to
+    # keep the weights separate even if they aren't add up to 1.0
+else:
+    print(f">> ERROR: Unexpected skinning mode {MODE}")
+    raise ValueError
     
-    if combine_points:
-        mesh_points = np.reshape(mesh_points, (-1,3)) # Combine all the 3D points into one dimension
-    return mesh_points
-
+assert helper_weights.shape == (n_verts, n_helpers), f"Helper bones weights are expected to have shape {(n_verts, n_helpers)}, got {helper_weights.shape}."
+weights = np.append(weights, helper_weights, axis=-1)
+    
 # ---------------------------------------------------------------------------------
 # Render Loop
 # ---------------------------------------------------------------------------------
+plotter.open_movie(RESULT_PATH + f"/helper-jiggle-m{MASS}-k{STIFFNESS}-kd{DAMPING}-mds{MASS_DSCALE}-sds{SPRING_DSCALE}-fixedscale-{FIXED_SCALE}-pointspring-{POINT_SPRING}.mp4")
+n_poses = pose.shape[0]
+trans = np.zeros((n_bones, 3))
 try:
-    for rep in range(N_REPEAT):
-        for pose_idx in range(n_poses):
+    # TODO: refactor this render loop such that we don't have to check N_REST from the
+    # inside, rather we'll just render static image once we're done with animation
+    # (or we can insert more rest poses via editing the pose array)
+    # TODO: refactor the lerp() to be out of render loop such that poses will be precomputed
+    # for each frame, we'll only retrieve the current pose daha and skinning data for rendering
+    # these two refactoring should remove a conditional and a loop 
+    for rep in range(N_REPEAT):         # This can be refactored too as it's not related to render
+        for pose_idx in range(n_poses): # Loop keyframes, this could be refactored.
             for frame_idx in range(FRAME_RATE):
                 
                 if rep < N_REST:  
@@ -238,11 +166,23 @@ try:
                         theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
                     else:        # Lerp with the last pose for boomerang
                         theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
-                         
-                mesh_points = _get_mesh_points(MODE, combine_points=True)
-                assert mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)
                 
-                skel_mesh.points = mesh_points # Update mesh points in the renderer.
+                if MODE=="Rigid":
+                    posed_locations = skinning.get_skel_points(test_skeleton, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
+                    abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
+
+                else:
+                    posed_locations = skinning.get_skel_points(helper_rig, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
+                    print("WARNING: Helper bone transformations aren't computed yet...")
+                    abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
+                    #abs_rot_quat, abs_trans = helper_rig.get_absolute_transformations(posed_locations)
+
+                skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
+                mesh_points = skinning.skinning(arm_verts_rest, abs_rot_quat[1:],  abs_trans[1:], weights, skinning_type="LBS")
+                
+                # Set data for renderer
+                arm_mesh.points = mesh_points
+                skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.
                 plotter.write_frame()          # Write a frame. This triggers a render.
 except AssertionError:
     print(">>>> Caught assertion, stopping execution...")
