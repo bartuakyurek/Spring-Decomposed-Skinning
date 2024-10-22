@@ -19,6 +19,10 @@ target set that is the posed skeleton. Every bone in the skeleton constitutes
 from 2 joints. We like to find the mapping for each bone that can take the bone
 from T-pose and locate it to its posed locations.
 
+Note that if you set FIXED_SCALE = False, the bones will be disconnected because
+transformations do not handle scaling of the bones yet. This effect is best observed
+on POINT_SPRINGS = False case, i.e. when the whole bone is a spring.
+
 Created on Thu Oct 10 14:34:34 2024
 @author: bartu
 """
@@ -147,10 +151,11 @@ def render_loop():
                 # WARNING: If there's scaling in the bones, these transformations will not handle it! 
                 # So it works under FIXED_SCALE = True case.
                 abs_rot_quat, abs_trans = helper_rig.get_absolute_transformations(posed_locations)
-                loc = test_skeleton.compute_bone_locations(abs_rot_quat, abs_trans)
-                if frame_idx == 1: print(">> Difference: ", np.linalg.norm(loc-posed_locations))
+                estimated_locations = test_skeleton.compute_bone_locations(abs_rot_quat, abs_trans)
+                diff = np.linalg.norm(estimated_locations - posed_locations)
+                assert diff < 1e-12, f"Expected difference to be less than 1e-12, got {diff}."
                
-                skel_mesh_points = loc[2:] # TODO: get rig of root bone convention
+                skel_mesh_points = estimated_locations[2:] # TODO: get rig of root bone convention
                 assert skel_mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)
                 
                 skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.
