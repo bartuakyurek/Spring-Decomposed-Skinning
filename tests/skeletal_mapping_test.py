@@ -142,11 +142,11 @@ def render_loop():
                 
                 # TODO: we're repeating ourselves, could we separate pose bones and abs T parts?
                 abs_rot_quat, abs_trans = skeleton.get_absolute_transformations(theta, trans, DEGREES)
-                abs_rot_quat = abs_rot_quat[1:] # TODO: get rid of root bone convention
-                abs_trans = abs_trans[1:]       # TODO: get rid of root bone convention
-                
-                
-                skel_mesh_points = skeleton.reproduce_skel(abs_rot_quat, abs_trans)
+                abs_rot_quat = abs_rot_quat # TODO: get rid of root bone convention
+                abs_trans = abs_trans       # TODO: get rid of root bone convention
+                loc = skeleton.compute_bone_locations(abs_rot_quat, abs_trans)
+    
+                skel_mesh_points = loc[2:]
                 
                 #skel_mesh_points = skinning.get_skel_points(skeleton, theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT, combine_points=True)
                 assert skel_mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)
