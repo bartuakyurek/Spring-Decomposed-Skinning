@@ -35,7 +35,7 @@ pose = poses.igl_arm_pose
 # ----------------------------------------------------------------------------
 MODE = "Rigid" #"Rigid" or "Dynamic" TODO: could you use more robust way to set it?
 FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
-POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 N_REPEAT = 10
@@ -155,19 +155,26 @@ try:
                     else:        # Lerp with the last pose for boomerang
                         theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
                 
-                    if MODE == "Rigid": skeleton = test_skeleton
-                    else: skeleton = helper_rig
                 
-                # TODO: we're repeating ourselves, could we separate pose bones and abs T parts?
-                abs_rot_quat, abs_trans = skeleton.get_absolute_transformations(theta, trans, DEGREES)
-                abs_rot_quat = abs_rot_quat[1:] # TODO: get rid of root bone convention
-                abs_trans = abs_trans[1:]       # TODO: get rid of root bone convention
-                mesh_points = skinning.skinning(arm_verts_rest, abs_rot_quat, abs_trans, weights, skinning_type="LBS")
-                arm_mesh.points = mesh_points
-                
-                skel_mesh_points = skinning.get_skel_points(skeleton, theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT, combine_points=True)
+                if MODE=="Rigid":
+                    posed_locations = skinning.get_skel_points(test_skeleton, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
+                else:
+                    posed_locations = skinning.get_skel_points(helper_rig, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
+               
+                abs_rot_quat, abs_trans = helper_rig.get_absolute_transformations(posed_locations)
+                estimated_locations = test_skeleton.compute_bone_locations(abs_rot_quat, abs_trans)
+                diff = np.linalg.norm(estimated_locations - posed_locations)
+                assert diff < 1e-12, f"Expected difference to be less than 1e-12, got {diff}."
+               
+                skel_mesh_points = estimated_locations[2:] # TODO: get rig of root bone convention
                 assert skel_mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)
+                #skel_mesh_points = skinning.get_skel_points(skeleton, theta, trans, degrees=DEGREES, exclude_root=EXCLUDE_ROOT, combine_points=True)
+    
+                # TODO: get rid of root bone convention
+                mesh_points = skinning.skinning(arm_verts_rest, abs_rot_quat[1:],  abs_trans[1:], weights, skinning_type="LBS")
                 
+                # Set data for renderer
+                arm_mesh.points = mesh_points
                 skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.
                 plotter.write_frame()          # Write a frame. This triggers a render.
 except AssertionError:
