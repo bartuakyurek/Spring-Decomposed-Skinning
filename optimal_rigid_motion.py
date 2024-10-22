@@ -82,18 +82,20 @@ def get_centroid(point_coords, weights):
     
     return centroid
 
-def get_optimal_rigid_motion(P, Q, W):
+def get_optimal_rigid_motion(P, Q, W=None):
     """
+    Get optimal rotation and translation from P to Q. 
+    That is, when P is rotated and translated, it'll fit better to Q.
     
-
     Parameters
     ----------
-    P : TYPE
-        DESCRIPTION.
-    Q : TYPE
-        DESCRIPTION.
-    W : TYPE
-        DESCRIPTION.
+    P : np.ndarray
+        Source point set has shape (n_points, n_dims) for P->Q mapping.
+    Q : np.ndarray
+        Target point set has shape (n_points, n_dims) for P->Q mapping.
+    W : np.ndarray (optional)
+        Weight matrix of shape (n_points) that is the weighting between P->Q
+        mapping.
 
     Returns
     -------
@@ -103,6 +105,8 @@ def get_optimal_rigid_motion(P, Q, W):
         Translation vector has shape (3,)
 
     """
+    if W is None: W=np.ones(P.shape[0])
+    
     n_points, n_dims = __check_icp_set_shapes(P, Q, W)
     assert n_dims == _SPACE_DIMS_, f"Number of dimensions in given set must be equal to {_SPACE_DIMS_} in {_SPACE_DIMS_}D setting. (See _SPACE_DIMS_ declaration)"  
     if W.shape == (n_points, 1): W = W.squeeze()
