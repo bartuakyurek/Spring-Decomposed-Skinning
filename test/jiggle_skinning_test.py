@@ -29,7 +29,10 @@ from src.helper_handler import HelperBonesHandler
 from src.global_vars import IGL_DATA_PATH, RESULT_PATH
 from src.render.pyvista_render_tools import add_skeleton, add_mesh
 from src.skeleton import Skeleton, create_skeleton, add_helper_bones
-from src.render.pyvista_render_tools import add_mesh, add_skeleton, set_mesh_color_scalars
+from src.render.pyvista_render_tools import (add_mesh, 
+                                             add_skeleton, 
+                                             set_mesh_color_scalars,
+                                             set_mesh_color)
 
 # ---------------------------------------------------------------------------- 
 # Set skeletal animation data (TODO: Can we do it in another script and retrieve the data with 1-2 lines?)
@@ -160,7 +163,7 @@ weights = np.append(weights, helper_weights, axis=-1)
 # Set up Key Press Actions
 # ---------------------------------------------------------------------------------
 # When "B" key is pressed, show colors of the corresponding bone's weights
-selected_bone_idx = 0
+selected_bone_idx = -1
 def change_colors():
     global selected_bone_idx
     global n_bones
@@ -172,11 +175,12 @@ def change_colors():
         print("INFO: Selected bone ", selected_bone_idx)
         print(">> Call set mesh colors...")
         selected_weights = weights[:,selected_bone_idx]
-        set_mesh_color_scalars(plotter, arm_mesh_actor,arm_mesh, selected_weights)  
+        set_mesh_color_scalars(arm_mesh, selected_weights)  
 
 def deselect_bone():
     global selected_bone_idx
     selected_bone_idx = -1
+    set_mesh_color(arm_mesh, [0.8, 0.8, 1.0])
     print(">> INFO: Bone deselected.")
     return
 
