@@ -2,8 +2,18 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is created to test the Skeleton class and it's forward kinematics
-to see if the kinematics are implemented correctly.
+This file is created to tranfer jiggling bones' transformations to the 
+surface via skinning (LBS by default).
+
+
+Note: You first need to interact with the plotter via mouse click before
+you can call key press events.
+
+Available key presses
+---------------------
+B : Select a bone and show its binding colors on the surface
+
+
 Created on Thu Oct 10 14:34:34 2024
 @author: bartu
 """
@@ -19,6 +29,7 @@ from src.helper_handler import HelperBonesHandler
 from src.global_vars import IGL_DATA_PATH, RESULT_PATH
 from src.render.pyvista_render_tools import add_skeleton, add_mesh
 from src.skeleton import Skeleton, create_skeleton, add_helper_bones
+from src.render.pyvista_render_tools import add_mesh, add_skeleton, set_mesh_color_scalars
 
 # ---------------------------------------------------------------------------- 
 # Set skeletal animation data (TODO: Can we do it in another script and retrieve the data with 1-2 lines?)
@@ -104,6 +115,7 @@ plotter.camera_position = 'zy'
 plotter.camera.azimuth = 90
 plotter.camera.view_angle = 90 # This works like zoom actually
 
+
 # ---------------------------------------------------------------------------- 
 # Add skeleton mesh based on T-pose locations
 # ---------------------------------------------------------------------------- 
@@ -115,7 +127,7 @@ rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=EXCLUDE
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-arm_mesh = add_mesh(plotter, arm_verts_rest, arm_faces, opacity=OPACITY)
+arm_mesh, arm_mesh_actor = add_mesh(plotter, arm_verts_rest, arm_faces, opacity=OPACITY, return_actor=True)
 
 # ---------------------------------------------------------------------------- 
 # Bind T-pose vertices to unposed skeleton
@@ -143,7 +155,35 @@ else:
     
 assert helper_weights.shape == (n_verts, n_helpers), f"Helper bones weights are expected to have shape {(n_verts, n_helpers)}, got {helper_weights.shape}."
 weights = np.append(weights, helper_weights, axis=-1)
+
+# ---------------------------------------------------------------------------------
+# Set up Key Press Actions
+# ---------------------------------------------------------------------------------
+# When "B" key is pressed, show colors of the corresponding bone's weights
+selected_bone_idx = 0
+def change_colors():
+    global selected_bone_idx
+    global n_bones
+    selected_bone_idx += 1
+    if selected_bone_idx >= n_bones-1: # TODO: remove -1 when you get rid of root bone
+        selected_bone_idx = -1
     
+    if selected_bone_idx >= 0:
+        print("INFO: Selected bone ", selected_bone_idx)
+        print(">> Call set mesh colors...")
+        selected_weights = weights[:,selected_bone_idx]
+        set_mesh_color_scalars(plotter, arm_mesh_actor,arm_mesh, selected_weights)  
+
+def deselect_bone():
+    global selected_bone_idx
+    selected_bone_idx = -1
+    print(">> INFO: Bone deselected.")
+    return
+
+plotter.add_key_event("B", change_colors)
+plotter.add_key_event("b", change_colors)
+plotter.add_key_event("N", deselect_bone)
+plotter.add_key_event("n", deselect_bone)
 # ---------------------------------------------------------------------------------
 # Render Loop
 # ---------------------------------------------------------------------------------
@@ -173,7 +213,7 @@ try:
 
                 else:
                     posed_locations = skinning.get_skel_points(helper_rig, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
-                    print("WARNING: Helper bone transformations aren't computed yet...")
+                    #print("WARNING: Helper bone transformations aren't computed yet...")
                     abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
                     #abs_rot_quat, abs_trans = helper_rig.get_absolute_transformations(posed_locations)
 
