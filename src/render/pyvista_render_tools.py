@@ -19,6 +19,24 @@ def _get_padded_edges(edges, n_points_per_edge=2):
 
 
 def set_mesh_color(mesh, color):
+    """
+    Set the mesh vertex colors to a single provided color.
+
+    Parameters
+    ----------
+    mesh : pv.PolyData
+        PyVista mesh whose colors will be updated to a single color.
+    color : list or np.ndarray
+        RGB color where every element is in range [0, 1]
+
+    Returns
+    -------
+    None.
+
+    """
+    assert type(mesh) is pv.PolyData, f"Expected actor to be a PolyData, got {type(mesh)}"
+    assert len(color) == 3, f"Expected color to have length 3, got {len(color)}"
+    assert np.min(color) >= 0.0 and np.max(color) <= 1.0, "Expected colors to be in range [0., 1.]"
     n_verts = len(mesh.points)
     default_color = np.array(color)
     default_color = np.reshape(default_color, (1,3))
