@@ -31,7 +31,7 @@ import numpy as np
 import pyvista as pv
 
 import __init__
-import skinning
+from src import skinning
 from data import poses
 from src.utils.linalg_utils import lerp
 from src.helper_handler import HelperBonesHandler
