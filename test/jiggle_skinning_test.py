@@ -17,6 +17,14 @@ B : Select a bone and show its binding colors on the surface
 Created on Thu Oct 10 14:34:34 2024
 @author: bartu
 """
+# TODO: you can sanity check your weights by _assert_normalized_weights() here as well
+# but you may not want normalized weights for entire skeleton...
+# TODO: we could put a scalar to tune the weights of the helper bones weights
+#       especially if we're computing weights separately for helper bones.
+# Note that since we're aiming a framework to be on top of the existing animation
+# we don't want to change the existing rig's weights anyway. So it's better to
+# keep the weights separate even if they aren't add up to 1.0
+
 import igl
 import numpy as np
 import pyvista as pv
@@ -142,16 +150,20 @@ n_helpers = n_bones - n_orig_bones - 1 # TODO: Minus one is for the invisible ro
 if MODE == "Rigid":
     helper_weights = np.zeros((n_verts, n_helpers))
 elif MODE == "Dynamic":
-    helper_bone_rest_locations = test_skeleton.get_rest_bone_locations(exclude_root=False, indices=all_helper_idxs)
-    helper_weights = skinning.bind_weights(arm_verts_rest, helper_bone_rest_locations, envelope=ENVELOPE)
-    print("WARNING: you're binding weights for every bone, not just helpers... please address this issue")
-    # TODO: you can sanity check your weights by _assert_normalized_weights() here as well
-    # but you may not want normalized weights for entire skeleton...
-    # TODO: we could put a scalar to tune the weights of the helper bones weights
-    #       especially if we're computing weights separately for helper bones.
-    # Note that since we're aiming a framework to be on top of the existing animation
-    # we don't want to change the existing rig's weights anyway. So it's better to
-    # keep the weights separate even if they aren't add up to 1.0
+    #helper_bone_rest_locations = test_skeleton.get_rest_bone_locations(exclude_root=False, indices=all_helper_idxs)
+    #helper_weights = skinning.bind_weights(arm_verts_rest, helper_bone_rest_locations, envelope=ENVELOPE)
+    helper_weights = np.zeros((n_verts, n_helpers))
+    print(">> WARNING: helper weights are initialized to zero.")
+    
+    # Insert loaded bone weights to the helper bone weights for a single bone
+    # This is done manually for now, it should be automatized....
+    with np.load("../data/single-bone-weights-0.npz") as data:
+        w = data["arr_0"]
+        idxs = data["arr_1"]
+    single_bone_weights = np.zeros((n_verts))
+    single_bone_weights[idxs] = w
+    helper_weights[:,-1] = single_bone_weights
+    # end of insert bone weights
 else:
     print(f">> ERROR: Unexpected skinning mode {MODE}")
     raise ValueError
