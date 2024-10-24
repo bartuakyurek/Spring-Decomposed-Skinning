@@ -13,7 +13,7 @@ from scipy.spatial.transform import Rotation
 
 from .skeleton import Skeleton
 from .utils.sanity_check import _assert_normalized_weights
-from .utils.linalg_utils import get_transform_mats, min_distance
+from .utils.linalg_utils import get_transform_mats, min_distance, normalize_weights
 
 # ---------------------------------------------------------------------------------
 # Helper routine to obtain posed mesh vertices
@@ -113,6 +113,12 @@ def bind_weights(mesh_verts, skel_verts, method="Envelope", envelope=10.0):
 def LBS(V, W, abs_rot, abs_trans):
     assert W.shape[0] == V.shape[0], f"Expected weights and verts to have same length at dimension 0, i.e. weights has shape (n_verts, n_bones)\
                                                  and verts has shape (n_verts, 3), got shape {W.shape} and {V.shape}."
+    
+    try:
+        _assert_normalized_weights(W)
+    except:
+        W = normalize_weights(W)
+    
     n_verts, n_bones = W.shape
     assert abs_rot.shape == (n_bones, 4), f"Expected absolute rotations in quaternions to have shape ({n_bones}, 4), got {abs_rot.shape}."
     assert abs_trans.shape == (n_bones, 3), f"Expected absolute translations to have shape ({n_bones}, 3), got {abs_trans.shape}."

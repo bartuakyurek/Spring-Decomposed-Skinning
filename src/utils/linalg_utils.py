@@ -10,6 +10,33 @@ import numpy as np
 from numpy import linalg as LA
 from scipy.spatial.transform import Rotation
 
+from .sanity_check import _assert_normalized_weights
+
+def normalize_weights(weights):
+    """
+    Make sure the weights per row (i.e. vertex) sums up to 1.0.
+    WARNING: This is NOT the standard way of data normalization (i.e. shifting
+                                                                 mean and scaling
+                                                                 std.)
+    Parameters
+    ----------
+    weights : np.ndarray
+        Vertex-bone binding weights have shape (n_verts, n_bones).
+
+    Returns
+    -------
+    normalized_weights : np.ndarray
+        Has shape (n_verts, n_bones), where every row sums up to 1.0
+
+    """
+    assert len(weights.shape) == 2, f"Expected weights to have shape length of 2, got shape {weights.shape}."
+    
+    row_sum = np.sum(weights, axis=1, keepdims=True) # For each vertex sum weights of all bones
+    assert len(row_sum) == len(weights), f"Expected to sum over all vertices, got shape mismatch with sum {row_sum.shape} and weights {weights.shape} at dimension 0."
+    
+    normalized_weights = weights / (row_sum + 1e-30)
+    _assert_normalized_weights(normalized_weights)
+    return normalized_weights
 
 def min_distance(point, line_segment):
     """

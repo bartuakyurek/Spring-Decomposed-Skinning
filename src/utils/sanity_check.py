@@ -13,7 +13,12 @@ _TOLERANCE_ = 1e-8
 
 
 def _assert_normalized_weights(weights):
-    weights_sum = np.sum(weights, axis=0) # For each vertex sum weights of all bones
+    if weights.shape[1] > weights.shape[0]:
+        print("WARNING: There seems to be more bones than the vertex count.\
+              Weights expected to have shape (n_verts, n_bones), got {weights.shape}")
+              
+    weights_sum = np.sum(weights, axis=1) # For each vertex sum weights of all bones
+    assert len(weights_sum) == len(weights), f"Expected to sum over all vertices, got shape mismatch with weights {weights.shape} and weights sum {weights_sum.shape}."
     assert not np.any(weights_sum < 1-1e-12), "Expected weights for a vertex to sum up 1.0"
     assert not np.any(weights_sum > 1+1e-12), "Expected weights for a vertex to sum up 1.0"
    
