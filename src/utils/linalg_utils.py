@@ -116,7 +116,7 @@ def get_transform_mats(trans, rotations):
         
     return M
     
-def compose_transform_matrix(trans_vec, rot : Rotation ):
+def compose_transform_matrix(trans_vec, rot : Rotation, rot_is_mat=False):
     """
     Compose a transformation matrix given the translation vector
     and Rotation object.
@@ -125,10 +125,13 @@ def compose_transform_matrix(trans_vec, rot : Rotation ):
     ----------
     trans_vec : np.ndarray or list
         3D translation vector to be inserted at the last column of 4x4 matrix.
-    rot : scipy.spatial.transform.Rotation
+    rot : scipy.spatial.transform.Rotation or np.nd.array
         Rotation object of scipy.spatial.transform. This is internally
         converted to 3x3 matrix to place in the 4x4 transformation matrix.
 
+    rot_is_mat : bool
+        Indicates if the provided rotation is a matrix if set True. If set
+        False, it'll be expected to be a Rotation class instance.
     Returns
     -------
     M : np.ndarray
@@ -142,12 +145,16 @@ def compose_transform_matrix(trans_vec, rot : Rotation ):
     if trans_vec.shape == (3,1):
         trans_vec = trans_vec[:,0]
     
-    assert type(rot) is Rotation, f"Expected Rotation class instance for rot variable, got {type(rot)}."
     assert type(trans_vec) == np.ndarray, f"Expected translation vector to have type np.ndarray, got {trans_vec.shape}."
     assert trans_vec.shape == (3, ), f"Expected translation vector to have shape (3,) got {trans_vec.shape}"
     
-    rot_mat = rot.as_matrix()
-    
+    if not rot_is_mat:
+        assert type(rot) is Rotation, f"Expected Rotation class instance for rot variable, got {type(rot)}."
+        rot_mat = rot.as_matrix()
+    else:
+        assert rot.shape == (3,3), f"Expected rotation matrix to have shape (3,3), got {rot.shape}"
+        rot_mat = rot
+        
     # Convert absolute rotations and translations into a single transformation matrix
     M = np.zeros((4,4))
     M[:3, :3] = rot_mat     # Place rotation matrix

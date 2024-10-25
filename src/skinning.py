@@ -110,74 +110,36 @@ def bind_weights(mesh_verts, skel_verts, method="Envelope", envelope=10.0):
     return weights
 
 
-def LBS(V, W, abs_rot, abs_trans):
+def LBS_from_quat(V, W, abs_rot, abs_trans):
     assert W.shape[0] == V.shape[0], f"Expected weights and verts to have same length at dimension 0, i.e. weights has shape (n_verts, n_bones)\
                                                  and verts has shape (n_verts, 3), got shape {W.shape} and {V.shape}."
-    
-    try:
-        _assert_normalized_weights(W)
-    except:
-        W = normalize_weights(W)
+    try: _assert_normalized_weights(W)
+    except: W = normalize_weights(W)
     
     n_verts, n_bones = W.shape
     assert abs_rot.shape == (n_bones, 4), f"Expected absolute rotations in quaternions to have shape ({n_bones}, 4), got {abs_rot.shape}."
     assert abs_trans.shape == (n_bones, 3), f"Expected absolute translations to have shape ({n_bones}, 3), got {abs_trans.shape}."
         
     Ms = get_transform_mats(abs_trans, abs_rot)
+    return LBS_from_mat(V, W, Ms)
+    
+def LBS_from_mat(V, W, M):
+    assert W.shape[0] == V.shape[0], f"Expected weights and verts to have same length at dimension 0, i.e. weights has shape (n_verts, n_bones)\
+                                                 and verts has shape (n_verts, 3), got shape {W.shape} and {V.shape}."
+    try: _assert_normalized_weights(W)
+    except: W = normalize_weights(W)
+    
+    n_verts, n_bones = W.shape
     V_homo = np.append(V, np.ones((n_verts,1)), axis=-1)
 
     # Pose vertices via matrix multiplications 
     V_homo = np.expand_dims(V_homo, axis=-1) # shape (n_verts, 4, 1) for broadcasting 
-    weighted_transforms = np.tensordot(W, Ms, axes=(-1,0)) # shape (n_verts, 4, 4)
+    weighted_transforms = np.tensordot(W, M, axes=(-1,0))  # shape (n_verts, 4, 4)
     V_posed_homo = np.matmul(weighted_transforms, V_homo)  # shape (n_verts, 4, 1)
     V_posed = V_posed_homo[:, :3, 0]
    
     assert V_posed.shape == V.shape
     return V_posed
-    
-
-
-def skinning(verts, abs_rot, abs_trans, weights, skinning_type="LBS"):
-    """
-    Deform the vertices by provided transformations and selected skinning
-    method.
-
-    Parameters
-    ----------
-    verts : np.ndarray
-        Vertices to be deformed by provided transformations.
-    abs_rot : np.ndarray
-        Absolute rotation transformation quaternions of shape (n_bones, 4)
-    abs_trans : np.ndarray
-        Absolute translation vec3 of shape (n_bones, 3)
-    weights : np.ndarray
-        Binding weights between vertices and bone transformation of shape
-        (n_verts, n_bones). Note that to deform the skeleton, set weights of 
-        shape (n_bones * 2, n_bones) with 1.0 weights for every couple rows.
-        e.g. for a two bones it is 
-                                    [[1.0, 0.0],
-                                     [1.0, 0.0],
-                                     [0.0, 1.0],
-                                     [0.0, 1.0]] 
-    skinning_type : str, optional
-        DESCRIPTION. The default is "LBS".
-
-    Returns
-    -------
-    V_deformed : np.ndarray
-        Deformed vertices of shape (n_verts, 3)
-    """
-    
-   
-    if skinning_type == "LBS" or skinning_type == "lbs":
-        # Deform vertices based on Linear Blend Skinning
-        return LBS(V         = verts, 
-                   W         = weights,
-                   abs_rot   = abs_rot, 
-                   abs_trans = abs_trans)
-    else:
-        raise ValueError(f">> ERROR: This skinning type \"{skinning_type}\" \
-                         is not supported yet.")
 
 if __name__ == "__main__":
     print(">> Testing skinning.py...")

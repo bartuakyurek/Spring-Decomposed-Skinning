@@ -11,7 +11,7 @@ from scipy.spatial.transform import Rotation
 
 from .skeleton import Skeleton, Bone
 from .mass_spring import MassSpringSystem
-from .utils.linalg_utils import get_midpoint
+from .utils.linalg_utils import get_midpoint, compose_transform_matrix
 from .optimal_rigid_motion import get_optimal_rigid_motion
 
 class HelperBonesHandler:
@@ -120,7 +120,7 @@ class HelperBonesHandler:
                                                  for {n_helper} jiggle bones."
         
     
-    def get_absolute_transformations(self, posed_locations):
+    def get_absolute_transformations(self, posed_locations, return_mat=False):
         """
         
         Parameters
@@ -128,7 +128,11 @@ class HelperBonesHandler:
         # TOOD: please make your data structure consistent. posed_locations
         has shape (n_bones * 2)... instead it can have (n_bones, 2) shape
         for readability.
-
+        
+        return_mat : bool
+            If True, return the rotation and translation as a whole 4x4 matrix
+            that has rotation and translation inside. If False, return a quaternion
+            for absolute rotation and a 3D vector for absolute translation.
         Returns
         -------
         abs_rot_quats: np.ndarray
@@ -141,8 +145,10 @@ class HelperBonesHandler:
         
         source_points = np.empty((3,3))
         target_points = np.empty((3,3))
+        
         abs_rot_quats = np.empty((n_bones, 4))
         abs_trans =  np.empty((n_bones, 3))
+        abs_M = np.empty((n_bones, 4, 4))
         for i, bone in enumerate(self.skeleton.rest_bones):
             source_points[0] = bone.start_location
             source_points[2] = bone.end_location
@@ -153,12 +159,19 @@ class HelperBonesHandler:
             target_points[1] = get_midpoint(target_start, target_end)
             
             R_mat, t = get_optimal_rigid_motion(source_points, target_points)
-            rot = Rotation.from_matrix(R_mat)
             
-            abs_rot_quats[i] = rot.as_quat()
-            abs_trans[i] = t
+            if return_mat:
+                abs_M[i] = compose_transform_matrix(t, R_mat, rot_is_mat=True)
+            else:
+                abs_trans[i] = t
+                rot = Rotation.from_matrix(R_mat)
+                abs_rot_quats[i] = rot.as_quat()
             
-        return abs_rot_quats, abs_trans
+
+        if return_mat: 
+            return abs_M
+        else:
+            return abs_rot_quats, abs_trans
     
     def init_pose(self, theta, trans, degrees):
         """

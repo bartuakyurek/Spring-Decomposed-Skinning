@@ -226,15 +226,15 @@ try:
                 if MODE=="Rigid":
                     posed_locations = skinning.get_skel_points(test_skeleton, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
                     abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
-
+                    mesh_points = skinning.LBS_from_quat(arm_verts_rest, weights, abs_rot_quat[1:], abs_trans[1:]) # TODO: get rid of root
                 else:
                     posed_locations = skinning.get_skel_points(helper_rig, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
                     #print("WARNING: Helper bone transformations aren't computed yet...")
-                    abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
-                    #abs_rot_quat, abs_trans = helper_rig.get_absolute_transformations(posed_locations)
-
+                    #abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
+                    M = helper_rig.get_absolute_transformations(posed_locations,return_mat=True)
+                    mesh_points = skinning.LBS_from_mat(arm_verts_rest, weights, M[1:]) # TODO: get rid of root
                 skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
-                mesh_points = skinning.skinning(arm_verts_rest, abs_rot_quat[1:],  abs_trans[1:], weights, skinning_type="LBS")
+                #mesh_points = skinning.skinning(arm_verts_rest, abs_rot_quat[1:],  abs_trans[1:], weights, skinning_type="LBS")
                 
                 # Set data for renderer
                 arm_mesh.points = mesh_points
