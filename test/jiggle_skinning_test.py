@@ -225,21 +225,24 @@ try:
                 
                 if MODE=="Rigid":
                     posed_locations = skinning.get_skel_points(test_skeleton, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
+                    skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
+
                     abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
                     mesh_points = skinning.LBS_from_quat(arm_verts_rest, weights, abs_rot_quat[1:], abs_trans[1:]) # TODO: get rid of root
                 else:
                     posed_locations = skinning.get_skel_points(helper_rig, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
-                    #print("WARNING: Helper bone transformations aren't computed yet...")
+                    skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
+                                                           # TODO: directly set skel_mesh.points = posed
+                    # TODO: keep getting transforms from rigid skeleton, only update the helpers' transforms.
                     #abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
                     M = helper_rig.get_absolute_transformations(posed_locations,return_mat=True)
                     mesh_points = skinning.LBS_from_mat(arm_verts_rest, weights, M[1:]) # TODO: get rid of root
-                skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
-                #mesh_points = skinning.skinning(arm_verts_rest, abs_rot_quat[1:],  abs_trans[1:], weights, skinning_type="LBS")
+                
                 
                 # Set data for renderer
                 arm_mesh.points = mesh_points
                 skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.
-                plotter.write_frame()          # Write a frame. This triggers a render.
+                plotter.write_frame()               # Write a frame. This triggers a render.
 except AssertionError:
     print(">>>> Caught assertion, stopping execution...")
     plotter.close()
