@@ -105,7 +105,7 @@ def get_rotation_mats(rot_quats):
         R_mats.append(rot.as_matrix())
     return np.array(R_mats)
 
-def get_transform_mats(trans, rotations):
+def get_transform_mats_from_quat_rots(trans, rotations):
     assert len(trans) == len(rotations), f"Given lists must have same lengths. Got {len(trans)} and {len(rotations)}"
 
     K = len(trans)
@@ -139,9 +139,10 @@ def scale_this_matrix(mat, scale):
     """
     assert mat.shape == (3,3) or mat.shape == (4,4), f"Expected 3x3 or 4x4 matrix to be scaled. Got {mat.shape}."
     
-    if len(scale) == 1: scale = np.repeat(scale, 3, axis=0)
-    else:  assert len(scale) == 3, f"Expected scale to be 3D vector or a scalar, \
-                                     got {scale.shape}."
+    if type(scale) is float or type(scale) is np.float64:
+        scale = np.repeat(scale, 3, axis=0)
+    else:  
+        assert len(scale) == 3, f"Expected scale to be 3D vector or a scalar, got {scale.shape}."
         
     mat[0, 0] *= scale[0]
     mat[1, 1] *= scale[1]
@@ -174,9 +175,9 @@ def get_aligning_rotation(src_vec, target_vec):
     """
     assert src_vec.shape == (3,) and target_vec.shape == (3,)
     
-    if np.abs(LA.norm(src_vec) - LA.norm(target_vec)) > 1e-18:
-        print("WARNING: Given vectors do not share the same norm. The rotation \
-               may cause scaling in the transformed vector. Please normalize   \
+    if LA.norm(src_vec) > 1. + 1e-18 or LA.norm(target_vec) > 1. + 1e-18:
+        print(">> WARNING: Given vectors aren't normalized. The rotation \
+               may cause scaling in the transformed vector. Please normalize \
                the vectors first.")
               
     cosA = np.dot(src_vec, target_vec)
