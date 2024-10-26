@@ -128,6 +128,10 @@ class HelperBonesHandler:
         WARNING: It doesn't give good results when directly used in the skinning
         matrices. It can map the bones from rest pose to current pose however
         when used on a volume, it doesn't produce consistent results.
+        
+        WARNING: The returned scale is always 1.0 at this point. Scale adapted
+        optimal rigid motion is not implemented yet. I've just put it for current
+        pipeline's convention.
 
         Parameters
         ----------
@@ -146,7 +150,9 @@ class HelperBonesHandler:
             Rotation matrix has shape (3,3).
         t : np.ndarray
             Translation vector has shape (3,).
-
+        
+        scale: float
+            Scale of the vector. WARNING: It's not implemented yet.
         """
         source_points = np.empty((3,3))
         target_points = np.empty((3,3))
@@ -160,14 +166,15 @@ class HelperBonesHandler:
         target_points[1] = get_midpoint(target_points[0], target_points[2])
         
         R_mat, t = get_optimal_rigid_motion(source_points, target_points)
-        return R_mat, t
+        scale = 1.0
+        return R_mat, t, scale
     
     def _get_bone_RST(self, bone_rest_tuple, bone_cur_tuple):
         
         s_orig, e_orig = bone_rest_tuple
         s_cur, e_cur = bone_cur_tuple
         
-        return
+        return R_mat, t, scale
     
     def get_absolute_transformations(self, posed_locations, return_mat=False, algorithm="RST"):
         """
@@ -214,8 +221,8 @@ class HelperBonesHandler:
         for i, bone in enumerate(self.skeleton.rest_bones):
             # Get bone matrices
             bone_rest_tuple = (bone.start_location, bone.end_location)
-            bone_cur_tuple = (posed_locations[2*i], posed_locations[2*i+1])
-            R_mat, t = get_bone_mats(bone_rest_tuple, bone_cur_tuple)
+            bone_cur_tuple = (posed_locations[2*i], posed_locations[2*i+1]) # TODO: get rid of root bone thing.
+            R_mat, t, scale = get_bone_mats(bone_rest_tuple, bone_cur_tuple)
           
             if return_mat: 
                 # Save transforms as a 4x4 matrix

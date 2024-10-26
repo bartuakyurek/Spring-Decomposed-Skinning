@@ -116,7 +116,39 @@ def get_transform_mats(trans, rotations):
         
     return M
     
-def compose_transform_matrix(trans_vec, rot : Rotation, rot_is_mat=False):
+def scale_this_matrix(mat, scale):
+    """
+    Scale a square matrix with given 3x3 or 4x4 homogeneous matrix 
+    and the scaling vector or scalar.
+
+    Parameters
+    ----------
+    mat : np.ndarray
+        The matrix to be scaled, has shape (3,3) or (4,4).
+        Note that in (4,4) case it's expected to be a homogenous matrix
+        so that the last entry, i.e. 1.0 at the end, won't be scaled.
+        
+    scale : np.ndarray or float
+        Scales the matrix by multiplying the diagonal entries.
+
+    Returns
+    -------
+    mat : np.ndarray
+        Scaled version of the given matrix, has the same shape.
+
+    """
+    assert mat.shape == (3,3) or mat.shape == (4,4), f"Expected 3x3 or 4x4 matrix to be scaled. Got {mat.shape}."
+    
+    if len(scale) == 1: scale = np.repeat(scale, 3, axis=0)
+    else:  assert len(scale) == 3, f"Expected scale to be 3D vector or a scalar, \
+                                     got {scale.shape}."
+        
+    mat[0, 0] *= scale[0]
+    mat[1, 1] *= scale[1]
+    mat[2, 2] *= scale[2]
+    return mat
+    
+def compose_transform_matrix(trans, rot, scale=None, rot_is_mat=False):
     """
     Compose a transformation matrix given the translation vector
     and Rotation object.
@@ -128,7 +160,10 @@ def compose_transform_matrix(trans_vec, rot : Rotation, rot_is_mat=False):
     rot : scipy.spatial.transform.Rotation or np.nd.array
         Rotation object of scipy.spatial.transform. This is internally
         converted to 3x3 matrix to place in the 4x4 transformation matrix.
-
+    
+    scale : np.ndarray or float
+        Scales the matrix by multiplying the diagonal entries.
+        
     rot_is_mat : bool
         Indicates if the provided rotation is a matrix if set True. If set
         False, it'll be expected to be a Rotation class instance.
@@ -138,15 +173,15 @@ def compose_transform_matrix(trans_vec, rot : Rotation, rot_is_mat=False):
         Transformation matrix composed by 3x3 rotation matrix and 3x1 translation
         vector, with the last row being [0,0,0,1].
     """
+   
+    if type(trans) is list:
+        trans = np.array(trans)
     
-    if type(trans_vec) is list:
-        trans_vec = np.array(trans_vec)
+    if trans.shape == (3,1):
+        trans = trans[:,0]
     
-    if trans_vec.shape == (3,1):
-        trans_vec = trans_vec[:,0]
-    
-    assert type(trans_vec) == np.ndarray, f"Expected translation vector to have type np.ndarray, got {trans_vec.shape}."
-    assert trans_vec.shape == (3, ), f"Expected translation vector to have shape (3,) got {trans_vec.shape}"
+    assert type(trans) == np.ndarray, f"Expected translation vector to have type np.ndarray, got {trans.shape}."
+    assert trans.shape == (3, ), f"Expected translation vector to have shape (3,) got {trans.shape}"
     
     if not rot_is_mat:
         assert type(rot) is Rotation, f"Expected Rotation class instance for rot variable, got {type(rot)}."
@@ -158,8 +193,13 @@ def compose_transform_matrix(trans_vec, rot : Rotation, rot_is_mat=False):
     # Convert absolute rotations and translations into a single transformation matrix
     M = np.zeros((4,4))
     M[:3, :3] = rot_mat     # Place rotation matrix
-    M[:3, -1] = trans_vec # Place translation vector
+    M[:3, -1] = trans # Place translation vector
     M[-1, -1] = 1.0  
+    
+    # Apply scale
+    if scale is not None:
+        M = scale_this_matrix(M, scale)
+        
     # Sanity check that M transformation matrix last row must be [0 0 0 1] 
     assert np.all(M[-1] == np.array([0.,0.,0.,1.])), f"Unexpected error occured at {M}."
     return M
