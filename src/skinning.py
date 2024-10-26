@@ -13,7 +13,7 @@ from scipy.spatial.transform import Rotation
 
 from .skeleton import Skeleton
 from .utils.sanity_check import _assert_normalized_weights
-from .utils.linalg_utils import get_transform_mats, min_distance, normalize_weights
+from .utils.linalg_utils import get_transform_mats_from_quat_rots, min_distance, normalize_weights
 
 # ---------------------------------------------------------------------------------
 # Helper routine to obtain posed mesh vertices
@@ -120,7 +120,7 @@ def LBS_from_quat(V, W, abs_rot, abs_trans):
     assert abs_rot.shape == (n_bones, 4), f"Expected absolute rotations in quaternions to have shape ({n_bones}, 4), got {abs_rot.shape}."
     assert abs_trans.shape == (n_bones, 3), f"Expected absolute translations to have shape ({n_bones}, 3), got {abs_trans.shape}."
         
-    Ms = get_transform_mats(abs_trans, abs_rot)
+    Ms = get_transform_mats_from_quat_rots(abs_trans, abs_rot)
     return LBS_from_mat(V, W, Ms)
     
 def LBS_from_mat(V, W, M):
