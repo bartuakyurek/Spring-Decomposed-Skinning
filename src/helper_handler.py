@@ -120,7 +120,49 @@ class HelperBonesHandler:
                                                  for {n_helper} jiggle bones."
         
     
-    def get_absolute_transformations(self, posed_locations, return_mat=False):
+    def _get_bone_SVD_optimal_rigid(self, bone_rest_tuple, bone_cur_tuple):
+        """
+        Get the optimal rigid motion (rotation and translation) of a single
+        bone given the rest locations and current locations of the endpoints.
+        
+        WARNING: It doesn't give good results when directly used in the skinning
+        matrices. It can map the bones from rest pose to current pose however
+        when used on a volume, it doesn't produce consistent results.
+
+        Parameters
+        ----------
+        bone_rest_tuple : tuple
+            Holds the endpoint locations of the bones in a (bone_start, bone_end)
+            manner at the rest pose. This will be used as a source points
+            that should be mapped to the target points.
+        bone_cur_tuple : tuple
+            Holds the endpoint locations of the bones in a (bone_start, bone_end)
+            manner at the current frame. These are the target points where we
+            like to get when we transform the rest pose bone.
+
+        Returns
+        -------
+        R_mat : np.ndarray
+            Rotation matrix has shape (3,3).
+        t : np.ndarray
+            Translation vector has shape (3,).
+
+        """
+        source_points = np.empty((3,3))
+        target_points = np.empty((3,3))
+        
+        source_points[0] = bone_rest_tuple[0] # head
+        source_points[2] = bone_rest_tuple[1] # tail
+        source_points[1] = get_midpoint(source_points[2], source_points[0])
+        
+        target_points[0] = bone_cur_tuple[0] # head
+        target_points[2] = bone_cur_tuple[1] # tail
+        target_points[1] = get_midpoint(target_points[0], target_points[2])
+        
+        R_mat, t = get_optimal_rigid_motion(source_points, target_points)
+        return R_mat, t
+    
+    def get_absolute_transformations(self, posed_locations, return_mat=False, algorithm="RST"):
         """
         
         Parameters
@@ -133,6 +175,14 @@ class HelperBonesHandler:
             If True, return the rotation and translation as a whole 4x4 matrix
             that has rotation and translation inside. If False, return a quaternion
             for absolute rotation and a 3D vector for absolute translation.
+        
+        algorithm : str
+            Choice of algorithm to compute transformations. 
+            Available options are:
+                - "SVD" : Computes SVD-based optimal rigid motion (see related .py script)
+                          WARNING: Do not use it to directly feed to the skinning algorithm
+                                   because it causes volume collapse.
+                
         Returns
         -------
         abs_rot_quats: np.ndarray
@@ -143,22 +193,22 @@ class HelperBonesHandler:
         
         n_bones = len(self.skeleton.rest_bones)
         
-        source_points = np.empty((3,3))
-        target_points = np.empty((3,3))
-        
+    
         abs_rot_quats = np.empty((n_bones, 4))
         abs_trans =  np.empty((n_bones, 3))
         abs_M = np.empty((n_bones, 4, 4))
         for i, bone in enumerate(self.skeleton.rest_bones):
-            source_points[0] = bone.start_location
-            source_points[2] = bone.end_location
-            source_points[1] = get_midpoint(bone.end_location, bone.start_location)
             
-            target_points[0] = target_start = posed_locations[2*i] 
-            target_points[2] = target_end = posed_locations[2*i+1]
-            target_points[1] = get_midpoint(target_start, target_end)
+            bone_rest_tuple = (bone.start_location, bone.end_location)
+            bone_cur_tuple = (posed_locations[2*i], posed_locations[2*i+1])
             
-            R_mat, t = get_optimal_rigid_motion(source_points, target_points)
+            if algorithm == "RST":
+                R_mat, t = None, None
+            elif algorithm == "SVD":
+                R_mat, t = self._get_bone_SVD_optimal_rigid( bone_rest_tuple, 
+                                                             bone_cur_tuple)
+            else:
+                raise ValueError(f"Unexpected algorithm type: {algorithm}.")
             
             if return_mat:
                 abs_M[i] = compose_transform_matrix(t, R_mat, rot_is_mat=True)
