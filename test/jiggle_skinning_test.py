@@ -80,6 +80,7 @@ helper_bone_endpoints = np.array([ joint_locations[PARENT_IDX] + [0.0, 0.2, 0.0]
 helper_bone_parents = [PARENT_IDX]
 
 test_skeleton = create_skeleton(joint_locations, kintree)
+
 helper_idxs = add_helper_bones(test_skeleton, 
                                helper_bone_endpoints, 
                                helper_bone_parents,
@@ -235,10 +236,9 @@ try:
                                                            # TODO: directly set skel_mesh.points = posed
                     # TODO: keep getting transforms from rigid skeleton, only update the helpers' transforms.
                     #abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
-                    M = helper_rig.get_absolute_transformations(posed_locations,return_mat=True)
+                    M = helper_rig.get_absolute_transformations(posed_locations, return_mat=True, algorithm="SVD")
                     mesh_points = skinning.LBS_from_mat(arm_verts_rest, weights, M[1:]) # TODO: get rid of root
-                
-                
+                              
                 # Set data for renderer
                 arm_mesh.points = mesh_points
                 skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.
