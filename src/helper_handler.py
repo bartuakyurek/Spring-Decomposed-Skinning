@@ -162,6 +162,13 @@ class HelperBonesHandler:
         R_mat, t = get_optimal_rigid_motion(source_points, target_points)
         return R_mat, t
     
+    def _get_bone_RST(self, bone_rest_tuple, bone_cur_tuple):
+        
+        s_orig, e_orig = bone_rest_tuple
+        s_cur, e_cur = bone_cur_tuple
+        
+        return
+    
     def get_absolute_transformations(self, posed_locations, return_mat=False, algorithm="RST"):
         """
         
@@ -193,30 +200,31 @@ class HelperBonesHandler:
         
         n_bones = len(self.skeleton.rest_bones)
         
-    
         abs_rot_quats = np.empty((n_bones, 4))
         abs_trans =  np.empty((n_bones, 3))
         abs_M = np.empty((n_bones, 4, 4))
+        
+        # Select the algorithm to compute bone matrices
+        get_bone_mats = None
+        if algorithm == "RST": get_bone_mats = self._get_bone_RST
+        elif algorithm == "SVD": get_bone_mats = self._get_bone_SVD_optimal_rigid
+        else: raise ValueError(f"Unexpected algorithm type: {algorithm}.")
+        
+        # Loop over rest bones
         for i, bone in enumerate(self.skeleton.rest_bones):
-            
+            # Get bone matrices
             bone_rest_tuple = (bone.start_location, bone.end_location)
             bone_cur_tuple = (posed_locations[2*i], posed_locations[2*i+1])
-            
-            if algorithm == "RST":
-                R_mat, t = None, None
-            elif algorithm == "SVD":
-                R_mat, t = self._get_bone_SVD_optimal_rigid( bone_rest_tuple, 
-                                                             bone_cur_tuple)
-            else:
-                raise ValueError(f"Unexpected algorithm type: {algorithm}.")
-            
-            if return_mat:
+            R_mat, t = get_bone_mats(bone_rest_tuple, bone_cur_tuple)
+          
+            if return_mat: 
+                # Save transforms as a 4x4 matrix
                 abs_M[i] = compose_transform_matrix(t, R_mat, rot_is_mat=True)
-            else:
+            else:     
+                # Convert matrices to quaternions
                 abs_trans[i] = t
                 rot = Rotation.from_matrix(R_mat)
-                abs_rot_quats[i] = rot.as_quat()
-            
+                abs_rot_quats[i] = rot.as_quat()     
 
         if return_mat: 
             return abs_M
