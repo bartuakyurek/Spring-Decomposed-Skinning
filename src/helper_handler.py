@@ -11,7 +11,7 @@ from scipy.spatial.transform import Rotation
 
 from .skeleton import Skeleton, Bone
 from .mass_spring import MassSpringSystem
-from .utils.linalg_utils import get_midpoint, compose_transform_matrix
+from .utils.linalg_utils import get_midpoint, compose_rigid_transform_matrix
 from .optimal_rigid_motion import get_optimal_rigid_motion
 
 class HelperBonesHandler:
@@ -226,7 +226,7 @@ class HelperBonesHandler:
           
             if return_mat: 
                 # Save transforms as a 4x4 matrix
-                abs_M[i] = compose_transform_matrix(t, R_mat, rot_is_mat=True)
+                abs_M[i] = compose_rigid_transform_matrix(t, R_mat, rot_is_mat=True)
             else:     
                 # Convert matrices to quaternions
                 abs_trans[i] = t

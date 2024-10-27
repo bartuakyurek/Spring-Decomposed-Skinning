@@ -10,7 +10,7 @@ import numpy as np
 import igl
 
 #from utils import linalg_utils
-from .utils.linalg_utils import compose_transform_matrix
+from .utils.linalg_utils import compose_rigid_transform_matrix
 from .global_vars import VERBOSE
 
 class Bone():
@@ -237,7 +237,7 @@ class Skeleton():
         final_bone_locations = np.empty((2*n_bones, 3))
         for i, bone in enumerate(self.rest_bones):
             rot = Rotation.from_quat(abs_rot_quat[i])
-            M = compose_transform_matrix(abs_trans[i], rot)
+            M = compose_rigid_transform_matrix(abs_trans[i], rot)
             
             s, e = np.ones((4,)), np.ones((4,))
             s[:3] = bone.start_location

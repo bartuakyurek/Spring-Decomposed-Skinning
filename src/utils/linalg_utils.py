@@ -143,7 +143,7 @@ def get_rotation_mats(rot_quats):
 def translation_vector_to_matrix(trans):
     """
     Given the translation vector [x, y, z], 
-    retrieve the translation matrix:
+    retrieve the homogeneous translation matrix:
                                     [1, 0, 0, x]
                                     [0, 1, 0, y]
                                     [0, 0, 1, z]
@@ -173,7 +173,7 @@ def get_transform_mats_from_quat_rots(trans, rotations):
     M = np.empty((K, 4, 4))
     for i in range(K):
         rot = Rotation.from_quat(rotations[i])
-        M[i] = compose_transform_matrix(trans[i], rot)
+        M[i] = compose_rigid_transform_matrix(trans[i], rot)
         
     return M
     
@@ -210,7 +210,7 @@ def scale_this_matrix(mat, scale):
     mat[2, 2] *= scale[2]
     return mat
 
-def get_aligning_rotation(src_vec, target_vec):
+def get_aligning_rotation(src_vec, target_vec, homogeneous=False):
     """
     Align the source vector to the target vector via rotation.
     
@@ -227,11 +227,14 @@ def get_aligning_rotation(src_vec, target_vec):
         Source vector to be transformed, has shape (3,).
     target_vec : np.ndarray
         Target vector to align the source vector, has shape (3,).
-
+        
+    homogeneous : bool (optional)
+        If set True, the returned matrix will be (4,4) homogeneous coordinates.
+        Else, it will remain as (3,3). Default is False.
     Returns
     -------
     result : np.ndarray
-        Rotation matrix has shape (3,3).
+        Rotation matrix has shape (3,3) or (4,4).
 
     """
     assert src_vec.shape == (3,) and target_vec.shape == (3,)
@@ -253,24 +256,30 @@ def get_aligning_rotation(src_vec, target_vec):
     
     result = np.vstack((row1, row2, row3), dtype=float)
     assert result.shape == (3,3)
+    
+    if homogeneous:
+        result_homo = np.eye(4)
+        result_homo[:3,:3] = result
+        return result_homo
+    
     return result
 
-def compose_transform_matrix(trans, rot, scale=None, rot_is_mat=False):
+def compose_rigid_transform_matrix(trans, rot, rot_is_mat=False):
     """
-    Compose a transformation matrix given the translation vector
-    and Rotation object.
+    Compose a rigid transformation matrix given the translation vector
+    and Rotation object. Note that rigid transformation consists of only
+    rotation and translation (i.e. a solid object is rigidly transformed
+                              in space)
 
     Parameters
     ----------
     trans_vec : np.ndarray or list
         3D translation vector to be inserted at the last column of 4x4 matrix.
+        
     rot : scipy.spatial.transform.Rotation or np.nd.array
         Rotation object of scipy.spatial.transform. This is internally
         converted to 3x3 matrix to place in the 4x4 transformation matrix.
     
-    scale : np.ndarray or float
-        Scales the matrix by multiplying the diagonal entries.
-        
     rot_is_mat : bool
         Indicates if the provided rotation is a matrix if set True. If set
         False, it'll be expected to be a Rotation class instance.
@@ -291,9 +300,12 @@ def compose_transform_matrix(trans, rot, scale=None, rot_is_mat=False):
     assert trans.shape == (3, ), f"Expected translation vector to have shape (3,) got {trans.shape}"
     
     if not rot_is_mat:
-        assert type(rot) is Rotation, f"Expected Rotation class instance for rot variable, got {type(rot)}."
+        assert type(rot) is Rotation, f"Expected Rotation class instance for rot variable, got {type(rot)}. Please set rot_is_mat=True if you want to provide a rotation matrix."
         rot_mat = rot.as_matrix()
     else:
+        if rot.shape == (4,4):
+            print(">> WARNING: Received 4x4 rotation matrix, only 3x3 part will be treated as rotation.")
+            rot = rot[:3,:3]
         assert rot.shape == (3,3), f"Expected rotation matrix to have shape (3,3), got {rot.shape}"
         rot_mat = rot
         
@@ -302,11 +314,7 @@ def compose_transform_matrix(trans, rot, scale=None, rot_is_mat=False):
     M[:3, :3] = rot_mat     # Place rotation matrix
     M[:3, -1] = trans # Place translation vector
     M[-1, -1] = 1.0  
-    
-    # Apply scale
-    if scale is not None:
-        M = scale_this_matrix(M, scale)
-        
+              
     # Sanity check that M transformation matrix last row must be [0 0 0 1] 
     assert np.all(M[-1] == np.array([0.,0.,0.,1.])), f"Unexpected error occured at {M}."
     return M
