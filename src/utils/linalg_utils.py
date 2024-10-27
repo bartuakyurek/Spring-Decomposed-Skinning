@@ -105,7 +105,7 @@ def get_rotation_mats(rot_quats):
         R_mats.append(rot.as_matrix())
     return np.array(R_mats)
 
-def get_trans_matrix(trans):
+def translation_vector_to_matrix(trans):
     """
     Given the translation vector [x, y, z], 
     retrieve the translation matrix:
@@ -123,7 +123,10 @@ def get_trans_matrix(trans):
     mat : np.ndarray
         A homogeneous matrix that translates a vector when applied, has shape (4,4)
     """
-    assert trans.shape == (3,1) or trans.shape == (3,), f"Expected translation vector to be 3D vector, got shape {trans.shape}."
+    if trans.shape == (3,1): trans = trans[:,0]
+    elif trans.shape == (1,3): trans = trans[0,:]
+    assert trans.shape == (3,), f"Expected translation vector to be 3D vector, got shape {trans.shape}."
+    
     mat = np.eye(4)
     mat[0:3,-1] = trans
     return mat
