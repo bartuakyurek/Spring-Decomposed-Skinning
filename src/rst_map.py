@@ -12,9 +12,17 @@ import numpy as np
 from numpy import linalg as LA
 
 try:
-    from .utils.linalg_utils import get_aligning_rotation, compose_transform_matrix, translation_vector_to_matrix
+    from .utils.linalg_utils import(get_aligning_rotation, 
+                                    compose_transform_matrix, 
+                                    translation_vector_to_matrix,
+                                    angle_between_vectors_np,
+                                    get_3d_scale)
 except:
-    from utils.linalg_utils import get_aligning_rotation, compose_transform_matrix, translation_vector_to_matrix
+    from utils.linalg_utils import(get_aligning_rotation, 
+                                    compose_transform_matrix, 
+                                    translation_vector_to_matrix,
+                                    angle_between_vectors_np,
+                                    get_3d_scale)
 
 def get_RST(src_segment, target_segment):
     # Step 0 - Declare source and target points
@@ -33,20 +41,21 @@ def get_RST(src_segment, target_segment):
     t = tgt_translated[0]
     tgt_bone_space = tgt_translated - t
     
-    # Step 3 - Compute the scaling of source by the norms ratio
-
-    src_len = LA.norm(e_src - s_src)
-    tgt_len = LA.norm(e_tgt - s_tgt)
-    assert src_len > 1e-18, f"Expected source vector to have a positive length, got {src_len}."
-    scale = tgt_len / src_len
-    
-    # Step 4 - Normalize both of the vector and compute the rotation between two
     assert LA.norm(src_bone_space[0]) < 1e-20, "Expected bone space translations to land on origin."
     assert LA.norm(tgt_bone_space[0]) < 1e-20, "Expected bone space translations to land on origin."
 
-    src_normalized = src_bone_space[1] / src_len
-    tgt_normalized = tgt_bone_space[1] / tgt_len
-    R = get_aligning_rotation(src_normalized, tgt_normalized)
+    # Step 3 - Compute the rotation between source and target vectors 
+    R = get_aligning_rotation(src_bone_space[1], tgt_bone_space[1])
+    src_bs_rotated = R @ src_bone_space[1]
+    assert angle_between_vectors_np(src_bs_rotated, tgt_bone_space[1]) < 1e-12, "Expected the rotated bone space vector to be aligned with target at bone space."
+    
+    # Step 4 - Compute the scaling of source by the norms ratio 
+    # Note that we compute that after rotation, because rotation also scales when the vectors aren't normalized
+    
+    #src_len = LA.norm(src_bs_rotated)
+    #tgt_len = LA.norm(tgt_bone_space[1])
+    #scale = tgt_len / src_len
+    scale = get_3d_scale(src_bs_rotated, tgt_bone_space[1], return_mat=False)
     
     # Step 5 - Combine all translation, rotation and scale in a single matrix
     M = compose_transform_matrix(t, R, scale, rot_is_mat=True)
@@ -64,9 +73,8 @@ if __name__ == "__main__":
     
     target_segment = np.array([
                             [3., 2., 0.3],
-                            [4., 1.4, 0.9]
+                            [5., 1.4, 0.9]
                             ])
-    
     
     # Obtain transformations ----------------------------------------------------------------
     M = get_RST(src_segment, target_segment)
@@ -78,7 +86,7 @@ if __name__ == "__main__":
     src_transformed = ( M @ src_homo.T)        # (4,4) @ (2,4).T -> (4,2)
     src_transformed = src_transformed.T[:,:3]  # (4,2).T -> (2,3)
     
-    # Print Results ------------------------------------------------------------------------
+    # Print Results -------------------------------------------------------------------------
     # Check if the obtained matrix can result:  M @ src = target
     print("Source: ", src_segment[0], src_segment[1])
     print("Target: ", target_segment[0], target_segment[1])

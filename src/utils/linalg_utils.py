@@ -12,6 +12,41 @@ from scipy.spatial.transform import Rotation
 
 from .sanity_check import _assert_normalized_weights
 
+
+def angle_between_vectors_np(u, v, degrees=True):
+    """
+    DISCLAIMER: This snipplet is adapted from: 
+    https://www.geeksforgeeks.org/how-to-compute-the-angle-between-vectors-using-python/
+
+
+    Parameters
+    ----------
+    u : TYPE
+        DESCRIPTION.
+    v : TYPE
+        DESCRIPTION.
+    degrees : bool, optional
+        If set True, return the angle in degrees. Else, return the angle
+        in radians. The default is True.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    u = np.array(u)
+    v = np.array(v)
+    cos_theta = np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v))
+    
+    angle_rad = np.arccos(np.clip(cos_theta, -1.0, 1.0))
+   
+    if not degrees:
+        return angle_rad
+    else:
+        angle_deg = np.degrees(angle_rad)
+        return angle_deg
+
 def normalize_weights(weights):
     """
     Make sure the weights per row (i.e. vertex) sums up to 1.0.
@@ -275,6 +310,57 @@ def compose_transform_matrix(trans, rot, scale=None, rot_is_mat=False):
     # Sanity check that M transformation matrix last row must be [0 0 0 1] 
     assert np.all(M[-1] == np.array([0.,0.,0.,1.])), f"Unexpected error occured at {M}."
     return M
+
+def get_3d_scale(u, v, return_mat=True, homogeneous=True):
+    """
+    
+
+    Parameters
+    ----------
+    u : np.ndarray
+        Source vector who will match the norms with target vector when scaled.
+        Has shape (3,1) or (3,).
+    v : np.ndarray
+        Target vector whose norm is should match when the source vector is scaled.
+        Has shape (3,1) or (3,)..
+    return_mat : bool, optional
+        If set True, return the matrix form of scale. Else,
+        return scale as a 3D vector. The default is True.
+    homogeneous : bool, optional
+        If set True, return the homogeneous matrix of shape (4,4)
+        Else, return a (3,3) matrix. This option is only considered
+        if return_mat is True. The default is True.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    # Pre-computation checks
+    assert u.shape == v.shape, f"Expected vectors to have equal shapes. Got {u.shape} and {v.shape}."
+    assert u.shape == (3,) or u.shape == (3,1), f"Expected vectors to have (3,) or (3,1) shapes, got {u.shape}."
+    
+    # Compute scales
+    xyz = [0., 0., 0.] # Hold the scaling for all dimensions    
+    for i in range(3):
+        if u[i] != 0:       
+            xyz[i] = v[i] / u[i]
+            
+        elif(u[i] == v[i]): # If both dimensions have zero values, return the scale 1.
+            xyz[i] = 1.
+
+    # Post-computation checks 
+    scaled_u = xyz * u
+    assert np.abs(LA.norm(scaled_u) - LA.norm(v)) < 1e-12, "Expected the scaled source vector to match the norm of the target vector."
+   
+    # Return
+    if return_mat:
+        if homogeneous:
+            return scale_this_matrix(np.eye(4), xyz)
+        else:
+            return scale_this_matrix(np.eye(3), xyz)
+    return xyz
 
 
 if __name__ == "__main__":
