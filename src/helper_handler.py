@@ -13,6 +13,7 @@ from .skeleton import Skeleton, Bone
 from .mass_spring import MassSpringSystem
 from .utils.linalg_utils import get_midpoint, compose_rigid_transform_matrix
 from .optimal_rigid_motion import get_optimal_rigid_motion
+from .rst_map import get_RST
 
 class HelperBonesHandler:
     
@@ -129,17 +130,13 @@ class HelperBonesHandler:
         matrices. It can map the bones from rest pose to current pose however
         when used on a volume, it doesn't produce consistent results.
         
-        WARNING: The returned scale is always 1.0 at this point. Scale adapted
-        optimal rigid motion is not implemented yet. I've just put it for current
-        pipeline's convention.
-
         Parameters
         ----------
-        bone_rest_tuple : tuple
+        bone_rest_tuple : tuple or np.ndarray
             Holds the endpoint locations of the bones in a (bone_start, bone_end)
             manner at the rest pose. This will be used as a source points
             that should be mapped to the target points.
-        bone_cur_tuple : tuple
+        bone_cur_tuple : tuple or np.ndarray
             Holds the endpoint locations of the bones in a (bone_start, bone_end)
             manner at the current frame. These are the target points where we
             like to get when we transform the rest pose bone.
@@ -151,8 +148,6 @@ class HelperBonesHandler:
         t : np.ndarray
             Translation vector has shape (3,).
         
-        scale: float
-            Scale of the vector. WARNING: It's not implemented yet.
         """
         source_points = np.empty((3,3))
         target_points = np.empty((3,3))
@@ -166,15 +161,14 @@ class HelperBonesHandler:
         target_points[1] = get_midpoint(target_points[0], target_points[2])
         
         R_mat, t = get_optimal_rigid_motion(source_points, target_points)
-        scale = 1.0
-        return R_mat, t, scale
+        return R_mat, t
     
-    def _get_bone_RST(self, bone_rest_tuple, bone_cur_tuple):
-        
-        s_orig, e_orig = bone_rest_tuple
-        s_cur, e_cur = bone_cur_tuple
-        
-        return R_mat, t, scale
+    def _get_bone_RST(self, bone_rest, bone_cur):
+        # TODO: Do we really need this?
+        if type(bone_rest) is list: bone_rest = np.array(bone_rest)
+        if type(bone_cur) is list: bone_cur = np.array(bone_cur)
+        M = get_RST(bone_rest, bone_cur)
+        return M
     
     def get_absolute_transformations(self, posed_locations, return_mat=False, algorithm="RST"):
         """
@@ -213,6 +207,8 @@ class HelperBonesHandler:
         
         # Select the algorithm to compute bone matrices
         get_bone_mats = None
+        if algorithm == "RST": assert return_mat, "Expected return_mat=True if the algorithm is set to RST as RST returns a single transformation matrix."
+       
         if algorithm == "RST": get_bone_mats = self._get_bone_RST
         elif algorithm == "SVD": get_bone_mats = self._get_bone_SVD_optimal_rigid
         else: raise ValueError(f"Unexpected algorithm type: {algorithm}.")
@@ -220,19 +216,21 @@ class HelperBonesHandler:
         # Loop over rest bones
         for i, bone in enumerate(self.skeleton.rest_bones):
             # Get bone matrices
-            bone_rest_tuple = (bone.start_location, bone.end_location)
-            bone_cur_tuple = (posed_locations[2*i], posed_locations[2*i+1]) # TODO: get rid of root bone thing.
-            R_mat, t, scale = get_bone_mats(bone_rest_tuple, bone_cur_tuple)
-          
-            if return_mat: 
-                # Save transforms as a 4x4 matrix
-                abs_M[i] = compose_rigid_transform_matrix(t, R_mat, rot_is_mat=True)
-            else:     
-                # Convert matrices to quaternions
-                abs_trans[i] = t
-                rot = Rotation.from_matrix(R_mat)
-                abs_rot_quats[i] = rot.as_quat()     
-
+            bone_rest = np.array([bone.start_location, bone.end_location]) # TODO: Why don't you directly store np.array in bones?
+            bone_cur = np.array([posed_locations[2*i], posed_locations[2*i+1]]) # TODO: get rid of root bone thing.
+            
+            if algorithm != "RST": # TODO: this conditional can easily fail if algorithm is not SVD 
+                R_mat, t = get_bone_mats(bone_rest, bone_cur)
+                if return_mat:  # Save transforms as a 4x4 matrix
+                    abs_M[i] = compose_rigid_transform_matrix(t, R_mat, rot_is_mat=True)
+                else:     
+                    # Convert matrices to quaternions
+                    abs_trans[i] = t
+                    rot = Rotation.from_matrix(R_mat)
+                    abs_rot_quats[i] = rot.as_quat()     
+            else: 
+                abs_M[i] = get_bone_mats(bone_rest, bone_cur)
+                
         if return_mat: 
             return abs_M
         else:

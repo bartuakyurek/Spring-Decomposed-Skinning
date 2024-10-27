@@ -78,7 +78,7 @@ if __name__ == "__main__":
     src_homo = np.append(src_segment, np.ones((2,1)),axis=-1) # (2,3) append (2,1) -> (2,4)
     
     # Get result
-    src_transformed = ( M @ src_homo.T)        # (4,4) @ (2,4).T -> (4,2)
+    src_transformed = M @ src_homo.T        # (4,4) @ (2,4).T -> (4,2)
     src_transformed = src_transformed.T[:,:3]  # (4,2).T -> (2,3)
     
     # Print Results -------------------------------------------------------------------------

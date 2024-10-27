@@ -121,7 +121,7 @@ helper_rig = HelperBonesHandler(test_skeleton,
 # Create plotter 
 # ---------------------------------------------------------------------------- 
 RENDER = True
-OPACITY = 0.5
+OPACITY = 1.0
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER)
 plotter.camera_position = 'zy'
 plotter.camera.azimuth = 90
@@ -236,7 +236,7 @@ try:
                                                            # TODO: directly set skel_mesh.points = posed
                     # TODO: keep getting transforms from rigid skeleton, only update the helpers' transforms.
                     #abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
-                    M = helper_rig.get_absolute_transformations(posed_locations, return_mat=True, algorithm="SVD")
+                    M = helper_rig.get_absolute_transformations(posed_locations, return_mat=True, algorithm="RST")
                     mesh_points = skinning.LBS_from_mat(arm_verts_rest, weights, M[1:]) # TODO: get rid of root
                               
                 # Set data for renderer
