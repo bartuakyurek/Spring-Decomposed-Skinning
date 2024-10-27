@@ -12,27 +12,11 @@ import numpy as np
 from numpy import linalg as LA
 
 try:
-    from .utils.linalg_utils import get_aligning_rotation, compose_transform_matrix
+    from .utils.linalg_utils import get_aligning_rotation, compose_transform_matrix, translation_vector_to_matrix
 except:
-    from utils.linalg_utils import get_aligning_rotation, compose_transform_matrix
+    from utils.linalg_utils import get_aligning_rotation, compose_transform_matrix, translation_vector_to_matrix
 
-
-
-
-
-if __name__ == "__main__":
-
-    src_segment = np.array([
-                            [1., 1., 0.],
-                            [2., 2., 0.]
-                            ])
-    
-    target_segment = np.array([
-                            [3., 2., 0.],
-                            [4., 1., 0.]
-                            ])
-    
-    
+def get_RST(src_segment, target_segment):
     # Step 0 - Declare source and target points
     assert src_segment.shape == (2,3) and target_segment.shape ==  (2,3)
     s_src, e_src = src_segment
@@ -50,6 +34,7 @@ if __name__ == "__main__":
     tgt_bone_space = tgt_translated - t
     
     # Step 3 - Compute the scaling of source by the norms ratio
+
     src_len = LA.norm(e_src - s_src)
     tgt_len = LA.norm(e_tgt - s_tgt)
     assert src_len > 1e-18, f"Expected source vector to have a positive length, got {src_len}."
@@ -65,24 +50,44 @@ if __name__ == "__main__":
     
     # Step 5 - Combine all translation, rotation and scale in a single matrix
     M = compose_transform_matrix(t, R, scale, rot_is_mat=True)
+    offs = translation_vector_to_matrix(offset)
+    inv_offs = translation_vector_to_matrix(-offset)
     
-    # Step 6 - Check if the obtained matrix can result:  M @ src = target
-    print("Testing...")
-    print("Source: ", s_src, e_src)
-    print("Target: ", s_tgt, e_tgt)
-    src_homo = np.append(src_segment, np.ones((2,1)),axis=-1)
-    offset_homo = np.append(offset, np.ones((1,1)), axis=-1)
+    return offs @ M @ inv_offs
     
-    src_transformed = (M  @ (src_homo - offset_homo).T) + offset_homo.T
+if __name__ == "__main__":
+    print("Testing RST...")
+    src_segment = np.array([
+                            [1., 1., 0.4],
+                            [2., 2., 0.2]
+                            ])
     
-    begin = src_transformed.T[0, :3]
-    end = src_transformed.T[1, :3]
+    target_segment = np.array([
+                            [3., 2., 0.3],
+                            [4., 1.4, 0.9]
+                            ])
     
+    
+    # Obtain transformations ----------------------------------------------------------------
+    M = get_RST(src_segment, target_segment)
+    
+    # Convert homogeneous coordinates
+    src_homo = np.append(src_segment, np.ones((2,1)),axis=-1) # (2,3) append (2,1) -> (2,4)
+    
+    # Get result
+    src_transformed = ( M @ src_homo.T)        # (4,4) @ (2,4).T -> (4,2)
+    src_transformed = src_transformed.T[:,:3]  # (4,2).T -> (2,3)
+    
+    # Print Results ------------------------------------------------------------------------
+    # Check if the obtained matrix can result:  M @ src = target
+    print("Source: ", src_segment[0], src_segment[1])
+    print("Target: ", target_segment[0], target_segment[1])
+    
+    begin = src_transformed[0]
+    end = src_transformed[1]
     print("Result ", np.round(begin, 4), 
                      np.round(end, 4))
 
-
-    
     
     
     
