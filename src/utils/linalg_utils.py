@@ -105,6 +105,29 @@ def get_rotation_mats(rot_quats):
         R_mats.append(rot.as_matrix())
     return np.array(R_mats)
 
+def get_trans_matrix(trans):
+    """
+    Given the translation vector [x, y, z], 
+    retrieve the translation matrix:
+                                    [1, 0, 0, x]
+                                    [0, 1, 0, y]
+                                    [0, 0, 1, z]
+                                    [0, 0, 0, 1]
+    Parameters
+    ----------
+    trans : np.ndarray
+        A 3D vector to represent translation, has shape (3,1) or (3,)
+
+    Returns
+    -------
+    mat : np.ndarray
+        A homogeneous matrix that translates a vector when applied, has shape (4,4)
+    """
+    assert trans.shape == (3,1) or trans.shape == (3,), f"Expected translation vector to be 3D vector, got shape {trans.shape}."
+    mat = np.eye(4)
+    mat[0:3,-1] = trans
+    return mat
+
 def get_transform_mats_from_quat_rots(trans, rotations):
     assert len(trans) == len(rotations), f"Given lists must have same lengths. Got {len(trans)} and {len(rotations)}"
 
