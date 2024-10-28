@@ -116,46 +116,7 @@ class HelperBonesHandler:
                                                  free mass. Got {len(self.free_idxs)} masses \
                                                  for {n_helper} jiggle bones."
         
-    
-    def init_pose(self, theta, trans, degrees):
-        """
-        Sets the previous bone locations to the given pose. This should be
-        called before initiating animation.
-
-        Parameters
-        ----------
-       theta : np.ndarray
-           DESCRIPTION.
-       trans : np.ndarray
-           DESCRIPTION.
-       degrees : bool 
-           DESCRIPTION.
-
-        Returns
-        -------
-        None.
-        """
-
-        initial_pose_locations = self.skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=False)
         
-        if self.prev_sim_locations is None:
-            self.prev_sim_locations = initial_pose_locations
-     
-        return initial_pose_locations
-    
-    def reset_rig(self):
-        """
-        Reset the spring rig simulation.
-
-        Returns
-        -------
-        None.
-
-        """
-        self.prev_sim_locations = None
-        print(">> TODO: reset mass-spring forces and locations too.")
-        return
-    
     def _preserve_bone_length(self, bone_start : np.ndarray,  
                                     free_mass_idx  : int, 
                                     original_length : float ):
@@ -199,23 +160,16 @@ class HelperBonesHandler:
         
         return adjust_vec, self.simulator.masses[free_mass_idx].center
     
-    def pose_bones(self, theta, trans, degrees, exclude_root, dt=None):
+    def update_bones(self, rigidly_posed_locations, dt=None):
         """
         Given the relative rotations, update the skeleton joints with mass-spring
         system and return the resulting joint locations.
 
         Parameters
         ----------
-        theta : np.ndarray
-            Axis-angle representation of relative rotations for each bone.
-        degrees : bool 
-            Set True if the provided theta is in degrees, False if in radians.
-        exclude_root : bool
-            Set True if you don't want to get the invisible root bone locations.
-            Otherwise set False if you also want root bone's endpoints for rendering.
+        rigidly_posed_locations : np.ndarray
+            Bone locations, 2 joint locations per bone, at the current frame.
             
-            TODO: it should be removed in future releases and renderer should decide
-            how to render the root node.
         Returns
         -------
         simulated_locations : np.ndarray
@@ -227,21 +181,16 @@ class HelperBonesHandler:
         # ---------------------------------------------------------------------
         # Precomputation checks
         # ---------------------------------------------------------------------
-        if type(theta) is not np.ndarray:
-            if type(theta) is list:
-                theta = np.array(theta)
-            else:
-                print(f"WARNING: Theta is expected to be either list or np.ndarray type, got {type(theta)}.")
-        assert type(degrees) == bool, f"Expected degrees parameter to have type bool, got {type(degrees)}"
-        assert type(exclude_root) == bool, f"Expected exclude_root parameter to have type bool, got {type(exclude_root)}"
 
 
         # ---------------------------------------------------------------------
         # Compute the new mass positions and update helper bone locations
         # ---------------------------------------------------------------------
         # Step 0 - Get the rigidly posed locations as the target
-        rigidly_posed_locations = self.init_pose(theta, trans, degrees=degrees)
         simulated_locations = rigidly_posed_locations.copy() 
+        
+        if self.prev_sim_locations is None:
+            self.prev_sim_locations = rigidly_posed_locations
         
         # WARNING: You're taking the difference data from the rigid skeleton, but what happens
         # if you had a chain of helper bones that are affecting each other? i.e.
@@ -288,8 +237,6 @@ class HelperBonesHandler:
         # ---------------------------------------------------------------------
         # Return checks
         # ---------------------------------------------------------------------
-        if exclude_root:
-            return simulated_locations[2:]
         return simulated_locations
         
     

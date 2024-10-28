@@ -226,17 +226,16 @@ try:
                     else:        # Lerp with the last pose for boomerang
                         theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
                 
+                posed_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
                 if MODE=="Rigid":
-
-                    posed_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
                     posed_locations = np.reshape(posed_locations, (-1,3)) # Combine all the 3D points into one dimension
-                    
                     skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
 
                     abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
                     mesh_points = skinning.LBS_from_quat(arm_verts_rest, weights, abs_rot_quat[1:], abs_trans[1:]) # TODO: get rid of root
                 else:
-                    posed_locations = helper_rig.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
+                    
+                    posed_locations = helper_rig.update_bones(posed_locations) # Update the rigidly posed locations
                     posed_locations = np.reshape(posed_locations, (-1,3)) # Combine all the 3D points into one dimension
                     
                     skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
