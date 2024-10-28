@@ -1,6 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
 
+This file is created to infer transformations, given the bone locations at the
+rest pose and the updated bone locations at the current frame. Note that this
+is not a typical Inverse Kinematics module, the name might be misleading. 
+
+The transformations are inferred via mapping line segments from one frame 
+to another. The available options are:
+                                        - SVD based optimal rigid motion
+                                        - RST based affine transformations
+
+"""
 import numpy as np
 from scipy.spatial.transform import Rotation
 
