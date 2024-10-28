@@ -40,7 +40,8 @@ def get_RST(src_segment, target_segment):
     R = get_aligning_rotation(src_bone_space[1], tgt_bone_space[1], homogeneous=True)
     src_bs_rotated = R[:3,:3] @ src_bone_space[1]
     # Check if the angle between is practically zero (note that lower than 1e-6 can fail)
-    assert angle_between_vectors_np(src_bs_rotated, tgt_bone_space[1]) < 1e-5, "Expected the rotated bone space vector to be aligned with target at bone space."
+    angle = angle_between_vectors_np(src_bs_rotated, tgt_bone_space[1])
+    assert angle < 1e-5, f"Expected the rotated bone space vector to be aligned with target at bone space. Got angle {angle} > 1e-5."
     
     # Step 4 - Compute the scaling of source by the norms ratio 
     # Note that we compute that after rotation, because rotation also scales when the vectors aren't normalized
