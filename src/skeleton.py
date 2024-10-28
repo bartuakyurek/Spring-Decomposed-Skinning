@@ -472,8 +472,7 @@ def add_helper_bones(test_skeleton,
     assert offset_ratio <= 1.0 and offset_ratio >= 0.0, f">>  Excpected offset_ratio to be in range [0, 1], got {offset_ratio}."
     if offset_ratio:
         print("WARNING: Adding a helper bone as a child of another helper bone is assumed\
-        to have offset_ratio = 0.0, but provided ratio is {offset_ratio}. The code will work\
-        but the functionality will be weird.")
+        to have no offset, i.e offset_ratio = 0.0, but provided ratio is {offset_ratio}.")
         
     n_helper = len(helper_bone_parents)
     if len(startpoints)==0: startpoints = np.repeat([None],n_helper)

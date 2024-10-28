@@ -76,36 +76,20 @@ ENVELOPE = 10. # For weights
 # ---------------------------------------------------------------------------- 
 # Create rig and add helper bones
 # ---------------------------------------------------------------------------- 
-PARENT_IDX = 2
-helper_bone_endpoints = np.array([ joint_locations[PARENT_IDX] + [0.0, 0.2, 0.0] ])
-helper_bone_parents = [PARENT_IDX]
-
 test_skeleton = create_skeleton(joint_locations, kintree)
+
+helper_bone_endpoints = np.array([[ 0.1016,  0.481821, -0.31808 ],
+                                  [ 0.1086,  0.4821, -0.0808 ],
+                                  [ 0.1637,  0.39714, -0.08928]])
+helper_bone_parents = [2, 5, 6]
 
 helper_idxs = add_helper_bones(test_skeleton, 
                                helper_bone_endpoints, 
                                helper_bone_parents,
-                               offset_ratio=0.5,
-                               #startpoints=helper_bone_endpoints-1e-6
                                )
 
-# Add helpers to the tip of the previously added helpers 
-another_helper_idxs = add_helper_bones(test_skeleton,
-                                       helper_bone_endpoints * 1.25, 
-                                       helper_bone_parents = helper_idxs,
-                                       offset_ratio=0.0,
-                                       )
-# TODO: This wasn't the way we supposed to add helpers. Can we change it to a single call?
-another_helper_idxs2 = add_helper_bones(test_skeleton,
-                                       helper_bone_endpoints * 2, 
-                                       helper_bone_parents = another_helper_idxs,
-                                       offset_ratio=0.0,
-                                       )
-# TODO: Again, can we change the adding of the helpers a single call by declaring
-#  the additional data manually in another script?
-all_helper_idxs = helper_idxs + another_helper_idxs + another_helper_idxs2
 helper_rig = HelperBonesHandler(test_skeleton, 
-                                all_helper_idxs,
+                                helper_idxs,
                                 mass          = MASS, 
                                 stiffness     = STIFFNESS,
                                 damping       = DAMPING,
