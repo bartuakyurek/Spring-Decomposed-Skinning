@@ -27,8 +27,8 @@ See https://igl.ethz.ch/projects/ARAP/svd_rot.pdf for the implementation details
 # ================================================================================================================
 
 import numpy as np
-from .utils.sanity_check import _assert_equality
-from .global_vars import _SPACE_DIMS_
+from ..utils.sanity_check import _assert_equality
+from ..global_vars import _SPACE_DIMS_
 
 # ================================================================================================================
 #                            SANITY CHECK FUNCTIONS FOR OPTIMAL RIGID MOTION ALGORITHM

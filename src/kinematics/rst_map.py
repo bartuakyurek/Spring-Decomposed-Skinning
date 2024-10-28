@@ -11,13 +11,8 @@ the given source line segment to the target line segment.
 import numpy as np
 from numpy import linalg as LA
 
-try:
-    from .utils.linalg_utils import(get_aligning_rotation, 
-                                    translation_vector_to_matrix,
-                                    angle_between_vectors_np,
-                                    get_3d_scale)
-except:
-    from utils.linalg_utils import(get_aligning_rotation, 
+
+from ..utils.linalg_utils import(get_aligning_rotation, 
                                     translation_vector_to_matrix,
                                     angle_between_vectors_np,
                                     get_3d_scale)

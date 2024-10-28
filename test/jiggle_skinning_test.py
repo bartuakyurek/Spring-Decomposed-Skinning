@@ -33,6 +33,7 @@ import __init__
 from data import poses
 from src import skinning
 from src.utils.linalg_utils import lerp
+from src.kinematics import inverse_kinematics
 from src.helper_handler import HelperBonesHandler
 from src.global_vars import IGL_DATA_PATH, RESULT_PATH
 from src.render.pyvista_render_tools import add_skeleton, add_mesh
@@ -55,7 +56,7 @@ pose = poses.igl_arm_pose
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODE = "Rigid" #"Rigid" or "Dynamic" TODO: could you use more robust way to set it?
+MODE = "Dynamic" #"Rigid" or "Dynamic" TODO: could you use more robust way to set it?
 FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
@@ -227,22 +228,24 @@ try:
                 
                 if MODE=="Rigid":
 
-                    bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
-                    posed_locations = np.reshape(bone_locations, (-1,3)) # Combine all the 3D points into one dimension
+                    posed_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
+                    posed_locations = np.reshape(posed_locations, (-1,3)) # Combine all the 3D points into one dimension
                     
                     skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
 
                     abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
                     mesh_points = skinning.LBS_from_quat(arm_verts_rest, weights, abs_rot_quat[1:], abs_trans[1:]) # TODO: get rid of root
                 else:
-                    bone_locations = helper_rig.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
-                    posed_locations = np.reshape(bone_locations, (-1,3)) # Combine all the 3D points into one dimension
+                    posed_locations = helper_rig.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
+                    posed_locations = np.reshape(posed_locations, (-1,3)) # Combine all the 3D points into one dimension
                     
                     skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
                                                            # TODO: directly set skel_mesh.points = posed
                     # TODO: keep getting transforms from rigid skeleton, only update the helpers' transforms.
                     #abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
-                    M = helper_rig.get_absolute_transformations(posed_locations, return_mat=True, algorithm="RST")
+                    #M = helper_rig.get_absolute_transformations(posed_locations, return_mat=True, algorithm="RST")
+                    rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=False) # TODO: Remove this line from here
+                    M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, posed_locations, return_mat=True, algorithm="RST")
                     mesh_points = skinning.LBS_from_mat(arm_verts_rest, weights, M[1:]) # TODO: get rid of root
                               
                 # Set data for renderer
