@@ -19,3 +19,4 @@ demo/vispy_picking.py
 results/.DS_Store
 /tests/__pycache__
 /tests/__pycache__
+tach.toml

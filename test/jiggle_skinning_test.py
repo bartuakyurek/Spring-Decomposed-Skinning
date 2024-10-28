@@ -55,7 +55,7 @@ pose = poses.igl_arm_pose
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODE = "Dynamic" #"Rigid" or "Dynamic" TODO: could you use more robust way to set it?
+MODE = "Rigid" #"Rigid" or "Dynamic" TODO: could you use more robust way to set it?
 FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
@@ -163,7 +163,8 @@ elif MODE == "Dynamic":
         idxs = data["arr_1"]
     single_bone_weights = np.zeros((n_verts))
     single_bone_weights[idxs] = w
-    helper_weights[:,-1] = single_bone_weights
+    SELECTED_HELPER = 1 # 0 1 2
+    helper_weights[:,SELECTED_HELPER] = single_bone_weights
     # end of insert bone weights
 else:
     print(f">> ERROR: Unexpected skinning mode {MODE}")
@@ -225,13 +226,18 @@ try:
                         theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
                 
                 if MODE=="Rigid":
-                    posed_locations = skinning.get_skel_points(test_skeleton, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
+
+                    bone_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
+                    posed_locations = np.reshape(bone_locations, (-1,3)) # Combine all the 3D points into one dimension
+                    
                     skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
 
                     abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
                     mesh_points = skinning.LBS_from_quat(arm_verts_rest, weights, abs_rot_quat[1:], abs_trans[1:]) # TODO: get rid of root
                 else:
-                    posed_locations = skinning.get_skel_points(helper_rig, theta, trans, degrees=DEGREES, exclude_root=False, combine_points=True)
+                    bone_locations = helper_rig.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
+                    posed_locations = np.reshape(bone_locations, (-1,3)) # Combine all the 3D points into one dimension
+                    
                     skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
                                                            # TODO: directly set skel_mesh.points = posed
                     # TODO: keep getting transforms from rigid skeleton, only update the helpers' transforms.

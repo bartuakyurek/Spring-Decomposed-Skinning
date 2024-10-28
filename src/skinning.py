@@ -11,22 +11,12 @@ import igl
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from .skeleton import Skeleton
 from .utils.sanity_check import _assert_normalized_weights
 from .utils.linalg_utils import get_transform_mats_from_quat_rots, min_distance, normalize_weights
 
 # ---------------------------------------------------------------------------------
 # Helper routine to obtain posed mesh vertices
 # ---------------------------------------------------------------------------------
-def get_skel_points(skeleton, theta, trans, degrees, exclude_root, combine_points=True):
-   
-    bone_locations = skeleton.pose_bones(theta, trans, degrees=degrees, exclude_root=exclude_root)
-    
-    skel_mesh_points = bone_locations
-    if combine_points:
-        skel_mesh_points = np.reshape(bone_locations, (-1,3)) # Combine all the 3D points into one dimension
-   
-    return skel_mesh_points
 
 def _get_mesh_points(mode):
     
