@@ -37,7 +37,11 @@ def angle_between_vectors_np(u, v, degrees=True):
     """
     u = np.array(u)
     v = np.array(v)
-    cos_theta = np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v))
+    norm_u = LA.norm(u)
+    norm_v = LA.norm(v)
+    assert norm_u > 0.0, f"Expected input vector {u} to have a non-zero length."
+    assert norm_v > 0.0, f"Expected input vector {v} to have a non-zero length."
+    cos_theta = np.dot(u, v) / (norm_u * norm_v)
     
     angle_rad = np.arccos(np.clip(cos_theta, -1.0, 1.0))
    
