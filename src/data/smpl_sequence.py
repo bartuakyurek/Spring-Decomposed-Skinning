@@ -57,9 +57,20 @@ femaleids = subject_ids[:5]
 maleids = subject_ids[5:]
 
                     
-def get_smpl_rest_data(smpl_model, betas, trans):
-    T_pose = np.zeros((1,72))
-    V_rest, J_rest = smpl_model(betas, T_pose, trans)
+def get_smpl_rest_data(smpl_model, beta, trans):
+    assert type(beta) is torch.Tensor
+    assert type(trans) is torch.Tensor
+    
+    if len(beta.shape) == 1: # This is needed for batched SMPL model
+        beta = beta.unsqueeze(0)
+    if len(trans.shape) == 1:
+        trans = trans.unsqueeze(0)
+        
+    assert len(beta.shape) == 2 and len(trans.shape) == 2
+    assert beta.shape[0] == 1, f"Expected beta to have shape (1, n_betas)."
+    
+    T_pose = torch.zeros((1,72)) # 24 * 3 = 72, where 24 is the number of bones in SMPL
+    V_rest, J_rest = smpl_model(beta, T_pose, trans)
     return V_rest, J_rest
 
 def _retrieve_bpt_and_v(subject_id, pose_id, regis_dir):
@@ -202,7 +213,14 @@ if __name__ == "__main__":
     SELECTED_POSE = pose_ids[0]
     
     smpl_model = get_gendered_smpl_model(subject_id=SELECTED_SUBJECT, device="cpu")
-    V_gt, V_smpl, J, _ = get_anim_sequence(SELECTED_SUBJECT, SELECTED_POSE, smpl_model, return_numpy=True)
+    V_gt, V_smpl, J, bpt = get_anim_sequence(SELECTED_SUBJECT, SELECTED_POSE, smpl_model, return_numpy=True)
+    
+    V_rest, J_rest = get_smpl_rest_data(smpl_model, bpt[0][0], bpt[-1][0])
+    
+    # To write .obj file, try 
+    # import igl
+    # F = np.array(smpl_model.faces, dtype=int)
+    # igl.write_obj(RESULT_PATH + "smpl_rest.obj", V_rest[0], F)
     
     print(">> End of test.")
     
