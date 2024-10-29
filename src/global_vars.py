@@ -17,5 +17,8 @@ VERBOSE = True
 ABS_PATH = "/Users/bartu/Documents/Github/Spring-Decomp/"
 RESULT_PATH = ABS_PATH + "results/"
 DATA_PATH = ABS_PATH + "data/"
+DFAUST_PATH = DATA_PATH + "DFaust_67"
 MODEL_PATH = ABS_PATH + "src/models/body_models/"
 IGL_DATA_PATH = DATA_PATH +"igl_data/"
+
+# TODO: rename this file as config, and maybe use a yaml file.
