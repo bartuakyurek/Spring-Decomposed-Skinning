@@ -18,6 +18,7 @@ ABS_PATH = "/Users/bartu/Documents/Github/Spring-Decomp/"
 RESULT_PATH = ABS_PATH + "results/"
 DATA_PATH = ABS_PATH + "data/"
 DFAUST_PATH = DATA_PATH + "DFaust_67"
+MODEL_REGIS_PATH = DATA_PATH + "dyna/dyna_dataset_f.h5" # Registrations of SMPL model
 MODEL_PATH = ABS_PATH + "src/models/body_models/"
 IGL_DATA_PATH = DATA_PATH +"igl_data/"
 
