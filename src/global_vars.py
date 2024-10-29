@@ -3,6 +3,8 @@
 """
 Created on Fri Sep 27 13:36:50 2024
 
+# TODO: rename this file as config, and maybe use a yaml file.
+
 @author: bartu
 """
 # TODO: Why space dims are _underscored_ but not homo_coords?
@@ -22,4 +24,12 @@ MODEL_REGIS_PATH = DATA_PATH + "dyna/dyna_dataset_f.h5" # Registrations of SMPL 
 MODEL_PATH = ABS_PATH + "src/models/body_models/"
 IGL_DATA_PATH = DATA_PATH +"igl_data/"
 
-# TODO: rename this file as config, and maybe use a yaml file.
+
+# Available DFAUST ids
+subject_ids = ['50004', '50020', '50021', '50022', '50025',
+               '50002', '50007', '50009', '50026', '50027']
+
+pose_ids = ['hips', 'knees', 'light_hopping_stiff', 'light_hopping_loose',
+            'jiggle_on_toes', 'one_leg_loose', 'shake_arms', 'chicken_wings',
+            'punching', 'shake_shoulders', 'shake_hips', 'jumping_jacks',
+            'one_leg_jump', 'running_on_spot']
