@@ -13,6 +13,7 @@ compare the computed jigglings with the ground truth DFAUST data.
 import numpy as np
 import pyvista as pv
 
+import __init__
 from src.global_vars import subject_ids, pose_ids, RESULT_PATH
 from src.data.skeleton_data import get_smpl_skeleton
 from src.render.pyvista_render_tools import add_skeleton, add_mesh
@@ -22,7 +23,7 @@ from src.data.smpl_sequence import get_gendered_smpl_model, get_anim_sequence
 # Load animation sequence for the selected subject and pose
 # -----------------------------------------------------------------------------
 
-SELECTED_SUBJECT, SELECTED_POSE = subject_ids[0], pose_ids[0]
+SELECTED_SUBJECT, SELECTED_POSE = subject_ids[0], pose_ids[4]
 
 smpl_model = get_gendered_smpl_model(subject_id=SELECTED_SUBJECT, device="cpu")
 F, kintree = smpl_model.faces, get_smpl_skeleton()
@@ -63,11 +64,29 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
 # Setup a helper rig and simulate 
 # -----------------------------------------------------------------------------
 
-# TODO: Precomputation here...
-# Note that we could do the computation inside the render loop
+# 0.1 - Setup helper bones data
+
+
+# 0.2 - Initiate helper rig
+
+
+# 0.3 - Load weights for helper bones
+
+
+# 0.4 - Bind keys (in render_tools) to show loaded weights
+
+
+# Loop over frames:
+J_dyn = J.copy() # np.zeros_like(J)
+V_dyn = V_smpl.copy() # np.zeros_like(V_smpl)
+# 1.1 - Compute dynamic joint locations via simulation
+# 1.2 - Get the transformations through IK
+# 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
+#       Note that we could do the computation inside the render loop
+
 # TODO: Report timing
-J_dyn = J.copy()
-V_dyn = V_smpl.copy()
+
+
 
 # Add SMPL mesh to be jiggled
 plotter.subplot(0, 2)
@@ -93,7 +112,7 @@ for frame in range(n_frames):
     dfaust_mesh.points = V_gt[frame]
     rigid_smpl_mesh.points = V_smpl[frame]
     dyn_smpl_mesh.points = V_dyn[frame]
-    
+     
     plotter.write_frame()               # Write a frame. This triggers a render.
     
 plotter.close()
