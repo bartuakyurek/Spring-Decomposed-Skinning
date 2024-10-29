@@ -3,7 +3,7 @@
 """
 This file is created to load an animation sequence from SMPL dataset. 
 Available methods are:
-                        get_smpl_model()
+                        get_gendered_smpl_model()
                         get_anim_sequence()
                         get_smpl_rest_data()
 
@@ -38,7 +38,6 @@ import sys
 sys.path.append('../') # For parent directory packages
 
 from models.smpl_torch_batch import SMPLModel
-from skeleton_data import get_smpl_skeleton
 from global_vars import MODEL_PATH, DFAUST_PATH, MODEL_REGIS_PATH
 
 
@@ -111,7 +110,7 @@ def _orientate_target_verts_to_smpl(verts, smpl_verts):
     target_verts = verts - translation
     return target_verts
 
-def get_smpl_model(device, subject_id=None, model_gender=None):
+def get_gendered_smpl_model(device, subject_id=None, model_gender=None):
     """
     Given the subject_id or model_gender, load the SMPL model and return it.
     
@@ -198,10 +197,8 @@ if __name__ == "__main__":
     SELECTED_SUBJECT = femaleids[0]
     SELECTED_POSE = pose_ids[0]
     
-    smpl_model = get_smpl_model(subject_id=SELECTED_SUBJECT, device="cpu")
+    smpl_model = get_gendered_smpl_model(subject_id=SELECTED_SUBJECT, device="cpu")
     V_gt, V_smpl, J, _ = get_anim_sequence(SELECTED_SUBJECT, SELECTED_POSE, smpl_model, return_numpy=True)
     
-    F = smpl_model.faces
-    kintree = get_smpl_skeleton()
     print(">> End of test.")
     
