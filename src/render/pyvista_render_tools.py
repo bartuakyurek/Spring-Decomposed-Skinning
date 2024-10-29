@@ -44,12 +44,15 @@ def set_mesh_color(mesh, color):
     mesh['vert_colors'] = colors
     return
 
-def add_mesh(plotter, verts, faces, 
-             triangular=True, opacity=1.0, 
-             return_actor=False, color=[0.8, 0.8, 1.0]):
+def add_mesh(plotter,
+             verts, 
+             faces, 
+             opacity=1.0, 
+             return_actor=False, 
+             color=[0.8, 0.8, 1.0]):
     
-    assert triangular and faces.shape[-1] == 3, ">> WARNING: Non-triangular meshes are not supported yet"
-    assert verts.shape[1] == 3, f"Expected vertices to have shape (n_verts, 3), got {verts.shape}."
+    assert faces.shape[-1] == 3, f"Non-triangular meshes are not supported yet. Expected faces has shape (n_faces, 3), got {faces.shape}"
+    assert verts.shape[-1] == 3, f"Expected vertices to have shape (n_verts, 3), got {verts.shape}."
     
     faces_w_padding = _get_padded_edges(faces, 3)
     mesh = pv.PolyData(verts, faces_w_padding)
@@ -62,8 +65,6 @@ def add_mesh(plotter, verts, faces,
                                     mesh,
                                     scalars='vert_colors',
                                     rgb=True,
-                                    #scalars = 'weights',
-                                    #cmap='jet',
                                     lighting=True,
                                     show_edges=False,
                                     opacity=opacity
