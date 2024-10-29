@@ -34,11 +34,15 @@ import os
 import h5py
 import torch
 import numpy as np
-import sys
-sys.path.append('../') # For parent directory packages
 
-from models.smpl_torch_batch import SMPLModel
-from global_vars import MODEL_PATH, DFAUST_PATH, MODEL_REGIS_PATH
+try:
+    from ..models.smpl_torch_batch import SMPLModel
+    from ..global_vars import MODEL_PATH, DFAUST_PATH, MODEL_REGIS_PATH
+except:
+    import sys
+    sys.path.append('../') # For parent directory packages
+    from models.smpl_torch_batch import SMPLModel
+    from global_vars import MODEL_PATH, DFAUST_PATH, MODEL_REGIS_PATH
 
 
 subject_ids = ['50004', '50020', '50021', '50022', '50025',
@@ -101,7 +105,7 @@ def _orientate_target_verts_to_smpl(verts, smpl_verts):
         DESCRIPTION.
 
     """
-    assert verts.shape == smpl_verts.shape
+    assert verts.shape == smpl_verts.shape, f"Found erronous data, please try another pose id."
     assert len(verts.shape) == 3 and verts.shape[-1] == 3, f"Expected vertices to have shape (n_batch, n_frames, 3) or (n_frames, 3)\
                                    Got {verts.shape}."
 
