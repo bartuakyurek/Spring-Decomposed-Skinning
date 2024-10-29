@@ -30,7 +30,7 @@ import numpy as np
 import pyvista as pv
 
 import __init__
-from data import poses
+from src.data import poses
 from src import skinning
 from src.utils.linalg_utils import lerp
 from src.kinematics import inverse_kinematics
