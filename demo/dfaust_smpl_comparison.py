@@ -14,10 +14,32 @@ import numpy as np
 import pyvista as pv
 
 import __init__
-from src.global_vars import subject_ids, pose_ids, RESULT_PATH
+from src.helper_handler import HelperBonesHandler
 from src.data.skeleton_data import get_smpl_skeleton
-from src.render.pyvista_render_tools import add_skeleton, add_mesh
-from src.data.smpl_sequence import get_gendered_smpl_model, get_anim_sequence
+from src.skeleton import create_skeleton, add_helper_bones
+from src.global_vars import subject_ids, pose_ids, RESULT_PATH
+from src.data.smpl_sequence import get_gendered_smpl_model, get_anim_sequence, get_smpl_rest_data
+from src.render.pyvista_render_tools import (add_mesh, 
+                                             add_skeleton, 
+                                             set_mesh_color_scalars,
+                                             set_mesh_color)
+
+# -----------------------------------------------------------------------------
+# Config Parameters 
+# -----------------------------------------------------------------------------
+FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
+POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
+DEGREES = True # Set true if pose is represented with degrees as Euler angles.
+N_REPEAT = 10
+N_REST = N_REPEAT - 5
+FRAME_RATE = 24 #24
+TIME_STEP = 1./FRAME_RATE  
+MASS = 1.
+STIFFNESS = 300.
+DAMPING = 50.            
+MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 # -----------------------------------------------------------------------------
 # Load animation sequence for the selected subject and pose
@@ -26,8 +48,105 @@ from src.data.smpl_sequence import get_gendered_smpl_model, get_anim_sequence
 SELECTED_SUBJECT, SELECTED_POSE = subject_ids[0], pose_ids[4]
 
 smpl_model = get_gendered_smpl_model(subject_id=SELECTED_SUBJECT, device="cpu")
-F, kintree = smpl_model.faces, get_smpl_skeleton()
-V_gt, V_smpl, J, _ = get_anim_sequence(SELECTED_SUBJECT, SELECTED_POSE, smpl_model, return_numpy=True)
+F = np.array(smpl_model.faces, dtype=int)
+smpl_kintree = get_smpl_skeleton()
+V_gt, V_smpl, J, bpt = get_anim_sequence(SELECTED_SUBJECT, SELECTED_POSE, smpl_model, return_numpy=True)
+V_rest, J_rest = get_smpl_rest_data(smpl_model, bpt[0][0], bpt[-1][0], return_numpy=True)
+
+
+# -----------------------------------------------------------------------------
+# Setup a helper rig
+# -----------------------------------------------------------------------------
+
+# Setup helper bones data
+HELPER_RIG_PATH = "../data/helper_rig_data_50004.npz"
+if SELECTED_SUBJECT != "50004": print(">> WARNING: Selected subject does not match with imported rig target.")
+
+# Load joint locations, kintree and weights
+with np.load(HELPER_RIG_PATH) as data:
+     helper_W = data["weights"]
+     helper_joints = data["joints"]
+     helper_kintree = data["kintree"]
+
+# Configure helper rig kintree
+n_rigid_bones = J.shape[1]
+n_helper_bones = helper_joints.shape[0]
+HELPER_ROOT_PARENT = 5
+assert HELPER_ROOT_PARENT < n_rigid_bones, f"Please select a valid parent index from: [0,..,{n_rigid_bones-1}]."
+assert helper_kintree[0,0] == -1, "Expected first entry to be the root bone."
+assert helper_kintree.shape[1] == 2, f"Expected helper kintree to have shape (n_helpers, 2), got {helper_kintree.shape}."
+assert helper_joints.shape == (n_helper_bones,2,3), f"Expected helper joints to have shape (n_helpers, 2, 3), got {helper_joints.shape}."
+
+helper_kintree = helper_kintree + (n_rigid_bones-1) # Update helper indices to match with current skeleton
+helper_kintree[0,0] = HELPER_ROOT_PARENT            # Bind the helper tree to a bone in rigid skeleton
+
+helper_parents = helper_kintree[:,0]                  # Extract parents (TODO: could you require less steps to setup helpers please?)
+helper_endpoints = helper_joints[:,-1,:]            # TODO: we should be able to insert helper bones with head,tail data
+assert len(helper_parents) == n_helper_bones, f"Expected all helper bones to have parents. Got {len(helper_parents)} parents instead of {n_helper_bones}."
+
+# Initiate rigid rig and add helper bones on it
+skeleton = create_skeleton(J_rest, smpl_kintree)
+helper_idxs = add_helper_bones(skeleton, 
+                               helper_endpoints, 
+                               helper_parents,
+                               )
+
+helper_rig = HelperBonesHandler(skeleton, 
+                                helper_idxs,
+                                mass          = MASS, 
+                                stiffness     = STIFFNESS,
+                                damping       = DAMPING,
+                                mass_dscale   = MASS_DSCALE,
+                                spring_dscale = SPRING_DSCALE,
+                                dt            = TIME_STEP,
+                                point_spring  = POINT_SPRING,
+                                fixed_scale   = FIXED_SCALE) 
+
+# -----------------------------------------------------------------------------
+# Simulate data
+# -----------------------------------------------------------------------------
+
+def extract_headtail_locations(joints, kintree, exclude_root=False, collapse=True):
+    # Given the joints and their connectivity
+    # Extract two endpoints for each bone
+    
+    n_bones = len(kintree)
+    if not exclude_root: n_bones += 1
+    J = np.empty((n_bones, 2, 3))
+    
+    if not exclude_root: # WARNING: Assumes root node is at 0
+        J[0] = np.array([[0,0,0], joints[0]])
+        
+    for pair in kintree:
+        parent_idx, bone_idx = pair
+        J[bone_idx-1] = np.array([joints[parent_idx], joints[bone_idx]]) 
+        
+    if collapse:
+        J = np.reshape(J, (-1,3))
+    return J
+
+# Loop over frames:
+
+J_dyn = []
+V_dyn = V_smpl.copy() #[]
+n_frames = V_smpl.shape[0]
+all_J = skeleton.get_rest_bone_locations(exclude_root=False)
+for frame in range(n_frames):
+    
+    # 1.1 - Compute dynamic joint locations via simulation
+    # 1.2 - Get the transformations through IK
+    # 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
+
+    smpl_J_frame = extract_headtail_locations(J[frame], smpl_kintree, exclude_root=False)
+    all_J[:len(smpl_J_frame)] = smpl_J_frame
+    
+    posed_locations = helper_rig.update_bones(all_J) # Update the rigidly posed locations
+    all_J = posed_locations.copy()
+    J_dyn.append(all_J)
+
+J_dyn = np.array(J_dyn, dtype=float)
+# TODO: add rest frames to see jiggling after motion? No because smpl data has no ground truth for that.
+# TODO: Report simulation timing
 
 
 # -----------------------------------------------------------------------------
@@ -53,49 +172,65 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
 
 # Add SMPL Mesh 
 plotter.subplot(0, 1)
-rigid_skel_mesh = add_skeleton(plotter, J[0], kintree)
+rigid_skel_mesh = add_skeleton(plotter, initial_J, smpl_kintree)
 rigid_smpl_mesh = add_mesh(plotter, initial_smpl_V, F, opacity=0.8)
 plotter.add_text("SMPL Rigid Deformation", font_size=18)
 plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
 
-# -----------------------------------------------------------------------------
-# Setup a helper rig and simulate 
-# -----------------------------------------------------------------------------
-
-# 0.1 - Setup helper bones data
-
-
-# 0.2 - Initiate helper rig
-
-
-# 0.3 - Load weights for helper bones
-
-
-# 0.4 - Bind keys (in render_tools) to show loaded weights
-
-
-# Loop over frames:
-J_dyn = J.copy() # np.zeros_like(J)
-V_dyn = V_smpl.copy() # np.zeros_like(V_smpl)
-# 1.1 - Compute dynamic joint locations via simulation
-# 1.2 - Get the transformations through IK
-# 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
-#       Note that we could do the computation inside the render loop
-
-# TODO: Report timing
-
-
-
 # Add SMPL mesh to be jiggled
 plotter.subplot(0, 2)
-dyn_skel_mesh = add_skeleton(plotter, J_dyn[0], kintree)
+
+assert J_dyn.shape[0] == J.shape[0], f"Expected first dimensions to share number of frames (n_frames, n_bones, 3). Got shapes {J_dyn} and {J}."
+J_dyn_initial = J_dyn[0]
+edges = len(skeleton.rest_bones)
+line_segments = np.reshape(np.arange(0, 2*(edges-1)), (edges-1, 2))
+dyn_skel_mesh = add_skeleton(plotter, J_dyn_initial, line_segments)
+
 dyn_smpl_mesh = add_mesh(plotter, initial_smpl_V, F, opacity=0.8)
 plotter.add_text("Spring Deformation", font_size=18)
 plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
+
+# ---------------------------------------------------------------------------------
+# Set up Key Press Actions
+# ---------------------------------------------------------------------------------
+selected_bone_idx = -1
+bone_start_idx = n_rigid_bones - 1
+weights = helper_W                     # TODO: extract interface?
+mesh_to_be_colored = dyn_smpl_mesh     # TODO: extract interface?
+
+def change_colors():
+    global selected_bone_idx
+    global n_bones
+    
+    if selected_bone_idx == -1:
+        selected_bone_idx = bone_start_idx
+        
+    selected_bone_idx += 1
+    if selected_bone_idx >= n_bones-1: # TODO: remove -1 when you get rid of root bone
+        selected_bone_idx = -1
+    
+    if selected_bone_idx >= 0:
+        print("INFO: Selected bone ", selected_bone_idx)
+        print(">> Call set mesh colors...")
+        selected_weights = weights[:,selected_bone_idx]
+        set_mesh_color_scalars(mesh_to_be_colored, selected_weights)  
+
+def deselect_bone():
+    global selected_bone_idx
+    selected_bone_idx = -1
+    set_mesh_color(mesh_to_be_colored, [0.8, 0.8, 1.0])
+    print(">> INFO: Bone deselected.")
+    return
+
+# When "B" key is pressed, show colors of the corresponding bone's weights
+plotter.add_key_event("B", change_colors)
+plotter.add_key_event("b", change_colors)
+plotter.add_key_event("N", deselect_bone)
+plotter.add_key_event("n", deselect_bone)
 
 # -----------------------------------------------------------------------------
 # Render and save results
