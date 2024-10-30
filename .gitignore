@@ -20,3 +20,4 @@ results/.DS_Store
 /tests/__pycache__
 /tests/__pycache__
 tach.toml
+data/.DS_Store
