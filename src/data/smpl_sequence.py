@@ -57,7 +57,7 @@ femaleids = subject_ids[:5]
 maleids = subject_ids[5:]
 
                     
-def get_smpl_rest_data(smpl_model, beta, trans):
+def get_smpl_rest_data(smpl_model, beta, trans, return_numpy=True):
     assert type(beta) is torch.Tensor
     assert type(trans) is torch.Tensor
     
@@ -67,10 +67,17 @@ def get_smpl_rest_data(smpl_model, beta, trans):
         trans = trans.unsqueeze(0)
         
     assert len(beta.shape) == 2 and len(trans.shape) == 2
-    assert beta.shape[0] == 1, f"Expected beta to have shape (1, n_betas)."
+    assert beta.shape[0] == 1, f"Expected beta to have shape (1, n_betas), got {beta.shape}."
     
     T_pose = torch.zeros((1,72)) # 24 * 3 = 72, where 24 is the number of bones in SMPL
     V_rest, J_rest = smpl_model(beta, T_pose, trans)
+    
+    V_rest = V_rest.squeeze()
+    J_rest = J_rest.squeeze()
+    if return_numpy:
+        V_rest = V_rest.detach().cpu().numpy()
+        J_rest = J_rest.detach().cpu().numpy()
+        
     return V_rest, J_rest
 
 def _retrieve_bpt_and_v(subject_id, pose_id, regis_dir):
