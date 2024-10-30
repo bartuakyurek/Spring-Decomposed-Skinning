@@ -132,8 +132,9 @@ data['kintree'] = kintree
 data['joints'] = J
 data['weights'] = W
 
+np.savez(PATH + OUT_FILENAME, **data) 
 print(f">> Kintree {kintree} is saved.")
 print(f">> Joints of shape {J.shape} is saved.")
 print(f">> Weights of shape {W.shape} saved. Are root weights set to zero? {RESET_ROOT_WEIGHTS}.")
 
-np.savez(PATH + OUT_FILENAME, **data)      
+     
