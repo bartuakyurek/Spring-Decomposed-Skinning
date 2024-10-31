@@ -41,6 +41,10 @@ DAMPING = 50.
 MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
+ADD_GLOBAL_T = False    # Add the global translation given in the dataset 
+                        # (Note that it'll naturally jiggle the helper bones but it doesn't mean 
+                        #  the jiggling of helper bones are intiated with rigid movement 
+                        #  so it might be misleading, could be better to keep it False.)
 # -----------------------------------------------------------------------------
 # Load animation sequence for the selected subject and pose
 # -----------------------------------------------------------------------------
@@ -145,7 +149,9 @@ for frame in range(n_frames):
     helper_poses = np.zeros((n_helper_bones, 3))
     theta = np.vstack((theta, helper_poses))
     global_trans = translations[frame].numpy()                 # (3,)
-    all_J = skeleton.pose_bones(theta, degrees=DEGREES, exclude_root=False) + global_trans
+    all_J = skeleton.pose_bones(theta, degrees=DEGREES, exclude_root=False) 
+    
+    if ADD_GLOBAL_T: all_J += global_trans
     
     # Since the regressed joint locations of SMPL is different, keep them as given in the dataset
     #smpl_J_frame = extract_headtail_locations(J[frame], smpl_kintree, exclude_root=False)
