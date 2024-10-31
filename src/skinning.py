@@ -113,11 +113,13 @@ def LBS_from_quat(V, W, abs_rot, abs_trans):
     Ms = get_transform_mats_from_quat_rots(abs_trans, abs_rot)
     return LBS_from_mat(V, W, Ms)
     
-def LBS_from_mat(V, W, M):
+def LBS_from_mat(V, W, M, normalize_weights=True):
     assert W.shape[0] == V.shape[0], f"Expected weights and verts to have same length at dimension 0, i.e. weights has shape (n_verts, n_bones)\
                                                  and verts has shape (n_verts, 3), got shape {W.shape} and {V.shape}."
-    try: _assert_normalized_weights(W)
-    except: W = normalize_weights(W)
+    
+    if normalize_weights:
+        try: _assert_normalized_weights(W)
+        except: W = normalize_weights(W)
     
     n_verts, n_bones = W.shape
     V_homo = np.append(V, np.ones((n_verts,1)), axis=-1)

@@ -14,6 +14,8 @@ import numpy as np
 import pyvista as pv
 
 import __init__
+from src import skinning
+from src.kinematics import inverse_kinematics
 from src.helper_handler import HelperBonesHandler
 from src.data.skeleton_data import get_smpl_skeleton
 from src.skeleton import create_skeleton, add_helper_bones, extract_headtail_locations
@@ -121,34 +123,42 @@ helper_rig = HelperBonesHandler(skeleton,
 
 # Loop over frames:
 J_dyn = []
-V_dyn = V_smpl.copy() #[]
+V_dyn = [] #V_smpl.copy() 
 n_frames = V_smpl.shape[0]
-#all_J = skeleton.get_rest_bone_locations(exclude_root=False)
+
 _, poses, translations = bpt
 helper_poses = np.zeros((n_helper_bones, 3))                  # (10,3)
+rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False)
 for frame in range(n_frames):
-    
+    # WARNING:I'm using pose parameters in the dataset to apply FK for helper bones
+    # but when the bones are actually posed with these parameters, the skeleton 
+    # is not the same as the provided joint locations from the SMPL model. That is
+    # because SMPL use a regressor to estimate the bone locations.
     theta = np.reshape(poses[frame].numpy(),newshape=(-1, 3)) # (24,3)
     theta = np.vstack((theta, helper_poses))                  # (34,3)
-    all_J = skeleton.pose_bones(theta, degrees=DEGREES, exclude_root=False) 
+    rigidly_posed_locations = skeleton.pose_bones(theta, degrees=DEGREES, exclude_root=False) 
     
-    if ADD_GLOBAL_T: 
-        global_trans = translations[frame].numpy()            # (3,)
-        all_J += global_trans
+    global_trans = translations[frame].numpy()            # (3,)
+    if ADD_GLOBAL_T: rigidly_posed_locations += global_trans
     
-    # WARNING: UNCOMMENT ME!
     # Since the regressed joint locations of SMPL is different, keep them as given in the dataset
-    #smpl_J_frame = extract_headtail_locations(J[frame], smpl_kintree, exclude_root=False)
-    #all_J[:len(smpl_J_frame)] = smpl_J_frame 
-    # END OF WARNING !!!!!!
+    # (Try to comment the couple lines right below this to see the effect.)
+    smpl_J_frame = extract_headtail_locations(J[frame], smpl_kintree, exclude_root=False)
+    rigidly_posed_locations[:len(smpl_J_frame)] = smpl_J_frame 
     
     # 1.1 - Compute dynamic joint locations via simulation
-    posed_locations = helper_rig.update_bones(all_J) # Update the rigidly posed locations
-    all_J = posed_locations.copy()
-    J_dyn.append(all_J)
+    dyn_posed_locations = helper_rig.update_bones(rigidly_posed_locations) # Update the rigidly posed locations
+    J_dyn.append(dyn_posed_locations)
     
     # 1.2 - Get the transformations through IK
+    M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, dyn_posed_locations, return_mat=True, algorithm="RST")
+    M = M[helper_idxs] # TODO: you may need to change it after excluding root bone? make sure you're retrieving correct transformations
+  
     # 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
+    mesh_points = skinning.LBS_from_mat(V_rest, helper_W, M, normalize_weights=False) 
+    delta_jiggle = mesh_points - V_rest #- global_trans
+    mesh_points = V_smpl[frame] + delta_jiggle
+    V_dyn.append(mesh_points)
 
 J_dyn = np.array(J_dyn, dtype=float)[:,2:,:] # TODO: get rid of the root bone
 # TODO: add rest frames to see jiggling after motion? No because smpl data has no ground truth for that.
