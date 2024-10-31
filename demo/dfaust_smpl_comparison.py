@@ -123,12 +123,13 @@ helper_rig = HelperBonesHandler(skeleton,
 
 # Loop over frames:
 J_dyn = []
-V_dyn = [] #V_smpl.copy() 
+V_dyn = V_smpl.copy() 
 n_frames = V_smpl.shape[0]
 
 _, poses, translations = bpt
 helper_poses = np.zeros((n_helper_bones, 3))                  # (10,3)
 rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False)
+prev_J = rest_bone_locations
 for frame in range(n_frames):
     # WARNING:I'm using pose parameters in the dataset to apply FK for helper bones
     # but when the bones are actually posed with these parameters, the skeleton 
@@ -151,14 +152,18 @@ for frame in range(n_frames):
     J_dyn.append(dyn_posed_locations)
     
     # 1.2 - Get the transformations through IK
-    M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, dyn_posed_locations, return_mat=True, algorithm="RST")
+    #M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, dyn_posed_locations, return_mat=True, algorithm="RST")
+    M = inverse_kinematics.get_absolute_transformations(prev_J, dyn_posed_locations, return_mat=True, algorithm="RST")
     M = M[helper_idxs] # TODO: you may need to change it after excluding root bone? make sure you're retrieving correct transformations
-  
+    
     # 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
-    mesh_points = skinning.LBS_from_mat(V_rest, helper_W, M, normalize_weights=False) 
-    delta_jiggle = mesh_points - V_rest #- global_trans
-    mesh_points = V_smpl[frame] + delta_jiggle
-    V_dyn.append(mesh_points)
+    #mesh_points = skinning.LBS_from_mat(V_rest, helper_W, M, normalize_weights=False) 
+    mesh_points = skinning.LBS_from_mat(V_smpl[frame], helper_W, M, normalize_weights=False) 
+    delta_jiggle = mesh_points - V_smpl[frame] #- global_trans
+    #mesh_points = V_smpl[frame] + delta_jiggle
+    #V_dyn.append(mesh_points)
+    V_dyn[frame] += delta_jiggle 
+    prev_J = dyn_posed_locations
 
 J_dyn = np.array(J_dyn, dtype=float)[:,2:,:] # TODO: get rid of the root bone
 # TODO: add rest frames to see jiggling after motion? No because smpl data has no ground truth for that.
