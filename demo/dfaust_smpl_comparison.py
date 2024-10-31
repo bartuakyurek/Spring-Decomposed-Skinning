@@ -30,9 +30,9 @@ from src.render.pyvista_render_tools import (add_mesh,
 FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
-DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-N_REPEAT = 10
-N_REST = N_REPEAT - 5
+DEGREES = False # Set true if pose is represented with degrees as Euler angles. 
+                # WARNING: For SMPL it is False, i.e. radians.
+
 FRAME_RATE = 24 #24
 TIME_STEP = 1./FRAME_RATE  
 MASS = 1.
@@ -97,8 +97,8 @@ helper_endpoints += helper_rig_t # Translate the helper rig
 assert len(helper_parents) == n_helper_bones, f"Expected all helper bones to have parents. Got {len(helper_parents)} parents instead of {n_helper_bones}."
 
 # Initiate rigid rig and add helper bones on it
-J_initial = J_rest #J[0] #J_rest
-skeleton = create_skeleton(J_initial, smpl_kintree)
+initial_skel_J = J_rest #J[0] #J_rest
+skeleton = create_skeleton(initial_skel_J, smpl_kintree)
 helper_idxs = add_helper_bones(skeleton, 
                                helper_endpoints, 
                                helper_parents,
@@ -125,15 +125,16 @@ V_dyn = V_smpl.copy() #[]
 n_frames = V_smpl.shape[0]
 #all_J = skeleton.get_rest_bone_locations(exclude_root=False)
 _, poses, translations = bpt
+helper_poses = np.zeros((n_helper_bones, 3))                  # (10,3)
 for frame in range(n_frames):
     
     theta = np.reshape(poses[frame].numpy(),newshape=(-1, 3)) # (24,3)
-    helper_poses = np.zeros((n_helper_bones, 3))              # (10,3)
     theta = np.vstack((theta, helper_poses))                  # (34,3)
-    global_trans = translations[frame].numpy()                # (3,)
-    
     all_J = skeleton.pose_bones(theta, degrees=DEGREES, exclude_root=False) 
-    if ADD_GLOBAL_T: all_J += global_trans
+    
+    if ADD_GLOBAL_T: 
+        global_trans = translations[frame].numpy()            # (3,)
+        all_J += global_trans
     
     # WARNING: UNCOMMENT ME!
     # Since the regressed joint locations of SMPL is different, keep them as given in the dataset
