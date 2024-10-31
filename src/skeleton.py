@@ -487,6 +487,24 @@ def add_helper_bones(test_skeleton,
         helper_idxs.append(bone_idx)
     return helper_idxs
 
+def extract_headtail_locations(joints, kintree, exclude_root=False, collapse=True):
+    # Given the joints and their connectivity
+    # Extract two endpoints for each bone
+    # This function is written to deal with SMPL kintree and joints locations
+    n_bones = len(kintree)
+    if not exclude_root: n_bones += 1
+    J = np.empty((n_bones, 2, 3))
+    
+    if not exclude_root: # WARNING: Assumes root node is at 0
+        J[0] = np.array([[0,0,0], joints[0]])
+        
+    for pair in kintree:
+        parent_idx, bone_idx = pair
+        J[bone_idx] = np.array([joints[parent_idx], joints[bone_idx]]) 
+        
+    if collapse:
+        J = np.reshape(J, (-1,3))
+    return J
 
 if __name__ == "__main__":
     print(">> Testing skeleton.py is NOT implemented yet...")

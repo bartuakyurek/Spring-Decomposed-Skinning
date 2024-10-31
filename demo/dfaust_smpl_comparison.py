@@ -16,7 +16,7 @@ import pyvista as pv
 import __init__
 from src.helper_handler import HelperBonesHandler
 from src.data.skeleton_data import get_smpl_skeleton
-from src.skeleton import create_skeleton, add_helper_bones
+from src.skeleton import create_skeleton, add_helper_bones, extract_headtail_locations
 from src.global_vars import subject_ids, pose_ids, RESULT_PATH
 from src.data.smpl_sequence import get_gendered_smpl_model, get_anim_sequence, get_smpl_rest_data
 from src.render.pyvista_render_tools import (add_mesh, 
@@ -90,7 +90,7 @@ helper_kintree[0,0] = HELPER_ROOT_PARENT            # Bind the helper tree to a 
 
 helper_parents = helper_kintree[:,0]                  # Extract parents (TODO: could you require less steps to setup helpers please?)
 helper_endpoints = helper_joints[:,-1,:]            # TODO: we should be able to insert helper bones with head,tail data
-
+                                                    # We can do that by start_points but also we should be able to provide [n_bones,2,3] shape, that is treated as headtail automatically.
 helper_rig_t = J_rest[HELPER_ROOT_PARENT] - helper_endpoints[0] * 0.8
 helper_endpoints += helper_rig_t # Translate the helper rig
 
@@ -119,44 +119,27 @@ helper_rig = HelperBonesHandler(skeleton,
 # Simulate data
 # -----------------------------------------------------------------------------
 
-def extract_headtail_locations(joints, kintree, exclude_root=False, collapse=True):
-    # Given the joints and their connectivity
-    # Extract two endpoints for each bone
-    
-    n_bones = len(kintree)
-    if not exclude_root: n_bones += 1
-    J = np.empty((n_bones, 2, 3))
-    
-    if not exclude_root: # WARNING: Assumes root node is at 0
-        J[0] = np.array([[0,0,0], joints[0]])
-        
-    for pair in kintree:
-        parent_idx, bone_idx = pair
-        J[bone_idx] = np.array([joints[parent_idx], joints[bone_idx]]) 
-        
-    if collapse:
-        J = np.reshape(J, (-1,3))
-    return J
-
 # Loop over frames:
 J_dyn = []
 V_dyn = V_smpl.copy() #[]
 n_frames = V_smpl.shape[0]
-all_J = skeleton.get_rest_bone_locations(exclude_root=False)
+#all_J = skeleton.get_rest_bone_locations(exclude_root=False)
 _, poses, translations = bpt
 for frame in range(n_frames):
     
     theta = np.reshape(poses[frame].numpy(),newshape=(-1, 3)) # (24,3)
-    helper_poses = np.zeros((n_helper_bones, 3))
-    theta = np.vstack((theta, helper_poses))
-    global_trans = translations[frame].numpy()                 # (3,)
-    all_J = skeleton.pose_bones(theta, degrees=DEGREES, exclude_root=False) 
+    helper_poses = np.zeros((n_helper_bones, 3))              # (10,3)
+    theta = np.vstack((theta, helper_poses))                  # (34,3)
+    global_trans = translations[frame].numpy()                # (3,)
     
+    all_J = skeleton.pose_bones(theta, degrees=DEGREES, exclude_root=False) 
     if ADD_GLOBAL_T: all_J += global_trans
     
+    # WARNING: UNCOMMENT ME!
     # Since the regressed joint locations of SMPL is different, keep them as given in the dataset
     #smpl_J_frame = extract_headtail_locations(J[frame], smpl_kintree, exclude_root=False)
     #all_J[:len(smpl_J_frame)] = smpl_J_frame 
+    # END OF WARNING !!!!!!
     
     # 1.1 - Compute dynamic joint locations via simulation
     posed_locations = helper_rig.update_bones(all_J) # Update the rigidly posed locations
