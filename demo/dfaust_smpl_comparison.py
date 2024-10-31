@@ -60,7 +60,8 @@ V_rest, J_rest = get_smpl_rest_data(smpl_model, bpt[0][0], bpt[-1][0], return_nu
 
 # Setup helper bones data
 HELPER_RIG_PATH = "../data/helper_rig_data_50004.npz"
-if SELECTED_SUBJECT != "50004": print(">> WARNING: Selected subject does not match with imported rig target.")
+HELPER_RIG_SUBJECT = HELPER_RIG_PATH.split("_")[-1].split(".")[0]
+if SELECTED_SUBJECT != HELPER_RIG_SUBJECT: print(">> WARNING: Selected subject does not match with imported rig target.")
 
 # Load joint locations, kintree and weights
 with np.load(HELPER_RIG_PATH) as data:
@@ -69,19 +70,25 @@ with np.load(HELPER_RIG_PATH) as data:
      helper_kintree = data["kintree"]
 
 # Configure helper rig kintree
+n_verts = V_smpl.shape[1]
 n_rigid_bones = J.shape[1]
 n_helper_bones = helper_joints.shape[0]
-HELPER_ROOT_PARENT = 5
+HELPER_ROOT_PARENT = 6
+
 assert HELPER_ROOT_PARENT < n_rigid_bones, f"Please select a valid parent index from: [0,..,{n_rigid_bones-1}]."
 assert helper_kintree[0,0] == -1, "Expected first entry to be the root bone."
 assert helper_kintree.shape[1] == 2, f"Expected helper kintree to have shape (n_helpers, 2), got {helper_kintree.shape}."
 assert helper_joints.shape == (n_helper_bones,2,3), f"Expected helper joints to have shape (n_helpers, 2, 3), got {helper_joints.shape}."
-
-helper_kintree = helper_kintree + (n_rigid_bones-1) # Update helper indices to match with current skeleton
+assert helper_W.shape == (n_verts, n_helper_bones), f"Expected helper bone weights to have shape ({n_verts},{n_helper_bones}), got {helper_W.shape}."
+helper_kintree = helper_kintree + n_rigid_bones # Update helper indices to match with current skeleton
 helper_kintree[0,0] = HELPER_ROOT_PARENT            # Bind the helper tree to a bone in rigid skeleton
 
 helper_parents = helper_kintree[:,0]                  # Extract parents (TODO: could you require less steps to setup helpers please?)
 helper_endpoints = helper_joints[:,-1,:]            # TODO: we should be able to insert helper bones with head,tail data
+
+helper_rig_t = J_rest[HELPER_ROOT_PARENT] - [-0.0, 0.0, 0.0]
+helper_endpoints += helper_rig_t # Translate the helper rig
+
 assert len(helper_parents) == n_helper_bones, f"Expected all helper bones to have parents. Got {len(helper_parents)} parents instead of {n_helper_bones}."
 
 # Initiate rigid rig and add helper bones on it
@@ -198,7 +205,8 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
 # Set up Key Press Actions
 # ---------------------------------------------------------------------------------
 selected_bone_idx = -1
-bone_start_idx = n_rigid_bones - 1
+n_bones = n_helper_bones # n_rigid_bones + n_helper_bones 
+bone_start_idx = 0 #n_rigid_bones - 1
 weights = helper_W                     # TODO: extract interface?
 mesh_to_be_colored = dyn_smpl_mesh     # TODO: extract interface?
 

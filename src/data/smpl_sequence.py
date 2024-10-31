@@ -223,11 +223,13 @@ if __name__ == "__main__":
     V_gt, V_smpl, J, bpt = get_anim_sequence(SELECTED_SUBJECT, SELECTED_POSE, smpl_model, return_numpy=True)
     
     V_rest, J_rest = get_smpl_rest_data(smpl_model, bpt[0][0], bpt[-1][0])
+    assert V_gt.shape[1] == V_rest.shape[0]
     
     # To write .obj file, try 
     # import igl
     # F = np.array(smpl_model.faces, dtype=int)
     # igl.write_obj(RESULT_PATH + "smpl_rest.obj", V_rest[0], F)
-    
+    # TODO: try adding a blank line at the end of .obj file
+    # Because blender imports the igl's saved .obj file 1 vertex less.
     print(">> End of test.")
     
