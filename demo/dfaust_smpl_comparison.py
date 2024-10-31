@@ -41,6 +41,7 @@ DAMPING = 50.
 MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
+WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
 ADD_GLOBAL_T = False    # Add the global translation given in the dataset 
                         # (Note that it'll naturally jiggle the helper bones but it doesn't mean 
                         #  the jiggling of helper bones are intiated with rigid movement 
@@ -177,7 +178,7 @@ plotter = pv.Plotter(notebook = False,
                      off_screen = not RENDER, 
                      shape = (1,3),
                      border = False,
-                     window_size = (1504, 1408))
+                     window_size = WINDOW_SIZE)
 
 # Data to initialize mesh objects
 initial_J, initial_smpl_V, initial_gt_V = J[0], V_smpl[0], V_gt[0]
