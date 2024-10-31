@@ -86,13 +86,14 @@ helper_kintree[0,0] = HELPER_ROOT_PARENT            # Bind the helper tree to a 
 helper_parents = helper_kintree[:,0]                  # Extract parents (TODO: could you require less steps to setup helpers please?)
 helper_endpoints = helper_joints[:,-1,:]            # TODO: we should be able to insert helper bones with head,tail data
 
-helper_rig_t = J_rest[HELPER_ROOT_PARENT] - [-0.0, 0.0, 0.0]
+helper_rig_t = J_rest[HELPER_ROOT_PARENT] - helper_endpoints[0] * 0.8
 helper_endpoints += helper_rig_t # Translate the helper rig
 
 assert len(helper_parents) == n_helper_bones, f"Expected all helper bones to have parents. Got {len(helper_parents)} parents instead of {n_helper_bones}."
 
 # Initiate rigid rig and add helper bones on it
-skeleton = create_skeleton(J_rest, smpl_kintree)
+J_initial = J_rest #J[0] #J_rest
+skeleton = create_skeleton(J_initial, smpl_kintree)
 helper_idxs = add_helper_bones(skeleton, 
                                helper_endpoints, 
                                helper_parents,
@@ -126,35 +127,41 @@ def extract_headtail_locations(joints, kintree, exclude_root=False, collapse=Tru
         
     for pair in kintree:
         parent_idx, bone_idx = pair
-        J[bone_idx-1] = np.array([joints[parent_idx], joints[bone_idx]]) 
+        J[bone_idx] = np.array([joints[parent_idx], joints[bone_idx]]) 
         
     if collapse:
         J = np.reshape(J, (-1,3))
     return J
 
 # Loop over frames:
-
 J_dyn = []
 V_dyn = V_smpl.copy() #[]
 n_frames = V_smpl.shape[0]
 all_J = skeleton.get_rest_bone_locations(exclude_root=False)
+_, poses, translations = bpt
 for frame in range(n_frames):
     
-    # 1.1 - Compute dynamic joint locations via simulation
-    # 1.2 - Get the transformations through IK
-    # 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
-
-    smpl_J_frame = extract_headtail_locations(J[frame], smpl_kintree, exclude_root=False)
-    all_J[:len(smpl_J_frame)] = smpl_J_frame
+    theta = np.reshape(poses[frame].numpy(),newshape=(-1, 3)) # (24,3)
+    helper_poses = np.zeros((n_helper_bones, 3))
+    theta = np.vstack((theta, helper_poses))
+    global_trans = translations[frame].numpy()                 # (3,)
+    all_J = skeleton.pose_bones(theta, degrees=DEGREES, exclude_root=False) + global_trans
     
+    # Since the regressed joint locations of SMPL is different, keep them as given in the dataset
+    #smpl_J_frame = extract_headtail_locations(J[frame], smpl_kintree, exclude_root=False)
+    #all_J[:len(smpl_J_frame)] = smpl_J_frame 
+    
+    # 1.1 - Compute dynamic joint locations via simulation
     posed_locations = helper_rig.update_bones(all_J) # Update the rigidly posed locations
     all_J = posed_locations.copy()
     J_dyn.append(all_J)
+    
+    # 1.2 - Get the transformations through IK
+    # 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
 
-J_dyn = np.array(J_dyn, dtype=float)
+J_dyn = np.array(J_dyn, dtype=float)[:,2:,:] # TODO: get rid of the root bone
 # TODO: add rest frames to see jiggling after motion? No because smpl data has no ground truth for that.
 # TODO: Report simulation timing
-
 
 # -----------------------------------------------------------------------------
 # Create a plotter object and add meshes
@@ -189,7 +196,7 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
 # Add SMPL mesh to be jiggled
 plotter.subplot(0, 2)
 
-assert J_dyn.shape[0] == J.shape[0], f"Expected first dimensions to share number of frames (n_frames, n_bones, 3). Got shapes {J_dyn} and {J}."
+assert J_dyn.shape[0] == J.shape[0], f"Expected first dimensions to share number of frames (n_frames, n_bones, 3). Got shapes {J_dyn.shape} and {J.shape}."
 J_dyn_initial = J_dyn[0]
 edges = len(skeleton.rest_bones)
 line_segments = np.reshape(np.arange(0, 2*(edges-1)), (edges-1, 2))
