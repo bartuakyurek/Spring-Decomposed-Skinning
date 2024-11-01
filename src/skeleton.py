@@ -313,9 +313,11 @@ class Skeleton():
             for child in bone_to_be_removed.children:
                 child.parent = parent    
         else:
-            print(">> WARNING: Cannot remove root bone.")
+            if len(bone_to_be_removed.children) == 1:
+                child.parent = None
+            print(">> WARNING: Cannot remove root bone with multiple children.")
             return
-        
+           
         # Remove the bone from the skeleton bones list
         bone_to_be_removed.children = None    # It's unnecessary probably.
         self.rest_bones.remove(bone_to_be_removed)
@@ -425,6 +427,9 @@ def add_helper_bones(test_skeleton,
         helper_idxs.append(bone_idx)
     return helper_idxs
 
+
+# TOOD: This has nothing to do with Skeleton class, shall we move it to smpl_utils
+# kind of a module?
 def extract_headtail_locations(joints, kintree, exclude_root=False, collapse=True):
     # Given the joints and their connectivity
     # Extract two endpoints for each bone
