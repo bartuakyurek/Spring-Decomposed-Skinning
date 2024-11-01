@@ -24,18 +24,10 @@ class Bone():
         if parent is not None:
             self.start_location = parent.end_location
         
-        # TODO:shall we use these while computing FK? If not shall we delete these properties?
-        self.rotation = Rotation.from_euler('xyz', angles=[0, 0, 0]) # Relative rotation
-        self.t = np.zeros(3)                                         # Relative translation
-        # self.t is like an offset from the parent bone (right?)
-        
         self.parent = parent
         self.children = []
         
     def set_start_location(self, start_location):
-        # This self.t would fail to give translation because endpoint is not
-        # translated. So I'm keeping it off for now.
-        # self.t += start_location - self.start_location
         self.start_location = start_location
         
     def set_parent(self, parent_node):
@@ -71,26 +63,65 @@ class Skeleton():
             
         return kintree
     
-    def get_absolute_transformations(self, theta, trans, degrees):
+    def get_absolute_transformations(self, theta, trans=None, degrees=True, quats=False):
+        """
+        Given the rotation angles and translation parameters,
+        compute the individual bone rigid motion (rotation and translation)
+        through Forward Kinematics.
         
+        DISCLAIMER: Forward Kinematics implementation is adopted from Libigl:
+        https://github.com/libigl/libigl/blob/main/include/igl/forward_kinematics.cpp
+            
+        Parameters
+        ----------
+        theta : np.ndarray
+            Axis-angle rotations for each bone. Has shape (n_bones, 3)
+        trans : np.ndarray
+            Relative translation vector for each bone. Has shape (n_bones, 3).
+            If not provided, the relative translations will be treated as zero
+            vectors. Default is None.
+        degrees : bool
+            Indicates if the provided angles are in degrees. Set False if
+            they are in radians (note that DFAUST/SMPL dataset is in radians).
+            Default is True.
+        quats : bool
+            Indicates if the provided rotations are in quaternions. Default is 
+            False. This option overrides the parameter degrees
+
+        Returns
+        -------
+        absolute_rot : np.ndarray
+            DESCRIPTION.
+        absolute_trans : np.ndarray
+            DESCRIPTION.
+
+        """
         n_bones = len(self.rest_bones)
-        assert len(theta) == n_bones, f"Expected theta to have shape (n_bones, 3), got {theta.shape}"
-        assert len(trans) == n_bones, f"Expected trans to have shape (n_bones, 4), got {trans.shape}"
-        assert trans.shape[1] == 3, "Please provide 3D coordinates for translation."
         
+        # Check and configure translation parameters
+        if trans is None: trans = np.zeros((n_bones,3))
+        else: assert trans.shape == (n_bones, 3), f"Expected trans to have shape (n_bones, 3), got {trans.shape}"
         relative_trans = np.array(trans)
-        relative_rot_q = np.empty((n_bones, 4))
-        for i in range(n_bones):
-            rot = Rotation.from_euler('xyz', theta[i], degrees=degrees)
-            relative_rot_q[i] = rot.as_quat()
         
+        # Check and configure rotation parameters
+        if quats:
+            assert theta.shape == (n_bones, 4), f"Expected theta as quaternions to have shape (n_bones, 4), got {theta.shape}"
+            relative_rot_q = theta
+        else:
+            assert theta.shape == (n_bones, 3), f"Expected theta to have shape (n_bones, 3), got {theta.shape}"
+            relative_rot_q = np.empty((n_bones, 4))
+            for i in range(n_bones):
+                rot = Rotation.from_euler('xyz', theta[i], degrees=degrees)
+                relative_rot_q[i] = rot.as_quat()
+        
+        # Compute absolute rigid motions with Dynamic programming
+        # DISCLAIMER: forward kinematics is adopted from Libigl's implementaiton
+        # https://github.com/libigl/libigl/blob/main/include/igl/forward_kinematics.cpp
         computed = np.zeros(n_bones, dtype=bool)
         vQ = np.zeros((n_bones, 4))
         vT = np.zeros((n_bones, 3))
-        # Dynamic programming
         def fk_helper(b : int): 
             if not computed[b]:
-                
                 if self.rest_bones[b].parent is None:
                     # Base case for roots
                     vQ[b] = relative_rot_q[b]
@@ -98,8 +129,7 @@ class Skeleton():
                     abs_rot = Rotation.from_quat(vQ[b])
                     r = self.rest_bones[b].start_location
                     r_rotated = abs_rot.apply(r)               # (vQ[b] * r)
-                    vT[b] = r - r_rotated + relative_trans[b]
-                    
+                    vT[b] = r - r_rotated + relative_trans[b]          
                 else:
                     # First compute parent's
                     parent_idx = self.rest_bones[b].parent.idx
