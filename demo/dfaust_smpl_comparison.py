@@ -43,13 +43,16 @@ DAMPING = 50.
 MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
+JIGGLE_SCALE = 10
 NORMALIZE_WEIGHTS = False # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
 ADD_GLOBAL_T = False    # Add the global translation given in the dataset 
                         # (Note that it'll naturally jiggle the helper bones but it doesn't mean 
                         #  the jiggling of helper bones are intiated with rigid movement 
                         #  so it might be misleading, could be better to keep it False.)
-        
+     
+if JIGGLE_SCALE != 1.0:
+    print(f"WARNING: Jiggle scaling is set to {JIGGLE_SCALE}, use 1.0 for normal settings.")
 # -----------------------------------------------------------------------------
 # Load animation sequence for the selected subject and pose
 # -----------------------------------------------------------------------------
@@ -107,6 +110,7 @@ helper_idxs = add_helper_bones(skeleton,
                                helper_endpoints, 
                                helper_parents,
                                )
+helper_idxs = np.array(helper_idxs)
 
 helper_rig = HelperBonesHandler(skeleton, 
                                 helper_idxs,
@@ -161,8 +165,16 @@ for frame in range(n_frames):
     
     # 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
     mesh_points = skinning.LBS_from_mat(prev_V, helper_W, M, use_normalized_weights=NORMALIZE_WEIGHTS) 
-    delta_jiggle = mesh_points #- prev_V #- global_trans
-    V_dyn[frame] += delta_jiggle 
+    
+    prev_helper_tips = prev_J[2 * helper_idxs + 1]
+    cur_helper_tips = dyn_posed_locations[2 * helper_idxs + 1]
+    delta = cur_helper_tips - prev_helper_tips
+    
+    #tmp = prev_V.copy()
+    #tmp[(np.sum(helper_W,axis=1) == 0.0)] = [0.0, 0.0, 0.0]
+    #delta_jiggle = mesh_points #- tmp #- prev_V #- 
+    delta_jiggle = helper_W @ delta 
+    V_dyn[frame] += delta_jiggle * JIGGLE_SCALE
     prev_J = dyn_posed_locations
     prev_V = V_smpl[frame]
 
