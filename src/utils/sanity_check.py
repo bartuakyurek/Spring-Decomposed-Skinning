@@ -19,9 +19,9 @@ def _assert_normalized_weights(weights):
               
     weights_sum = np.sum(weights, axis=1) # For each vertex sum weights of all bones
     assert len(weights_sum) == len(weights), f"Expected to sum over all vertices, got shape mismatch with weights {weights.shape} and weights sum {weights_sum.shape}."
-    assert not np.any(weights_sum < 1-1e-12), "Expected weights for a vertex to sum up 1.0"
-    assert not np.any(weights_sum > 1+1e-12), "Expected weights for a vertex to sum up 1.0"
-   
+    assert not np.any((weights_sum < 1.0-1e-12) & (weights_sum >  1e-12)), "Expected weights for a vertex to sum up 1.0 or 0.0, found weights sum < 1.0."
+    assert not np.any((weights_sum > 1.0+1e-12) & (weights_sum >  1e-12)), "Expected weights for a vertex to sum up 1.0 or 0.0, found weights sum > 1.0."
+    assert not np.any(weights_sum < 0.0), f"Found negative weights sum."
 
 def _check_or_convert_numpy(arr):
     if type(arr) is list:

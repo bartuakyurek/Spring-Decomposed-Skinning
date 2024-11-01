@@ -43,11 +43,13 @@ DAMPING = 50.
 MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
+NORMALIZE_WEIGHTS = True # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
 ADD_GLOBAL_T = False    # Add the global translation given in the dataset 
                         # (Note that it'll naturally jiggle the helper bones but it doesn't mean 
                         #  the jiggling of helper bones are intiated with rigid movement 
                         #  so it might be misleading, could be better to keep it False.)
+        
 # -----------------------------------------------------------------------------
 # Load animation sequence for the selected subject and pose
 # -----------------------------------------------------------------------------
@@ -130,6 +132,7 @@ _, poses, translations = bpt
 helper_poses = np.zeros((n_helper_bones, 3))                  # (10,3)
 rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False)
 prev_J = rest_bone_locations
+prev_V = V_smpl[0]
 for frame in range(n_frames):
     # WARNING:I'm using pose parameters in the dataset to apply FK for helper bones
     # but when the bones are actually posed with these parameters, the skeleton 
@@ -157,13 +160,11 @@ for frame in range(n_frames):
     M = M[helper_idxs] # TODO: you may need to change it after excluding root bone? make sure you're retrieving correct transformations
     
     # 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
-    #mesh_points = skinning.LBS_from_mat(V_rest, helper_W, M, normalize_weights=False) 
-    mesh_points = skinning.LBS_from_mat(V_smpl[frame], helper_W, M, normalize_weights=False) 
-    delta_jiggle = mesh_points - V_smpl[frame] #- global_trans
-    #mesh_points = V_smpl[frame] + delta_jiggle
-    #V_dyn.append(mesh_points)
+    mesh_points = skinning.LBS_from_mat(prev_V, helper_W, M, use_normalized_weights=NORMALIZE_WEIGHTS) 
+    delta_jiggle = mesh_points - prev_V #- global_trans
     V_dyn[frame] += delta_jiggle 
     prev_J = dyn_posed_locations
+    prev_V = V_smpl[frame]
 
 J_dyn = np.array(J_dyn, dtype=float)[:,2:,:] # TODO: get rid of the root bone
 # TODO: add rest frames to see jiggling after motion? No because smpl data has no ground truth for that.
