@@ -168,18 +168,15 @@ for frame in range(n_frames):
     
     prev_helper_tips = prev_J[2 * helper_idxs + 1]
     cur_helper_tips = dyn_posed_locations[2 * helper_idxs + 1]
-    delta = cur_helper_tips - prev_helper_tips
     
-    #tmp = prev_V.copy()
-    #tmp[(np.sum(helper_W,axis=1) == 0.0)] = [0.0, 0.0, 0.0]
-    #delta_jiggle = mesh_points #- tmp #- prev_V #- 
+    delta = cur_helper_tips - prev_helper_tips
     delta_jiggle = helper_W @ delta 
     V_dyn[frame] += delta_jiggle * JIGGLE_SCALE
+    
     prev_J = dyn_posed_locations
     prev_V = V_smpl[frame]
 
-J_dyn = np.array(J_dyn, dtype=float)[:,2:,:] # TODO: get rid of the root bone
-# TODO: add rest frames to see jiggling after motion? No because smpl data has no ground truth for that.
+J_dyn = np.array(J_dyn, dtype=float)#[:,2:,:] # TODO: get rid of the root bone
 # TODO: Report simulation timing
 
 # -----------------------------------------------------------------------------
