@@ -43,7 +43,7 @@ DAMPING = 50.
 MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
-NORMALIZE_WEIGHTS = True # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
+NORMALIZE_WEIGHTS = False # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
 ADD_GLOBAL_T = False    # Add the global translation given in the dataset 
                         # (Note that it'll naturally jiggle the helper bones but it doesn't mean 
@@ -161,7 +161,7 @@ for frame in range(n_frames):
     
     # 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
     mesh_points = skinning.LBS_from_mat(prev_V, helper_W, M, use_normalized_weights=NORMALIZE_WEIGHTS) 
-    delta_jiggle = mesh_points - prev_V #- global_trans
+    delta_jiggle = mesh_points #- prev_V #- global_trans
     V_dyn[frame] += delta_jiggle 
     prev_J = dyn_posed_locations
     prev_V = V_smpl[frame]
