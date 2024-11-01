@@ -2,6 +2,7 @@
 HOW TO USE THIS SCRIPT?
 --------------------------------------------------------------------------------------------------
 In Blender,
+- Import the object you want to rig (see the warning below)
 - Setup an armature with a single root bone. This armature will be used as helper rig in Spring
   Decomposition pipeline, excluding the root.
 - Bind the armature to the mesh via automatic weights.
@@ -26,6 +27,15 @@ It will export "helper_data.npz" which includes:
 In this script,
     - Simply edit the parameters listed right after the imports.
     
+------------------------------------------------------------------------------------------------------------------------------------------------
+WARNING: Blender's imported vertex indices might not match with the .obj indices.
+To solve it, refer to https://stackoverflow.com/questions/68078267/when-importing-obj-files-the-vertex-indices-order-is-changed-is-there-any-way
+or if you're in a similar version 3.6.4 like me, uncheck the split option while importing .obj, see:
+https://docs.blender.org/manual/en/2.80/addons/io_scene_obj.html#import
+
+If you omit this step you might lose vertices or vertex order that might cause problems in your external pipeline
+(I was losing 1 vertex and quarter of vertices were in different order).
+------------------------------------------------------------------------------------------------------------------------------------------------
 """
 import bpy
 import numpy as np
