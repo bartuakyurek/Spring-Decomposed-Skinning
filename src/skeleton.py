@@ -8,7 +8,6 @@ Created on Tue Oct  8 09:17:14 2024
 from scipy.spatial.transform import Rotation
 import numpy as np
 
-#from utils import linalg_utils
 from .utils.linalg_utils import compose_rigid_transform_matrix
 from .global_vars import VERBOSE
 
@@ -18,7 +17,7 @@ class Bone():
         self.idx = idx  # To couple with loaded skeleton matrix data
         
         if parent:
-            assert type(parent) == Bone, f"parent parameter is expected to be type Bone, got {type(parent)}"
+            assert type(parent) == Bone, f"Parent parameter is expected to be type Bone, got {type(parent)}"
             
         self.end_location = np.array(endpoint_location)
         if parent is None:
@@ -41,8 +40,6 @@ class Bone():
         # translated. So I'm keeping it off for now.
         # self.t += start_location - self.start_location
         self.start_location = start_location
-        #self.offset = self.parent.end_location - self.start_location
-        # above doesn't work when we set bone start location different than 
         
     def set_parent(self, parent_node):
         self.parent = parent_node
@@ -249,7 +246,7 @@ class Skeleton():
         return final_bone_locations
         
         
-    def pose_bones(self, theta, trans=None, get_transforms=False, degrees=False, exclude_root=False): 
+    def pose_bones(self, theta, trans=None, get_transforms=False, degrees=False): 
         """
         Apply the given relative rotations to the bones in the skeleton.
         This is used for deforming the rest pose to the current frame.
@@ -281,32 +278,18 @@ class Skeleton():
             Returned only if get_transforms=True.
         """
         assert type(theta) == np.ndarray, f"Expected pose type np.ndarray, got {type(theta)}"
-        
-        # ---------------------------------------------------------------------
-        # Set up the relative translation (if not provided set to zero)
-        # ---------------------------------------------------------------------
-        if trans is None:
+        if trans is None: 
             trans = np.zeros((len(self.rest_bones), 3))
         
-        # ---------------------------------------------------------------------
-        # Get absolute rotation and translation of the bones
-        # ---------------------------------------------------------------------
         abs_rot_quat, abs_trans = self.get_absolute_transformations(theta, trans, degrees)
-        
-        # ---------------------------------------------------------------------
-        # Compute the final bone locations
-        # ---------------------------------------------------------------------
         final_bone_locations = self.compute_bone_locations(abs_rot_quat, abs_trans)
-        
-        # ---------------------------------------------------------------------
-        # Return the data with the requested settings
-        # ---------------------------------------------------------------------
-        if exclude_root:
+    
+        #if exclude_root:
             # Warning: This still assumes absolute transformations are returned for all joints
             # so it doesn't exclude root. It just excludes root bone assuming the descedents are
             # connected to them without an offset. 
             # TODO: Couldn't we design better so that we won't need this option at all?
-            final_bone_locations = final_bone_locations[2:] 
+        #    final_bone_locations = final_bone_locations[2:] 
             
         if get_transforms:
             return final_bone_locations, abs_rot_quat, abs_trans

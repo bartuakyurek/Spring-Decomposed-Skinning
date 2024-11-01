@@ -136,7 +136,6 @@ n_helpers = n_bones - n_orig_bones - 1 # TODO: Minus one is for the invisible ro
 if MODE == "Rigid":
     helper_weights = np.zeros((n_verts, n_helpers))
 elif MODE == "Dynamic":
-    #helper_bone_rest_locations = test_skeleton.get_rest_bone_locations(exclude_root=False, indices=all_helper_idxs)
     #helper_weights = skinning.bind_weights(arm_verts_rest, helper_bone_rest_locations, envelope=ENVELOPE)
     helper_weights = np.zeros((n_verts, n_helpers))
     print(">> WARNING: helper weights are initialized to zero.")
@@ -210,7 +209,7 @@ try:
                     else:        # Lerp with the last pose for boomerang
                         theta = lerp(pose[pose_idx], pose[-1], frame_idx/FRAME_RATE)
                 
-                posed_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES, exclude_root=False)
+                posed_locations = test_skeleton.pose_bones(theta, trans, degrees=DEGREES)
                 if MODE=="Rigid":
                     posed_locations = np.reshape(posed_locations, (-1,3)) # Combine all the 3D points into one dimension
                     skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention

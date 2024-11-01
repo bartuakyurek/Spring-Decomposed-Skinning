@@ -144,7 +144,7 @@ for frame in range(n_frames):
     # because SMPL use a regressor to estimate the bone locations.
     theta = np.reshape(poses[frame].numpy(),newshape=(-1, 3)) # (24,3)
     theta = np.vstack((theta, helper_poses))                  # (34,3)
-    rigidly_posed_locations = skeleton.pose_bones(theta, degrees=DEGREES, exclude_root=False) 
+    rigidly_posed_locations = skeleton.pose_bones(theta, degrees=DEGREES) 
     
     global_trans = translations[frame].numpy()            # (3,)
     if ADD_GLOBAL_T: rigidly_posed_locations += global_trans
