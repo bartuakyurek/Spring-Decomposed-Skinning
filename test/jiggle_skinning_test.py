@@ -213,7 +213,7 @@ try:
                 if MODE=="Rigid":
                     posed_locations = np.reshape(posed_locations, (-1,3)) # Combine all the 3D points into one dimension
                     skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
-
+                    # TODO: this is repeated at skeleton.pose_bones(), please remove it.
                     abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
                     mesh_points = skinning.LBS_from_quat(arm_verts_rest, weights, abs_rot_quat[1:], abs_trans[1:]) # TODO: get rid of root
                 else:
@@ -224,8 +224,7 @@ try:
                     skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
                                                            # TODO: directly set skel_mesh.points = posed
                     # TODO: keep getting transforms from rigid skeleton, only update the helpers' transforms.
-                    #abs_rot_quat, abs_trans = test_skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
-                    #M = helper_rig.get_absolute_transformations(posed_locations, return_mat=True, algorithm="RST")
+                   
                     rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=False) # TODO: Remove this line from here
                     M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, posed_locations, return_mat=True, algorithm="RST")
                     mesh_points = skinning.LBS_from_mat(arm_verts_rest, weights, M[1:]) # TODO: get rid of root

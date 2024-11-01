@@ -91,9 +91,14 @@ class Skeleton():
         Returns
         -------
         absolute_rot : np.ndarray
-            DESCRIPTION.
+            Absolute rotation quaternions per bone, has shape (n_bones, 4). It can
+            be used to represent rotation together with in a 4x4 transformation matrix 
+            for LBS, or directly used in DQS as a quaternion.
         absolute_trans : np.ndarray
-            DESCRIPTION.
+            Absolute translation as a 3D vector per bone, has shape (n_bones, 3).
+            Represents the amount of total translation the bone needs in the given
+            kinematic chain. Together with absoulute rotation, it can be embedded
+            in a transformation matrix to be used in Linear Blend Skinning.
 
         """
         n_bones = len(self.rest_bones)
