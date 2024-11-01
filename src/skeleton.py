@@ -20,12 +20,9 @@ class Bone():
             assert type(parent) == Bone, f"Parent parameter is expected to be type Bone, got {type(parent)}"
             
         self.end_location = np.array(endpoint_location)
-        if parent is None:
-            self.start_location = np.zeros(3)
-            self.visible = False # Root bone is an invisible one, determining global transformation
-        else:
+        self.start_location = np.zeros(3)
+        if parent is not None:
             self.start_location = parent.end_location
-            self.visible = True
         
         # TODO:shall we use these while computing FK? If not shall we delete these properties?
         self.rotation = Rotation.from_euler('xyz', angles=[0, 0, 0]) # Relative rotation
@@ -46,84 +43,7 @@ class Bone():
     
     def add_child(self, child_node):
         self.children.append(child_node)
-        
-    def translate(self, offset_vec, override=True, keep_trans=False):
-        """
-        Translate the bone line segment given the translation vector.
-
-        Parameters
-        ----------
-        offset_vec : np.ndarray
-            translation  vector to be applied to the bone points, has shape (3, )
-        override : bool, optional
-            Override the bone locations by applying the offset_vec. When it's False,
-            do not update the bone locations just update the translation information.
-            The intended usage of False is for animation, where the rest pose information
-            should not be updated but we need to update bone transformations for forward
-            kinematics. The default is True.
-
-        Returns
-        -------
-        start_translated : np.ndarray 
-            Has shape (3, ), it is the translated starting point of the bone line segment.
-        end_translated : np.ndarray 
-            Has shape (3, ), it is the translated ending point of the bone line segment.
-        """
-        assert offset_vec.shape == self.t.shape, f"Expected translation vector to have shape {self.t.shape}, got {offset_vec.shape}"
-        
-        start_translated = self.start_location + offset_vec
-        end_translated = self.end_location + offset_vec
-        if override:
-            if VERBOSE:
-                print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
-            self.set_start_location(start_translated)
-            self.end_location = end_translated
-            if keep_trans:
-                self.t += offset_vec
-        else:
-            self.t += offset_vec
-        
-        return (start_translated, end_translated)
-    
-    def rotate(self, axsang, override=True, keep_trans=True):
-        """
-        Sets the bone rotation and adjust the endpoint location of the bone.
-
-        Parameters
-        ----------
-        axsang : np.ndarray or torch.Tensor
-            Axis-angle representation of shape (3,).
-            
-        override: bool
-            If True, it will change the endpoint location of the bone. Otherwise
-            the rotation will not affect the rest location of the bone, that is 
-            to be used in pose mode, i.e. to retrieve bone positions with Forward
-            Kinematics.
-
-        Returns
-        -------
-        final_bone_pos : location of the tip of the bone that is rotated.
-
-        """
-        # Translate the bone to bone space (i.e. bone beginning is the origin now)
-        bone_space_vec = (self.end_location - self.start_location)  
-        
-        r = Rotation.from_euler('xyz', axsang)
-        self.rotation = r * self.rotation # (p * q) is q rotation followed by p rotation
-        
-        bone_space_rotated = r.apply(bone_space_vec)
-        final_bone_pos = bone_space_rotated + self.start_location
-        
-        # Since this is a rotation, bone origin does not move, so only change the
-        # location of the tip of the bone.
-        if override:
-            if VERBOSE:
-                print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
-            self.end_location = final_bone_pos
-            if not keep_trans: # If we're not keeping the transformation, reset
-                self.rotation = Rotation.from_euler('xyz', [0, 0, 0])
-            
-        return final_bone_pos
+  
         
 class Skeleton():
     def __init__(self, root_vec=[0., 0., 1.]):
