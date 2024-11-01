@@ -176,7 +176,7 @@ for frame in range(n_frames):
     prev_J = dyn_posed_locations
     prev_V = V_smpl[frame]
 
-J_dyn = np.array(J_dyn, dtype=float)#[:,2:,:] # TODO: get rid of the root bone
+J_dyn = np.array(J_dyn, dtype=float)[:,2:,:] # TODO: get rid of the root bone
 # TODO: Report simulation timing
 
 # -----------------------------------------------------------------------------
