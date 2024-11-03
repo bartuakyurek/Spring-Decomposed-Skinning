@@ -36,6 +36,11 @@ https://docs.blender.org/manual/en/2.80/addons/io_scene_obj.html#import
 If you omit this step you might lose vertices or vertex order that might cause problems in your external pipeline
 (I was losing 1 vertex and quarter of vertices were in different order).
 ------------------------------------------------------------------------------------------------------------------------------------------------
+WARNING: If the exported rig is rotated, you can rotate it in Blender to match
+with the space axes in the pipeline. For me, I've applied -90d Rotation along X axis
+(F3 -> Apply Rotation).
+
+------------------------------------------------------------------------------------------------------------------------------------------------
 """
 import bpy
 import numpy as np

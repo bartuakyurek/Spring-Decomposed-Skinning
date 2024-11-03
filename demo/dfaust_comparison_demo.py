@@ -43,7 +43,7 @@ DAMPING = 50.
 MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
-JIGGLE_SCALE = 10
+JIGGLE_SCALE = 4
 NORMALIZE_WEIGHTS = False # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
 ADD_GLOBAL_T = False    # Add the global translation given in the dataset 
@@ -98,13 +98,15 @@ helper_kintree[0,0] = HELPER_ROOT_PARENT            # Bind the helper tree to a 
 helper_parents = helper_kintree[:,0]                  # Extract parents (TODO: could you require less steps to setup helpers please?)
 helper_endpoints = helper_joints[:,-1,:]            # TODO: we should be able to insert helper bones with head,tail data
                                                     # We can do that by start_points but also we should be able to provide [n_bones,2,3] shape, that is treated as headtail automatically.
-helper_rig_t = J_rest[HELPER_ROOT_PARENT] - helper_endpoints[0] * 0.8
-helper_endpoints += helper_rig_t # Translate the helper rig
+
+initial_skel_J = J[0] #J_rest
+helper_rig_t = initial_skel_J[HELPER_ROOT_PARENT] - helper_endpoints[0] * 0.5
+#helper_endpoints += helper_rig_t # Translate the helper rig
 
 assert len(helper_parents) == n_helper_bones, f"Expected all helper bones to have parents. Got {len(helper_parents)} parents instead of {n_helper_bones}."
 
 # Initiate rigid rig and add helper bones on it
-initial_skel_J = J_rest #J[0] #J_rest
+
 skeleton = create_skeleton(initial_skel_J, smpl_kintree)
 helper_idxs = add_helper_bones(skeleton, 
                                helper_endpoints, 
