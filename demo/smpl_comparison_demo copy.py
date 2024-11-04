@@ -234,7 +234,7 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
 # Render and save results
 # -----------------------------------------------------------------------------
     
-result_fname = "dfaust_comparison" + "_" + str(SELECTED_SUBJECT) + "_" + str(SELECTED_POSE)
+result_fname = "smpl_comparison" + "_" + str(SELECTED_SUBJECT) + "_" + str(SELECTED_POSE)
 plotter.open_movie(RESULT_PATH + f"{result_fname}.mp4")
 
 n_frames = V_smpl.shape[0]
