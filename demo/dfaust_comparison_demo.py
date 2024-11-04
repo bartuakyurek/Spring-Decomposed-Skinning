@@ -39,12 +39,12 @@ DEGREES = False # Set true if pose is represented with degrees as Euler angles.
 FRAME_RATE = 24 #24
 TIME_STEP = 1./FRAME_RATE  
 MASS = 1.
-STIFFNESS = 300.
+STIFFNESS = 200.
 DAMPING = 50.            
-MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+MASS_DSCALE = 0.3       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
-JIGGLE_SCALE = 4
+JIGGLE_SCALE = 1.0      # Set it greater than 1 to exaggerate the jiggling impact
 NORMALIZE_WEIGHTS = False # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
 ADD_GLOBAL_T = False    # Add the global translation given in the dataset 
@@ -269,5 +269,5 @@ for frame in range(n_frames):
 plotter.close()
 
 
-print("Total error:\n", "SMPL:", np.round(tot_err_rigid,2), "\nOurs:",  np.round(tot_err_dyn,2))
+print("Total vertex distance error:\n", "SMPL:", np.round(tot_err_rigid,2), "\nOurs:",  np.round(tot_err_dyn,2))
 print("Total vertex average error:\n", "SMPL:",  np.round(tot_avg_err_rigid,4), "\nOurs:",  np.round(tot_avg_err_dyn,4))
