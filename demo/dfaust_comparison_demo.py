@@ -17,6 +17,7 @@ import __init__
 from src import skinning
 from src.kinematics import inverse_kinematics
 from src.helper_handler import HelperBonesHandler
+from src.utils.linalg_utils import normalize_arr_np
 from src.data.skeleton_data import get_smpl_skeleton
 from src.skeleton import create_skeleton, add_helper_bones, extract_headtail_locations
 from src.global_vars import subject_ids, pose_ids, RESULT_PATH
@@ -228,45 +229,6 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
 
-# ---------------------------------------------------------------------------------
-# Set up Key Press Actions
-# ---------------------------------------------------------------------------------
-selected_bone_idx = -1
-n_bones = n_helper_bones # n_rigid_bones + n_helper_bones 
-bone_start_idx = 0 #n_rigid_bones - 1
-weights = helper_W                     # TODO: extract interface?
-mesh_to_be_colored = dyn_smpl_mesh     # TODO: extract interface?
-
-def change_colors():
-    global selected_bone_idx
-    global n_bones
-    
-    if selected_bone_idx == -1:
-        selected_bone_idx = bone_start_idx
-        
-    selected_bone_idx += 1
-    if selected_bone_idx >= n_bones-1: # TODO: remove -1 when you get rid of root bone
-        selected_bone_idx = -1
-    
-    if selected_bone_idx >= 0:
-        print("INFO: Selected bone ", selected_bone_idx)
-        print(">> Call set mesh colors...")
-        selected_weights = weights[:,selected_bone_idx]
-        set_mesh_color_scalars(mesh_to_be_colored, selected_weights)  
-
-def deselect_bone():
-    global selected_bone_idx
-    selected_bone_idx = -1
-    set_mesh_color(mesh_to_be_colored, [0.8, 0.8, 1.0])
-    print(">> INFO: Bone deselected.")
-    return
-
-# When "B" key is pressed, show colors of the corresponding bone's weights
-plotter.add_key_event("B", change_colors)
-plotter.add_key_event("b", change_colors)
-plotter.add_key_event("N", deselect_bone)
-plotter.add_key_event("n", deselect_bone)
-
 # -----------------------------------------------------------------------------
 # Render and save results
 # -----------------------------------------------------------------------------
@@ -283,6 +245,17 @@ for frame in range(n_frames):
     rigid_smpl_mesh.points = V_smpl[frame]
     dyn_smpl_mesh.points = V_dyn[frame]
      
+    # Colorize meshes with respect to error distances
+    delta_rigid = np.linalg.norm(V_gt[frame] - V_smpl[frame], axis=1) 
+    delta_dyn = np.linalg.norm(V_gt[frame] - V_dyn[frame], axis=1) 
+    
+    delta_rigid = normalize_arr_np(delta_rigid)
+    delta_dyn = normalize_arr_np(delta_dyn)
+    
+    set_mesh_color_scalars(rigid_smpl_mesh, delta_rigid)  
+    set_mesh_color_scalars(dyn_smpl_mesh, delta_dyn)  
+    
+    
     plotter.write_frame()               # Write a frame. This triggers a render.
     
 plotter.close()
