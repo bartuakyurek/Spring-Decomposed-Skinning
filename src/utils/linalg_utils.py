@@ -32,7 +32,7 @@ def normalize_arr_np(arr, tol=1e-14):
         Array with the values in range [0.0, 1.0] where 0.0 corresponds to
         the lowest value and 1.0 is to highest value in the given array.
     """
-    if len(arr) > 1: print(f"WARNING: Input array has shape {arr.shape}, the normalization is taken in all axes.")
+    if len(arr.shape) > 1: print(f"WARNING: Input array has shape {arr.shape}, the normalization is taken in all axes.")
     
     min_val = np.min(arr)
     arr_shifted = arr - min_val
