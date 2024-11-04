@@ -10,6 +10,10 @@ the files under ./tests/ or ./demo/ directories, e.g. ``python ./tests/spring_bo
 
 ### TO-DO
 
-[] Add demo gifs
-[] Color code evaluation
-[] Update instructions to use this repo
+[ ] Adjust plotter camera zoom
+
+[ ] Add demo gifs
+
+[ ] Color code evaluation
+
+[ ] Update instructions to use this repo
