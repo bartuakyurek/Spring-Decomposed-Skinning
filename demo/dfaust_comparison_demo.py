@@ -237,6 +237,8 @@ result_fname = "dfaust_comparison" + "_" + str(SELECTED_SUBJECT) + "_" + str(SEL
 plotter.open_movie(RESULT_PATH + f"{result_fname}.mp4")
 
 n_frames = V_smpl.shape[0]
+tot_err_rigid, tot_err_dyn = 0.0, 0.0
+tot_avg_err_rigid, tot_avg_err_dyn = 0.0, 0.0
 for frame in range(n_frames):
     rigid_skel_mesh.points = J[frame]   # Update mesh points in the renderer.
     dyn_skel_mesh.points = J_dyn[frame] # TODO: update it!
@@ -255,7 +257,17 @@ for frame in range(n_frames):
     set_mesh_color_scalars(rigid_smpl_mesh, delta_rigid)  
     set_mesh_color_scalars(dyn_smpl_mesh, delta_dyn)  
     
+    # Save the error metrics
+    tot_err_rigid += np.sum(delta_rigid)
+    tot_err_dyn += np.sum(delta_dyn)
+    
+    tot_avg_err_rigid += np.sum(delta_rigid) / len(delta_rigid)
+    tot_avg_err_dyn += np.sum(delta_dyn) / len(delta_dyn)
     
     plotter.write_frame()               # Write a frame. This triggers a render.
-    
+
 plotter.close()
+
+
+print("Total error:\n", "SMPL:", np.round(tot_err_rigid,2), "\nOurs:",  np.round(tot_err_dyn,2))
+print("Total vertex average error:\n", "SMPL:",  np.round(tot_avg_err_rigid,4), "\nOurs:",  np.round(tot_avg_err_dyn,4))
