@@ -13,6 +13,40 @@ from scipy.spatial.transform import Rotation
 from .sanity_check import _assert_normalized_weights
 
 
+def normalize_arr_np(arr, tol=1e-14):
+    """
+    Given an array map the array values to normalized range [0.0, 1.0].
+    It's assumed to be used on 1D array, the other use cases aren't tested yet.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        Array to be normalized to range [0.0, 1.0].
+    tol : float, optional
+        Tolerance to numerical tests. It's used to assert the array
+        is normalized to correct [0,1] range. The default is 1e-14.
+        Note that lower values can cause assert failure.
+    Returns
+    -------
+    normalized_arr : np.ndarray
+        Array with the values in range [0.0, 1.0] where 0.0 corresponds to
+        the lowest value and 1.0 is to highest value in the given array.
+    """
+    if len(arr) > 1: print(f"WARNING: Input array has shape {arr.shape}, the normalization is taken in all axes.")
+    
+    min_val = np.min(arr)
+    arr_shifted = arr - min_val
+    
+    max_val = np.max(arr_shifted)
+    assert max_val != 0.0, "Expected array to have a nonzero maximum."
+    normalized_arr = arr_shifted / max_val
+    
+    new_min = np.min(normalized_arr)
+    new_max = np.max(normalized_arr)
+    assert new_min < tol and new_min > -tol, f"Expected normalized array to have minimum 0.0, got {new_min}."
+    assert new_max > 1-tol and new_max < 1+tol, f"Expected normalized array to have maximum 1.0, got {new_max}."
+    return normalized_arr
+    
 def angle_between_vectors_np(u, v, degrees=True):
     """
     DISCLAIMER: This snipplet is adapted from: 
