@@ -194,10 +194,12 @@ plotter = pv.Plotter(notebook = False,
 # Data to initialize mesh objects
 initial_J, initial_smpl_V, initial_gt_V = J[0], V_smpl[0], V_gt[0]
 
+
+TEXT_POSITION = "lower_left"
 # Add DFAUST Ground Truth Mesh
 plotter.subplot(0, 0)
 dfaust_mesh = add_mesh(plotter, initial_gt_V, F, opacity=1.0)
-plotter.add_text("Ground Truth Deformation", font_size=18)
+plotter.add_text("Ground Truth Deformation", TEXT_POSITION, font_size=18)
 plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
@@ -206,7 +208,7 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
 plotter.subplot(0, 1)
 rigid_skel_mesh = add_skeleton(plotter, initial_J, smpl_kintree)
 rigid_smpl_mesh = add_mesh(plotter, initial_smpl_V, F, opacity=0.8)
-plotter.add_text("SMPL Rigid Deformation", font_size=18)
+plotter.add_text("SMPL Rigid Deformation", TEXT_POSITION, font_size=18)
 plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
@@ -221,7 +223,7 @@ line_segments = np.reshape(np.arange(0, 2*(edges-1)), (edges-1, 2))
 dyn_skel_mesh = add_skeleton(plotter, J_dyn_initial, line_segments)
 
 dyn_smpl_mesh = add_mesh(plotter, initial_smpl_V, F, opacity=0.8)
-plotter.add_text("Spring Deformation", font_size=18)
+plotter.add_text("Spring Deformation", TEXT_POSITION, font_size=18)
 plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
@@ -269,7 +271,7 @@ plotter.add_key_event("n", deselect_bone)
 # Render and save results
 # -----------------------------------------------------------------------------
     
-result_fname = "dfaust_comparison"
+result_fname = "dfaust_comparison" + "_" + str(SELECTED_SUBJECT) + "_" + str(SELECTED_POSE)
 plotter.open_movie(RESULT_PATH + f"{result_fname}.mp4")
 
 n_frames = V_smpl.shape[0]
