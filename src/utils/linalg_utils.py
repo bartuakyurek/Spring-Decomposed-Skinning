@@ -38,7 +38,11 @@ def normalize_arr_np(arr, tol=1e-14):
     arr_shifted = arr - min_val
     
     max_val = np.max(arr_shifted)
-    assert max_val != 0.0, "Expected array to have a nonzero maximum."
+    if max_val == 0.0:
+        print("WARNING: Expected array to have a nonzero maximum. \
+              Didn't normalize the vector.")
+        return arr
+    
     normalized_arr = arr_shifted / max_val
     
     new_min = np.min(normalized_arr)
