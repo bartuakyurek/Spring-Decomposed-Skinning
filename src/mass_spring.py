@@ -162,7 +162,7 @@ class Spring:
         
         
 class MassSpringSystem:
-    def __init__(self, dt, mode="Verlet"):
+    def __init__(self, dt, mode="PBD"):
         print(">> INFO: Initiated empty mass-spring system")
         self.masses = []
         self.fixed_indices = []
@@ -299,7 +299,7 @@ class MassSpringSystem:
     
     def simulate_verlet(self, dt=None):
         """
-        Uses Verlet Integration 
+        Uses Explicit Verlet Integration 
         WARNING: This simulation has not been tested yet so don't rely on t.
         
         Parameters
@@ -328,8 +328,11 @@ class MassSpringSystem:
                 self.masses[i].prev_center  = self.masses[i].center
                 
                 p_new =  p_prev + dt * self.masses[i].velocity + force * dt * dt / self.masses[i].mass
+                velocity = (p_new - p_prev) / dt
+                # Optionlly dampen the velocity 
+                velocity = velocity * self.masses[i].dscale
                 
-                self.masses[i].velocity = (p_new - p_prev) / dt
+                self.masses[i].velocity = velocity
                 self.masses[i].center = p_new
                 
                
