@@ -37,6 +37,7 @@ EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (i
 DEGREES = False # Set true if pose is represented with degrees as Euler angles. 
                 # WARNING: For SMPL it is False, i.e. radians.
 
+INTEGRATION = "EULER" # Options: PBD, Verlet, Euler
 FRAME_RATE = 24 #24
 TIME_STEP = 1./FRAME_RATE  
 MASS = 1.
@@ -125,7 +126,8 @@ helper_rig = HelperBonesHandler(skeleton,
                                 spring_dscale = SPRING_DSCALE,
                                 dt            = TIME_STEP,
                                 point_spring  = POINT_SPRING,
-                                fixed_scale   = FIXED_SCALE) 
+                                fixed_scale   = FIXED_SCALE, 
+                                simulation_mode = INTEGRATION) 
 
 # -----------------------------------------------------------------------------
 # Simulate data

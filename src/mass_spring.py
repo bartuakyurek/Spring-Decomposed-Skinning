@@ -123,6 +123,8 @@ class Spring:
         self.m1 = beginning_mass
         self.m2 = ending_mass
         
+        
+        
     def get_force_on_mass(self, mass : Particle, tol=1e-12, verbose=VERBOSE):
         
         distance = LA.norm(self.m1.center - self.m2.center)
@@ -160,14 +162,17 @@ class Spring:
         
         
 class MassSpringSystem:
-    def __init__(self, dt):
-        print(">> Initiated empty mass-spring system")
+    def __init__(self, dt, mode="Verlet"):
+        print(">> INFO: Initiated empty mass-spring system")
         self.masses = []
         self.fixed_indices = []
         self.connections = []
         self.dt =  dt
         
-    def simulate(self, dt=None, integration="PBD"):
+        print(">> INFO: Simulation integrator is set to ", mode)
+        self.integration_mode = mode
+        
+    def simulate(self, dt=None, integration=None):
         """
         Simulate the mass-spring system. Updates the mass locations in the 
         system.
@@ -179,7 +184,8 @@ class MassSpringSystem:
             be used. The default is None.
             
         integration : str, optional
-            Type of integration to be used in the simulation. The default is PBD.
+            Type of integration to be used in the simulation. The default is None.
+            If set to None, the default simulator will be used.
             Available options are (case insensitive): {PBD, Verlet, Euler}
             
         Returns
@@ -187,7 +193,8 @@ class MassSpringSystem:
         None.
         
         """
-
+        if integration is None: integration = self.integration_mode
+        
         assert type(integration) == str, f"Expected str type at integration parameter, got {type(integration)}."
         integration = integration.upper()
         
