@@ -168,6 +168,69 @@ class MassSpringSystem:
         self.dt =  dt
         
     def simulate(self, dt=None):
+        """
+        Default simulator of mass spring system based on Position Based Dynamics
+        (excluding the constraint projections).
+
+        Parameters
+        ----------
+        dt : float, optional
+            Timestep for the integration. When set to None, the time step of the simulator settings will
+            be used. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        if dt is None:
+            dt = self.dt
+            
+        n_masses = len(self.masses)
+        for i in range(n_masses):
+            # Constraint: If a mass is zero, don't exert any force (f=ma=0)
+            # that makes the mass fixed in space (world position still can be changed globally)
+            # Also this allows us to not divide by zero in the acceleration computation.
+            m = self.masses[i].mass
+            if m < 1e-12:
+                continue
+            
+            force = self.masses[i].get_total_spring_forces() 
+            velocity = self.masses[i].velocity + dt * (force / m)
+            
+            # Optionally, damp velocities here
+            velocity = velocity * self.masses[i].dscale
+            
+            # (Omitting constraint projections x <- solveConstraints())
+        
+            x = self.masses[i].center.copy()
+            p = x + dt * velocity
+            velocity = (p - x) / dt
+            
+            self.masses[i].velocity = velocity
+            self.masses[i].center = p
+            
+            #self.masses[i].prev_center = previous_position
+            #self.masses[i].center += velocity * dt * self.masses[i].dscale
+            
+            # This update is unstable 
+            ##self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
+            
+    def simulate_euler(self, dt=None):
+        """
+        Mass-Spring simulation with explicit Euler Integration (TODO: needs verification).
+
+        Parameters
+        ----------
+        dt : float, optional
+            Timestep for the integration. When set to None, the time step of the simulator settings will
+            be used. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
         if dt is None:
             dt = self.dt
             
@@ -183,12 +246,10 @@ class MassSpringSystem:
             
             acc = force / self.masses[i].mass
             velocity = self.masses[i].velocity + acc * dt
-            #previous_position = self.masses[i].center.copy()
-            
+            #previous_position = self.masses[i].center.copy()            
             #self.masses[i].prev_center = previous_position
             self.masses[i].center += velocity * dt * self.masses[i].dscale
-            #self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
-    
+            
     
     def simulate_zero_length(self, dt):
         """
