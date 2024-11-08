@@ -180,21 +180,24 @@ class MassSpringSystem:
                 continue
             
             force = self.masses[i].get_total_spring_forces()
-            acc = force / self.masses[i].mass
-        
-            velocity = self.masses[i].velocity + acc * dt
-            previous_position = self.masses[i].center.copy()
             
-            self.masses[i].prev_center = previous_position
+            acc = force / self.masses[i].mass
+            velocity = self.masses[i].velocity + acc * dt
+            #previous_position = self.masses[i].center.copy()
+            
+            #self.masses[i].prev_center = previous_position
             self.masses[i].center += velocity * dt * self.masses[i].dscale
-            self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
+            #self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
     
     
     def simulate_zero_length(self, dt):
         """
         WARNING: This assumes the spring is zero-length spring. I.e. masses
         of the spring are at the same location.
-
+        
+        Uses Verlet Integration 
+        WARNING: This simulation has not been tested yet so don't rely on t.
+        
         Parameters
         ----------
         dt : float, optional
