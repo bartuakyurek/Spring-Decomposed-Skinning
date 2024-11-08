@@ -251,7 +251,8 @@ for frame in range(n_frames):
     # Colorize meshes with respect to error distances
     base_verts = V_smpl[frame]
     delta_dyn = np.linalg.norm(base_verts - V_dyn[frame], axis=1) 
-    delta_dyn = normalize_arr_np(delta_dyn)
+    delta_dyn = normalize_arr_np(delta_dyn) 
+    # TODO: don't normalize at every frame, actually normalize it for all the frames to see changes clearly 
     
     set_mesh_color_scalars(dyn_smpl_mesh, delta_dyn)  
     
