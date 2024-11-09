@@ -43,15 +43,17 @@ DEGREES = False # Set true if pose is represented with degrees as Euler angles.
 
 FRAME_RATE = 24 #24
 TIME_STEP = 1./FRAME_RATE  
-MASS = 1.
-STIFFNESS = 200.
-DAMPING = 50.            
-MASS_DSCALE = 0.3       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+MASS = 2.
+STIFFNESS = 10 #200.
+DAMPING = 15. #50.            
+MASS_DSCALE = 0.5       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
-RENDER_MESH_RIGID, RENDER_MESH_DYN = False, False # Turn on/off mesh for SMPL and/or SDDS
+ERR_MODE = "SMPL" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
+COLOR_CODE = True
+RENDER_MESH_RIGID, RENDER_MESH_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
 RENDER_SKEL_RIGID, RENDER_SKEL_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
-OPACITY = 0.5
+OPACITY = 0.8
 JIGGLE_SCALE = 1.0      # Set it greater than 1 to exaggerate the jiggling impact
 NORMALIZE_WEIGHTS = False # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
@@ -66,7 +68,7 @@ if JIGGLE_SCALE != 1.0:
 # Load animation sequence for the selected subject and pose
 # -----------------------------------------------------------------------------
 
-SELECTED_SUBJECT, SELECTED_POSE = subject_ids[0], pose_ids[4]
+SELECTED_SUBJECT, SELECTED_POSE = subject_ids[0], pose_ids[10]
 
 smpl_model = get_gendered_smpl_model(subject_id=SELECTED_SUBJECT, device="cpu")
 F = np.array(smpl_model.faces, dtype=int)
@@ -169,14 +171,15 @@ for frame in range(n_frames):
     dyn_posed_locations = helper_rig.update_bones(rigidly_posed_locations) # Update the rigidly posed locations
     J_dyn.append(dyn_posed_locations)
     
-    # 1.2 - Get the transformations through IK
+    # 1.2 - Get the transformations through IK (cancelled for SMPL)
     #M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, dyn_posed_locations, return_mat=True, algorithm="RST")
-    M = inverse_kinematics.get_absolute_transformations(prev_J, dyn_posed_locations, return_mat=True, algorithm="RST")
-    M = M[helper_idxs] # TODO: you may need to change it after excluding root bone? make sure you're retrieving correct transformations
+    #M = inverse_kinematics.get_absolute_transformations(prev_J, dyn_posed_locations, return_mat=True, algorithm="RST")
+    #M = M[helper_idxs] # TODO: you may need to change it after excluding root bone? make sure you're retrieving correct transformations
     
-    # 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
-    mesh_points = skinning.LBS_from_mat(prev_V, helper_W, M, use_normalized_weights=NORMALIZE_WEIGHTS) 
+    # 1.3 - Feed them to skinning and obtain dynamically deformed vertices. (cancelled for SMPL)
+    #mesh_points = skinning.LBS_from_mat(prev_V, helper_W, M, use_normalized_weights=NORMALIZE_WEIGHTS) 
     
+    # Compute the translations and add them on SMPL mesh
     prev_helper_tips = prev_J[2 * helper_idxs + 1]
     cur_helper_tips = dyn_posed_locations[2 * helper_idxs + 1]
     
@@ -253,23 +256,30 @@ result_fname = "dfaust_comparison" + "_" + str(SELECTED_SUBJECT) + "_" + str(SEL
 plotter.open_movie(RESULT_PATH + f"{result_fname}.mp4")
 
 n_frames = len(V_smpl)
-base_verts = V_gt
-
-distance_err_rigid = np.linalg.norm(base_verts - V_smpl, axis=-1)  # (n_frames, n_verts)
-distance_err_dyn = np.linalg.norm(base_verts - V_dyn, axis=-1)  # (n_frames, n_verts)
-
-tot_err_rigid =  np.sum(distance_err_rigid)
-tot_err_dyn =  np.sum(distance_err_dyn)
-print(">> Total error SMPL: ", np.round(tot_err_rigid,4))
-print(">> Total error Ours: ", np.round(tot_err_dyn,4))
-
-avg_err_rigid = tot_err_rigid / n_frames
-avg_err_dyn = tot_err_dyn / n_frames
-print(">> Average error SMPL: ", np.round(avg_err_rigid, 4))
-print(">> Average error Ours: ", np.round(avg_err_dyn, 4))
-
-normalized_dists_rigid = normalize_arr_np(distance_err_rigid) 
-normalized_dists_dyn = normalize_arr_np(distance_err_dyn) 
+if ERR_MODE == "SMPL":
+    base_verts = V_smpl
+    distance_err_dyn = np.linalg.norm(base_verts - V_dyn, axis=-1)  # (n_frames, n_verts)
+    tot_err_dyn =  np.sum(distance_err_dyn)
+    print(">> Total error: ", np.round(tot_err_dyn,4))
+    avg_err_dyn = tot_err_dyn / n_frames
+    print(">> Average error: ", np.round(avg_err_dyn, 4))
+    normalized_dists_dyn = normalize_arr_np(distance_err_dyn) 
+    
+elif ERR_MODE == "DFAUST":
+    base_verts = V_gt
+    distance_err_rigid = np.linalg.norm(base_verts - V_smpl, axis=-1)  # (n_frames, n_verts)
+    distance_err_dyn = np.linalg.norm(base_verts - V_dyn, axis=-1)  # (n_frames, n_verts)
+    
+    tot_err_rigid =  np.sum(distance_err_rigid)
+    tot_err_dyn =  np.sum(distance_err_dyn)
+    print(">> Total error SMPL: ", np.round(tot_err_rigid,4))
+    print(">> Total error Ours: ", np.round(tot_err_dyn,4))
+    avg_err_rigid = tot_err_rigid / n_frames
+    avg_err_dyn = tot_err_dyn / n_frames
+    print(">> Average error SMPL: ", np.round(avg_err_rigid, 4))
+    print(">> Average error Ours: ", np.round(avg_err_dyn, 4))
+    normalized_dists_rigid = normalize_arr_np(distance_err_rigid) 
+    normalized_dists_dyn = normalize_arr_np(distance_err_dyn) 
 
 for frame in range(n_frames):
     rigid_skel_mesh.points = J[frame]   # Update mesh points in the renderer.
@@ -280,8 +290,10 @@ for frame in range(n_frames):
     dyn_smpl_mesh.points = V_dyn[frame]
      
     # Colorize meshes with respect to error distances
-    set_mesh_color_scalars(rigid_smpl_mesh, normalized_dists_rigid[frame])  
-    set_mesh_color_scalars(dyn_smpl_mesh, normalized_dists_dyn[frame])  
+    if COLOR_CODE:
+        if ERR_MODE == "DFAUST":
+            set_mesh_color_scalars(rigid_smpl_mesh, normalized_dists_rigid[frame])  
+        set_mesh_color_scalars(dyn_smpl_mesh, normalized_dists_dyn[frame])  
     
     frame_text_actor.input = str(frame+1)
     plotter.write_frame()               # Write a frame. This triggers a render.
