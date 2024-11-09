@@ -34,7 +34,13 @@ MODE = "Dynamic" #"Rigid" or "Dynamic"
 INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
+
 RENDER_MESH = True
+RENDER_SKEL = False
+RENDER_PHYS_BASED = True
+MATERIAL_METALLIC = 1.0 
+MATERIAL_ROUGHNESS = 0.4
+
 FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
@@ -56,7 +62,7 @@ MONSTERA_RIG_PATH = "../data/" + FNAME + "_rig_data.npz"
 # ---------------------------------------------------------------------------- 
 # Set skeletal animation data 
 # ---------------------------------------------------------------------------- 
-V_rest, _, _, F, _, _ =  igl.read_obj(OBJ_PATH)
+V_rest, texture_coord, _, F, _, _ =  igl.read_obj(OBJ_PATH)
 keyframe_poses = poses.monstera_rig_pose
 
 with np.load(MONSTERA_RIG_PATH) as data:
@@ -115,8 +121,17 @@ plotter.camera.focal_point = (0.0, 0.65, 0.0)
 # ----------------------------------------------------------------------------
 rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
-skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-if RENDER_MESH: mesh, mesh_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True)
+
+if RENDER_SKEL:
+    skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
+
+if RENDER_MESH: 
+    # Texture coordinates do not work as I expected...
+    #texture_coord = pv.numpy_to_texture(texture_coord)
+    mesh, mesh_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True,
+                                pbr=RENDER_PHYS_BASED, metallic=MATERIAL_METALLIC, roughness=MATERIAL_ROUGHNESS)
+    #mesh.texture_map_to_plane(inplace=True)
+    #mesh_actor.texture = texture_coord
 
 plotter.open_movie(RESULT_PATH + f"/{FNAME}-{ALGO}.mp4")
 n_poses = keyframe_poses.shape[0]
@@ -152,7 +167,7 @@ try:
                        
                 # Set data for renderer
                 if RENDER_MESH: mesh.points = mesh_points
-                skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.
+                if RENDER_SKEL: skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.
                 plotter.write_frame()               # Write a frame. This triggers a render.
 except AssertionError:
     print(">>>> Caught assertion, stopping execution...")

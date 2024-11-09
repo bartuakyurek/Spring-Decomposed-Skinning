@@ -44,12 +44,18 @@ def set_mesh_color(mesh, color):
     mesh['vert_colors'] = colors
     return
 
+# This is a feature-envy function, we don't really need it because every time I want 
+# to pass an extra parameter on plotter.add_mesh I have to modify here too, it's unnecessary
 def add_mesh(plotter,
              verts, 
              faces, 
              opacity=1.0, 
              return_actor=False, 
-             color=[0.8, 0.8, 1.0]):
+             color=[0.8, 0.8, 1.0],
+             texture=None,
+             pbr=False, 
+             metallic=1.0, 
+             roughness=0.5):
     
     assert faces.shape[-1] == 3, f"Non-triangular meshes are not supported yet. Expected faces has shape (n_faces, 3), got {faces.shape}"
     assert verts.shape[-1] == 3, f"Expected vertices to have shape (n_verts, 3), got {verts.shape}."
@@ -67,7 +73,11 @@ def add_mesh(plotter,
                                     rgb=True,
                                     lighting=True,
                                     show_edges=False,
-                                    opacity=opacity
+                                    opacity=opacity,
+                                    texture=texture,
+                                    pbr=pbr, 
+                                    metallic=metallic,
+                                    roughness=roughness,
                                 )
     
     if return_actor:
