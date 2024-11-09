@@ -44,9 +44,10 @@ FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-N_REPEAT = 4
+N_REPEAT = 2
+N_REST = 2
 
-FRAME_RATE = 24 # 24, 30, 60
+FRAME_RATE = 10 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 10.5
 STIFFNESS = 100.
@@ -119,6 +120,10 @@ plotter.camera.focal_point = (0.0, 0.65, 0.0)
 light = pv.Light(position=(0, 1.5, 1.5), light_type='scene light')
 plotter.add_light(light)
 
+# Add frame number
+TEXT_POSITION = (WINDOW_SIZE[0]-70, WINDOW_SIZE[1]-70)
+frame_text_actor = plotter.add_text("0", TEXT_POSITION, font_size=18)
+
 # ---------------------------------------------------------------------------- 
 # Add mesh actors
 # ----------------------------------------------------------------------------
@@ -148,14 +153,15 @@ trans = np.zeros((n_bones+1, 3)) # TODO: remove +1 when you remove root bone iss
 # ---------------------------------------------------------------------------------
 V_anim = []
 J_anim = []
-for rep in range(N_REPEAT):         # This can be refactored too as it's not related to render
+for rep in range(N_REPEAT + N_REST):         # This can be refactored too as it's not related to render
     for pose_idx in range(n_poses): # Loop keyframes, this could be refactored.
         for frame_idx in range(FRAME_RATE):
-                
-            if pose_idx: # If not the first pose
-                        theta = lerp(keyframe_poses[pose_idx-1], keyframe_poses[pose_idx], frame_idx/FRAME_RATE)
-            else:        # Lerp with the last pose for boomerang
-                        theta = lerp(keyframe_poses[pose_idx], keyframe_poses[-1], frame_idx/FRAME_RATE)
+            
+            if rep < N_REPEAT:
+                if pose_idx: # If not the first pose
+                            theta = lerp(keyframe_poses[pose_idx-1], keyframe_poses[pose_idx], frame_idx/FRAME_RATE)
+                else:        # Lerp with the last pose for boomerang
+                            theta = lerp(keyframe_poses[pose_idx], keyframe_poses[-1], frame_idx/FRAME_RATE)
                 
             posed_locations = skeleton.pose_bones(theta, trans, degrees=DEGREES)
             abs_rot_quat, abs_trans = skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
@@ -190,6 +196,8 @@ for frame in range(n_frames):
     # Set data for renderer
     if RENDER_MESH: mesh.points = V_anim[frame]
     if RENDER_SKEL: skel_mesh.points = J_anim[frame] 
+    
+    frame_text_actor.input = str(frame+1)
     plotter.write_frame()   # Write a frame. This triggers a render.
     
 
