@@ -477,10 +477,11 @@ def create_skeleton_from(bone_locations, kintree):
     
     skeleton = Skeleton(root_vec=bone_locations[kintree[0][1]][0]) ## TODO: this would be global translation when we remove root_bone
     
+    print(">> Warning: kintree is modified to fit the implementation. This should be removed once the root bone issue is resolved.")
     for i in range(n_bones):
         parent_id, bone_id = kintree[i]
         skeleton.insert_bone(
-                              parent_idx = parent_id,
+                              parent_idx = parent_id + 1 , # TODO: this is because of root bone issue
                               startpoint =  bone_locations[bone_id][0],
                               endpoint = bone_locations[bone_id][1]
                              ) 
