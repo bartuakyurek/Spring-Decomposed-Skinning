@@ -31,21 +31,23 @@ from src.render.pyvista_render_tools import (add_mesh,
 # Declare parameters
 # ----------------------------------------------------------------------------
 MODE = "Dynamic" #"Rigid" or "Dynamic" 
-INTEGRATION = "Euler" # PBD or Euler
+INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
-FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
-POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+NORMALIZE_WEIGHTS = True
+RENDER_MESH = True
+FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
+POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-N_REPEAT = 2
+N_REPEAT = 3
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
-MASS = 1.
-STIFFNESS = 300.
-DAMPING = 50.            
-MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
-SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
+MASS = 0.1
+STIFFNESS = 10.
+DAMPING = 1.            
+MASS_DSCALE = 0.8       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+SPRING_DSCALE = 2.0     # Scales spring forces (increase for more jiggling)
 
 FNAME = "monstera"      # For i/o files
 OBJ_PATH = DATA_PATH + FNAME + ".obj"
@@ -103,7 +105,7 @@ OPACITY = 1.0
 WINDOW_SIZE = (1200, 1200)
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER, window_size = WINDOW_SIZE)
 plotter.camera_position = 'zy'
-plotter.camera.position = [-8.0, 1.0, 0]
+plotter.camera.position = [-8.0, 2.0, 0]
 plotter.camera.view_angle = 20 # This works like zoom actually
 plotter.camera.focal_point = (0.0, 0.65, 0.0)
 
@@ -114,7 +116,7 @@ plotter.camera.focal_point = (0.0, 0.65, 0.0)
 rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
-mesh, mesh_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True)
+if RENDER_MESH: mesh, mesh_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True)
 
 plotter.open_movie(RESULT_PATH + f"/{FNAME}-{ALGO}.mp4")
 n_poses = keyframe_poses.shape[0]
@@ -136,7 +138,7 @@ try:
                 
                 if MODE=="Rigid":
                    skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
-                   mesh_points = skinning.LBS_from_quat(V_rest, W, abs_rot_quat[1:], abs_trans[1:]) # TODO: get rid of root
+                   if RENDER_MESH: mesh_points = skinning.LBS_from_quat(V_rest, W, abs_rot_quat[1:], abs_trans[1:], use_normalized_weights=NORMALIZE_WEIGHTS) # TODO: get rid of root
                 else:
                     posed_locations = helper_rig.update_bones(posed_locations) # Update the rigidly posed locations
                     skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
@@ -146,10 +148,10 @@ try:
                     
                     M_hybrid = M_rigid
                     M_hybrid[helper_idxs] = M[helper_idxs]
-                    mesh_points = skinning.LBS_from_mat(V_rest, W, M_hybrid)
+                    if RENDER_MESH: mesh_points = skinning.LBS_from_mat(V_rest, W, M_hybrid, use_normalized_weights=NORMALIZE_WEIGHTS)
                        
                 # Set data for renderer
-                mesh.points = mesh_points
+                if RENDER_MESH: mesh.points = mesh_points
                 skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.
                 plotter.write_frame()               # Write a frame. This triggers a render.
 except AssertionError:
