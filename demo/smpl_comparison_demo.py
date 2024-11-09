@@ -243,6 +243,13 @@ plotter.open_movie(RESULT_PATH + f"{result_fname}.mp4")
 n_frames = V_smpl.shape[0]
 tot_err_rigid, tot_err_dyn = 0.0, 0.0
 tot_avg_err_rigid, tot_avg_err_dyn = 0.0, 0.0
+
+base_verts = V_smpl
+distance_err = np.linalg.norm(base_verts - V_dyn, axis=-1)  # (n_frames, n_verts)
+tot_err =  np.sum(distance_err)
+print(">> Total error: ",tot_err)
+print(">> Average error: ", tot_err / len(distance_err))
+normalized_dists = normalize_arr_np(distance_err) 
 for frame in range(n_frames):
     rigid_skel_mesh.points = J[frame]   # Update mesh points in the renderer.
     dyn_skel_mesh.points = J_dyn[frame] # TODO: update it!
@@ -251,14 +258,7 @@ for frame in range(n_frames):
     rigid_smpl_mesh.points = V_smpl[frame]
     dyn_smpl_mesh.points = V_dyn[frame]
      
-    # Colorize meshes with respect to error distances
-    base_verts = V_smpl[frame]
-    delta_dyn = np.linalg.norm(base_verts - V_dyn[frame], axis=1) 
-    delta_dyn = normalize_arr_np(delta_dyn) 
-    # TODO: don't normalize at every frame, actually normalize it for all the frames to see changes clearly 
-    
-    set_mesh_color_scalars(dyn_smpl_mesh, delta_dyn)  
-    
+    set_mesh_color_scalars(dyn_smpl_mesh, normalized_dists[frame])  
     plotter.write_frame()               # Write a frame. This triggers a render.
 
 plotter.close()

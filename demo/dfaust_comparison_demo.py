@@ -7,6 +7,11 @@ This file is created to view DFAUST and corresponding rigid SMPL model
 side by side. We then add helper bones to jiggle the SMPL tissues to 
 compare the computed jigglings with the ground truth DFAUST data.
 
+Color coded error metrics display Euclidean distance differences between
+DFAUST vs. SMPL (middle) and DFAUST vs. Ours (right). Note that since the
+basic SMPL model has more topological difference on hands and feet, the 
+distance error isn't on the jiggling tissues. 
+
 @author: bartu
 """
 
@@ -236,9 +241,25 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
 result_fname = "dfaust_comparison" + "_" + str(SELECTED_SUBJECT) + "_" + str(SELECTED_POSE)
 plotter.open_movie(RESULT_PATH + f"{result_fname}.mp4")
 
-n_frames = V_smpl.shape[0]
-tot_err_rigid, tot_err_dyn = 0.0, 0.0
-tot_avg_err_rigid, tot_avg_err_dyn = 0.0, 0.0
+n_frames = len(V_smpl)
+base_verts = V_gt
+
+distance_err_rigid = np.linalg.norm(base_verts - V_smpl, axis=-1)  # (n_frames, n_verts)
+distance_err_dyn = np.linalg.norm(base_verts - V_dyn, axis=-1)  # (n_frames, n_verts)
+
+tot_err_rigid =  np.sum(distance_err_rigid)
+tot_err_dyn =  np.sum(distance_err_dyn)
+print(">> Total error SMPL: ", np.round(tot_err_rigid,4))
+print(">> Total error Ours: ", np.round(tot_err_dyn,4))
+
+avg_err_rigid = tot_err_rigid / n_frames
+avg_err_dyn = tot_err_dyn / n_frames
+print(">> Average error SMPL: ", np.round(avg_err_rigid, 4))
+print(">> Average error Ours: ", np.round(avg_err_dyn, 4))
+
+normalized_dists_rigid = normalize_arr_np(distance_err_rigid) 
+normalized_dists_dyn = normalize_arr_np(distance_err_dyn) 
+
 for frame in range(n_frames):
     rigid_skel_mesh.points = J[frame]   # Update mesh points in the renderer.
     dyn_skel_mesh.points = J_dyn[frame] # TODO: update it!
@@ -248,26 +269,11 @@ for frame in range(n_frames):
     dyn_smpl_mesh.points = V_dyn[frame]
      
     # Colorize meshes with respect to error distances
-    delta_rigid = np.linalg.norm(V_gt[frame] - V_smpl[frame], axis=1) 
-    delta_dyn = np.linalg.norm(V_gt[frame] - V_dyn[frame], axis=1) 
-    
-    delta_rigid = normalize_arr_np(delta_rigid)
-    delta_dyn = normalize_arr_np(delta_dyn)
-    
-    set_mesh_color_scalars(rigid_smpl_mesh, delta_rigid)  
-    set_mesh_color_scalars(dyn_smpl_mesh, delta_dyn)  
-    
-    # Save the error metrics
-    tot_err_rigid += np.sum(delta_rigid)
-    tot_err_dyn += np.sum(delta_dyn)
-    
-    tot_avg_err_rigid += np.sum(delta_rigid) / len(delta_rigid)
-    tot_avg_err_dyn += np.sum(delta_dyn) / len(delta_dyn)
+    set_mesh_color_scalars(rigid_smpl_mesh, normalized_dists_rigid[frame])  
+    set_mesh_color_scalars(dyn_smpl_mesh, normalized_dists_dyn[frame])  
     
     plotter.write_frame()               # Write a frame. This triggers a render.
 
 plotter.close()
 
 
-print("Total vertex distance error:\n", "SMPL:", np.round(tot_err_rigid,2), "\nOurs:",  np.round(tot_err_dyn,2))
-print("Total vertex average error:\n", "SMPL:",  np.round(tot_avg_err_rigid,4), "\nOurs:",  np.round(tot_avg_err_dyn,4))
