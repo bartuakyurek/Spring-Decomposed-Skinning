@@ -213,6 +213,8 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
 
+frame_text_actor = plotter.add_text("0", (600,0), font_size=18)
+
 # Add SMPL Mesh 
 plotter.subplot(0, 1)
 rigid_skel_mesh, rigid_skel_actor = add_skeleton(plotter, initial_J, smpl_kintree, return_actor=True)
@@ -281,6 +283,7 @@ for frame in range(n_frames):
     set_mesh_color_scalars(rigid_smpl_mesh, normalized_dists_rigid[frame])  
     set_mesh_color_scalars(dyn_smpl_mesh, normalized_dists_dyn[frame])  
     
+    frame_text_actor.input = str(frame+1)
     plotter.write_frame()               # Write a frame. This triggers a render.
 
 plotter.close()

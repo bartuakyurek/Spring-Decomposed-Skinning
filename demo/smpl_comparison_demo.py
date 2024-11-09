@@ -212,6 +212,9 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
 
+# Print frame number
+frame_text_actor = plotter.add_text("0", (600,0), font_size=18)
+
 # Add SMPL Mesh 
 plotter.subplot(0, 1)
 rigid_skel_mesh, rigid_skel_actor = add_skeleton(plotter, initial_J, smpl_kintree, return_actor=True)
@@ -232,6 +235,8 @@ dyn_skel_mesh, dyn_skel_actor = add_skeleton(plotter, J_dyn_initial, line_segmen
 
 dyn_smpl_mesh, dyn_smpl_actor = add_mesh(plotter, initial_smpl_V, F, opacity=OPACITY, return_actor=True)
 plotter.add_text("Spring Deformation", TEXT_POSITION, font_size=18)
+
+
 plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
@@ -268,6 +273,7 @@ for frame in range(n_frames):
     dyn_smpl_mesh.points = V_dyn[frame]
      
     set_mesh_color_scalars(dyn_smpl_mesh, normalized_dists[frame])  
+    frame_text_actor.input = str(frame+1)
     plotter.write_frame()               # Write a frame. This triggers a render.
 
 plotter.close()
