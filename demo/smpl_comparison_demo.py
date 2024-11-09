@@ -38,6 +38,7 @@ DEGREES = False # Set true if pose is represented with degrees as Euler angles.
                 # WARNING: For SMPL it is False, i.e. radians.
 
 INTEGRATION = "EULER" # Options: PBD, Verlet, Euler
+ALGO = "RST" # SVD, RST, T
 FRAME_RATE = 24 #24
 TIME_STEP = 1./FRAME_RATE  
 MASS = 1.
@@ -166,7 +167,7 @@ for frame in range(n_frames):
     
     # 1.2 - Get the transformations through IK
     #M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, dyn_posed_locations, return_mat=True, algorithm="RST")
-    M = inverse_kinematics.get_absolute_transformations(prev_J, dyn_posed_locations, return_mat=True, algorithm="RST")
+    M = inverse_kinematics.get_absolute_transformations(prev_J, dyn_posed_locations, return_mat=True, algorithm=ALGO)
     M = M[helper_idxs] # TODO: you may need to change it after excluding root bone? make sure you're retrieving correct transformations
     
     # 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
