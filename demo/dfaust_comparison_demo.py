@@ -49,6 +49,9 @@ DAMPING = 50.
 MASS_DSCALE = 0.3       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
+RENDER_MESH_RIGID, RENDER_MESH_DYN = False, False # Turn on/off mesh for SMPL and/or SDDS
+RENDER_SKEL_RIGID, RENDER_SKEL_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
+OPACITY = 0.5
 JIGGLE_SCALE = 1.0      # Set it greater than 1 to exaggerate the jiggling impact
 NORMALIZE_WEIGHTS = False # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
@@ -212,8 +215,8 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
 
 # Add SMPL Mesh 
 plotter.subplot(0, 1)
-rigid_skel_mesh = add_skeleton(plotter, initial_J, smpl_kintree)
-rigid_smpl_mesh = add_mesh(plotter, initial_smpl_V, F, opacity=0.8)
+rigid_skel_mesh, rigid_skel_actor = add_skeleton(plotter, initial_J, smpl_kintree, return_actor=True)
+rigid_smpl_mesh, rigid_smpl_actor = add_mesh(plotter, initial_smpl_V, F, opacity=OPACITY, return_actor=True)
 plotter.add_text("SMPL Rigid Deformation", TEXT_POSITION, font_size=18)
 plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
@@ -226,14 +229,20 @@ assert J_dyn.shape[0] == J.shape[0], f"Expected first dimensions to share number
 J_dyn_initial = J_dyn[0]
 edges = len(skeleton.rest_bones)
 line_segments = np.reshape(np.arange(0, 2*(edges-1)), (edges-1, 2))
-dyn_skel_mesh = add_skeleton(plotter, J_dyn_initial, line_segments)
+dyn_skel_mesh, dyn_skel_actor = add_skeleton(plotter, J_dyn_initial, line_segments, return_actor=True)
 
-dyn_smpl_mesh = add_mesh(plotter, initial_smpl_V, F, opacity=0.8)
+dyn_smpl_mesh, dyn_smpl_actor = add_mesh(plotter, initial_smpl_V, F, opacity=OPACITY, return_actor=True)
 plotter.add_text("Spring Deformation", TEXT_POSITION, font_size=18)
 plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
 
+# Visibility settings
+if not RENDER_MESH_DYN: dyn_smpl_actor.visibility = False
+if not RENDER_SKEL_DYN: dyn_skel_actor.visibility = False
+
+if not RENDER_MESH_RIGID: rigid_smpl_actor.visibility = False
+if not RENDER_SKEL_RIGID: rigid_skel_actor.visibility = False
 # -----------------------------------------------------------------------------
 # Render and save results
 # -----------------------------------------------------------------------------

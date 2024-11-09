@@ -96,7 +96,7 @@ def set_mesh_color_scalars(mesh, scalars):
     return
 
 
-def add_skeleton(plotter, joint_locations, edges, colors=None):
+def add_skeleton(plotter, joint_locations, edges, colors=None, return_actor=False):
     # pl: PyVista Plotter
     # joint_locations: (n_joints, 3) numpy.ndarray of 3D coordinates per joint
     # edges: (n_edges, 2) numpy.ndarray consisting of two joint indices per edge
@@ -107,11 +107,12 @@ def add_skeleton(plotter, joint_locations, edges, colors=None):
     if colors is None:
         colors = range(edges.shape[0])
 
-    plotter.add_mesh(skel_mesh, scalars=colors,
+    actor = plotter.add_mesh(skel_mesh, scalars=colors,
                     render_lines_as_tubes=True,
                     style='wireframe',
                     line_width=10,
                     cmap='jet',
                     show_scalar_bar=False)
     
+    if return_actor: return skel_mesh, actor
     return skel_mesh
