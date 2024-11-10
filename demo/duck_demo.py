@@ -34,14 +34,14 @@ INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
 
-OPACITY = 1.0
+OPACITY = 0.8
 WINDOW_SIZE = (1200, 1200)
 RENDER_MESH = True
-RENDER_SKEL = False
-RENDER_PHYS_BASED = False
+RENDER_SKEL = True
+RENDER_PHYS_BASED = True
 EYEDOME_LIGHT = False
 MATERIAL_METALLIC = 0.0
-MATERIAL_ROUGHNESS = 0.5
+MATERIAL_ROUGHNESS = 0.2
 
 FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
@@ -119,8 +119,9 @@ plotter = pv.Plotter(notebook=False, off_screen=not RENDER, window_size = WINDOW
 #plotter.roll = 90
 plotter.camera.tight(padding=5, view="yz")
 print(plotter.camera.position)
-plotter.camera.position = [0.0, 5.0, 3.0]
-plotter.camera.focal_point = (0.0, 0.5, 0.5)
+plotter.camera.position = [0.0, 5.0, 4.0]
+plotter.camera.focal_point = (0.0, 0.5, 3.5)
+plotter.camera.roll = 190
 
 # Add light
 if EYEDOME_LIGHT: plotter.enable_eye_dome_lighting()
