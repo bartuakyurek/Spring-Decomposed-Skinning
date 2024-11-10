@@ -31,36 +31,36 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 MODE = "Dynamic" #"Rigid" or "Dynamic" 
 INTEGRATION = "PBD" # PBD or Euler
-ALGO = "T" # RST, SVD, T
+ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
 
-OPACITY = 0.8
+OPACITY = 1.0
 WINDOW_SIZE = (1200, 1200)
 RENDER_MESH = True
-RENDER_SKEL = True
+RENDER_SKEL = False
 RENDER_PHYS_BASED = False
-EYEDOME_LIGHT = False
-MATERIAL_METALLIC = 0.2
+EYEDOME_LIGHT = True
+MATERIAL_METALLIC = 0.0
 MATERIAL_ROUGHNESS = 0.5
 
 FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
-POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 N_REPEAT = 2
-N_REST = 4
+N_REST = 1
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
-MASS = 10.5
+MASS = 1.5
 STIFFNESS = 100.
-DAMPING = 1.            
-MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+DAMPING = 10.            
+MASS_DSCALE = 0.8       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
-FNAME = "blob"      # For i/o files # ----------------------------------------------------  EDIT !
-keyframe_poses = poses.blob_rig_pose  # --------------------------------------------------  EDIT !
-helper_idxs = [16,21,22,25,26,27,33] #np.array([i for i in range(1, n_bones)])  # ----------------------------  EDIT !
+FNAME = "cloth"      # For i/o files # ----------------------------------------------------  EDIT !
+keyframe_poses = poses.cloth_rig_pose  # --------------------------------------------------  EDIT !
+helper_idxs = np.array([i for i in range(1, 23)])  # ----------------------------  EDIT !
 
 DATA_PATH = DATA_PATH + FNAME + "/"
 OBJ_PATH = DATA_PATH + FNAME + ".obj"
@@ -76,20 +76,20 @@ with np.load(RIG_PATH) as data:
      B = data["joints"] # (n_bones, 2, 3)
      kintree = data["kintree"] # (n_bones, 2)
 
-# ---- Rotate, translate, scale the rig data if needed -------------------------------------------  EDIT !
-
+# ---- Rotate, translate, scale the rig data if needed --------------------------------------  EDIT !
+"""
 # Rotate 
 from scipy.spatial.transform import Rotation
-r = Rotation.from_euler('x', -90, degrees=True)
+r = Rotation.from_euler('xyz',(0,90,180), degrees=True)
 for i in range(len(B)):   
     B[i] = r.apply(B[i])
-    
+
 # Translate to origin
 #B = B - np.array([0, 0, 0.6])
 
 # Scale
-B = B * 0.8
-
+#B = B * 1.0
+"""
 # ---------------------------------------------------------------------------- 
 # Define helper spring bones on the existing skeleton
 # ---------------------------------------------------------------------------- 
@@ -115,12 +115,13 @@ plotter = pv.Plotter(notebook=False, off_screen=not RENDER, window_size = WINDOW
 plotter.camera_position = 'zy'
 plotter.camera.position = [-15.0, 0.0, 0]
 plotter.camera.view_angle = 20 # This works like zoom actually
-plotter.camera.focal_point = (0.0, 0.3, 0.0)
+plotter.camera.focal_point = (0.0, 0.0, 0.0)
+plotter.roll = 90
 
 # Add light
 if EYEDOME_LIGHT: plotter.enable_eye_dome_lighting()
 
-light = pv.Light(position=(0, 1.5, 1.5), light_type='scene light')
+light = pv.Light(position=(-1.0, 1.5, 1.5), light_type='scene light')
 plotter.add_light(light)
 
 # Add frame number
@@ -131,6 +132,7 @@ frame_text_actor = plotter.add_text("0", TEXT_POSITION, font_size=18)
 # Add mesh actors
 # ----------------------------------------------------------------------------
 rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False)
+
 n_bones = int(len(rest_bone_locations) / 2)
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 

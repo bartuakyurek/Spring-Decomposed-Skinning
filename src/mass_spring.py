@@ -136,7 +136,7 @@ class Spring:
             
         # Find the spring direction and normalize it (if it's not a zero vector like in point springs)
         normalized_dir = (self.m2.center - self.m1.center) / distance
-        if LA.norm(normalized_dir) > 1e-20: # If the direction is not a zero vector
+        if LA.norm(normalized_dir) > tol: # If the direction is not a zero vector
             assert LA.norm(normalized_dir) < 1.0+tol, f"Expected normalized direction. Provided {normalized_dir} has norm {LA.norm(normalized_dir)}."
             assert LA.norm(normalized_dir) > 1.0-tol, f"Expected normalized direction. Provided {normalized_dir} has norm {LA.norm(normalized_dir)}."
         

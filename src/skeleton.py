@@ -181,12 +181,12 @@ class Skeleton():
         
         # Check and configure translation parameters
         if trans is None: trans = np.zeros((n_bones,3))
-        else: assert trans.shape == (n_bones, 3), f"Expected trans to have shape (n_bones, 3), got {trans.shape}"
+        else: assert trans.shape == (n_bones, 3), f"Expected trans to have shape (n_bones={n_bones}, 3), got {trans.shape}"
         relative_trans = np.array(trans)
         
         # Check and configure rotation parameters
         if quats:
-            assert theta.shape == (n_bones, 4), f"Expected theta as quaternions to have shape (n_bones, 4), got {theta.shape}"
+            assert theta.shape == (n_bones, 4), f"Expected theta as quaternions to have shape (n_bones={n_bones}, 4), got {theta.shape}"
             relative_rot_q = theta
         else:
             assert theta.shape == (n_bones, 3), f"Expected theta to have shape (n_bones={n_bones}, 3), got {theta.shape}"
