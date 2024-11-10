@@ -217,14 +217,20 @@ class HelperBonesHandler:
                 bone_start = simulated_locations[start_idx]
                 _, new_endpoint = self._preserve_bone_length(bone_start, free_idx, orig_length)
                 simulated_locations[end_idx] = new_endpoint
-                
+              
             # Adjust the child bones' starting points
             for child in bone.children:
                 child_start_idx = child.idx * 2
                 child_bone_start = simulated_locations[end_idx]         # Parent's endpoint is the new start point
+                previous_start = simulated_locations[child_start_idx].copy() # without copying, translation gets zero.
                 simulated_locations[child_start_idx] = child_bone_start # Save the new start location
                 # TODO: how about if a child has an offset? we should add it to child_bone_start
-
+                # Translate the child endpoint too
+                translation_amount = child_bone_start - previous_start
+                #if np.sum(translation_amount) > 0: print("translation: ", translation_amount)
+                simulated_locations[child_start_idx + 1] += translation_amount
+            
+                
         # Step 5 - Save the simulated locations for the next iteration
         self.prev_sim_locations = simulated_locations
         # ---------------------------------------------------------------------
