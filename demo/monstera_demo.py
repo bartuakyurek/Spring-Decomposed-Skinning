@@ -22,22 +22,22 @@ from src.helper_handler import HelperBonesHandler
 from src.global_vars import DATA_PATH, RESULT_PATH
 from src.skeleton import Skeleton, create_skeleton_from
 from src.render.pyvista_render_tools import (add_mesh, 
-                                             add_skeleton, 
+                                             add_skeleton_from_Skeleton, 
                                              set_mesh_color_scalars,
                                              set_mesh_color)
 
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODE = "Rigid" #"Rigid" or "Dynamic" 
+MODE = "Dynamic" #"Rigid" or "Dynamic" 
 INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
 
-OPACITY = 1.0
+OPACITY = 0.6
 WINDOW_SIZE = (1200, 1200)
 RENDER_MESH = True
-RENDER_SKEL = False
+RENDER_SKEL = True
 RENDER_PHYS_BASED = True
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.5
@@ -47,7 +47,7 @@ POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set 
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 N_REPEAT = 2
-N_REST = 2
+N_REST = 3
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
@@ -127,11 +127,9 @@ frame_text_actor = plotter.add_text("0", TEXT_POSITION, font_size=18)
 # ---------------------------------------------------------------------------- 
 # Add mesh actors
 # ----------------------------------------------------------------------------
-rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
-line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 
-if RENDER_SKEL:
-    skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
+if RENDER_SKEL:    
+    skel_mesh = add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs)
 
 if RENDER_MESH: 
     
@@ -145,8 +143,7 @@ if RENDER_MESH:
 
 plotter.open_movie(RESULT_PATH + f"/{FNAME}-{ALGO}-{MODE}.mp4")
 n_poses = keyframe_poses.shape[0]
-trans = np.zeros((n_bones+1, 3)) # TODO: remove +1 when you remove root bone issue
-
+trans = np.zeros((len(skeleton.rest_bones), 3)) # TODO: remove +1 when you remove root bone issue
 
 # ---------------------------------------------------------------------------------
 # Simulate and save data

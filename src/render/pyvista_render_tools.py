@@ -96,7 +96,7 @@ def set_mesh_color_scalars(mesh, scalars):
     return
 
 
-def add_skeleton(plotter, joint_locations, edges, colors=None, return_actor=False):
+def add_skeleton(plotter, joint_locations, edges, bone_color=None, colors=None, joint_size=20, return_actor=False):
     # pl: PyVista Plotter
     # joint_locations: (n_joints, 3) numpy.ndarray of 3D coordinates per joint
     # edges: (n_edges, 2) numpy.ndarray consisting of two joint indices per edge
@@ -106,12 +106,70 @@ def add_skeleton(plotter, joint_locations, edges, colors=None, return_actor=Fals
     
     if colors is None:
         colors = range(edges.shape[0])
-
+        cmap = 'jet'
+        
+    if bone_color:
+        colors = np.zeros_like(colors)
+        cmap = [bone_color]
+        
     actor = plotter.add_mesh(skel_mesh, scalars=colors,
                     render_lines_as_tubes=True,
                     style='wireframe',
                     line_width=10,
-                    cmap='jet',
+                    cmap=cmap,
+                    show_scalar_bar=False)
+    
+    # Add spheres to indicate joints
+    _ = plotter.add_mesh(skel_mesh, 
+                    point_size=joint_size,
+                    render_points_as_spheres = True,
+                    style='points',
+                    scalars=colors,
+                    cmap=cmap,
+                    show_scalar_bar=False)
+    
+    if return_actor: return skel_mesh, actor
+    return skel_mesh
+
+
+
+def add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs=None, is_smpl=False,
+                               default_bone_color="#FFFFFF", spring_bone_color="#BEACE6", 
+                               joint_size=20,
+                               return_actor=False):
+    # Given the Skeleton instance and helper indices array, this function
+    # creates a mesh and colors the bones respectively.
+    #print("WARNING: It is assumed helper_idxs includes root bone so they are one index more than the usual. TODO: resolve it...")
+    if is_smpl: 
+        if helper_idxs is not None: helper_idxs = np.array(helper_idxs) - 1
+    
+    # Define joint-edges
+    joint_locations = skeleton.get_rest_bone_locations(exclude_root=True)
+    n_bones = int(len(joint_locations) / 2)
+    edges = np.reshape(np.arange(0, 2*n_bones), (n_bones, 2))
+    edges_w_padding = _get_padded_edges(edges, 2)
+    skel_mesh = pv.PolyData(joint_locations, edges_w_padding)
+    
+    # Define colors
+    colors = np.zeros((n_bones))
+    colors[helper_idxs] = 1.0
+
+    
+    actor = plotter.add_mesh(skel_mesh, 
+                    render_lines_as_tubes=True,
+                    style='wireframe',
+                    line_width=10,
+                    scalars=colors,
+                    cmap = [default_bone_color, spring_bone_color],
+                    show_scalar_bar=False)
+    
+    # Add spheres to indicate joints
+    _ = plotter.add_mesh(skel_mesh, 
+                    point_size=joint_size,
+                    render_points_as_spheres = True,
+                    style='points',
+                    scalars=colors,
+                    cmap = [default_bone_color, spring_bone_color],
                     show_scalar_bar=False)
     
     if return_actor: return skel_mesh, actor

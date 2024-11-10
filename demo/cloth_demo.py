@@ -22,7 +22,7 @@ from src.helper_handler import HelperBonesHandler
 from src.global_vars import DATA_PATH, RESULT_PATH
 from src.skeleton import Skeleton, create_skeleton_from
 from src.render.pyvista_render_tools import (add_mesh, 
-                                             add_skeleton, 
+                                             add_skeleton_from_Skeleton, 
                                              set_mesh_color_scalars,
                                              set_mesh_color)
 
@@ -37,7 +37,7 @@ NORMALIZE_WEIGHTS = True
 OPACITY = 1.0
 WINDOW_SIZE = (1200, 1200)
 RENDER_MESH = True
-RENDER_SKEL = False
+RENDER_SKEL = True
 RENDER_PHYS_BASED = False
 EYEDOME_LIGHT = True
 MATERIAL_METALLIC = 0.0
@@ -131,13 +131,9 @@ frame_text_actor = plotter.add_text("0", TEXT_POSITION, font_size=18)
 # ---------------------------------------------------------------------------- 
 # Add mesh actors
 # ----------------------------------------------------------------------------
-rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False)
-
-n_bones = int(len(rest_bone_locations) / 2)
-line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
 
 if RENDER_SKEL:
-    skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
+    skel_mesh = add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs)
 
 if RENDER_MESH: 
     mesh, mesh_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True,
@@ -150,8 +146,8 @@ if RENDER_MESH:
 
 plotter.open_movie(RESULT_PATH + f"/{FNAME}-{ALGO}-{MODE}.mp4")
 n_poses = keyframe_poses.shape[0]
+n_bones = len(skeleton.rest_bones)
 trans = np.zeros((n_bones, 3)) # TODO: remove +1 when you remove root bone issue
-
 
 # ---------------------------------------------------------------------------------
 # Simulate and save data
