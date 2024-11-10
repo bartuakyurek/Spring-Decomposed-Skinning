@@ -34,10 +34,10 @@ INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
 
-OPACITY = 0.8
+OPACITY = 1.0
 WINDOW_SIZE = (1200, 1200)
 RENDER_MESH = True
-RENDER_SKEL = True
+RENDER_SKEL = False
 RENDER_PHYS_BASED = True
 EYEDOME_LIGHT = False
 MATERIAL_METALLIC = 0.0
@@ -112,13 +112,7 @@ helper_rig = HelperBonesHandler(skeleton,
 # ---------------------------------------------------------------------------- 
 RENDER = True
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER, window_size = WINDOW_SIZE)
-#plotter.camera_position = 'yz'
-#plotter.camera.position = [-10.0, 0.0, 0]
-#plotter.camera.view_angle = 90 # This works like zoom actually
-#plotter.camera.focal_point = (0.0, 0.0, 0.0)
-#plotter.roll = 90
 plotter.camera.tight(padding=5, view="yz")
-print(plotter.camera.position)
 plotter.camera.position = [0.0, 5.0, 4.0]
 plotter.camera.focal_point = (0.0, 0.5, 3.5)
 plotter.camera.roll = 190
