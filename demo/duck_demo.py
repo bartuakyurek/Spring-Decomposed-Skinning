@@ -83,13 +83,13 @@ from scipy.spatial.transform import Rotation
 r = Rotation.from_euler('xyz',(0,90,180), degrees=True)
 for i in range(len(B)):   
     B[i] = r.apply(B[i])
-
+"""
 # Translate to origin
 #B = B - np.array([0, 0, 0.6])
 
 # Scale
-#B = B * 1.0
-"""
+B = B * 2.8
+
 # ---------------------------------------------------------------------------- 
 # Define helper spring bones on the existing skeleton
 # ---------------------------------------------------------------------------- 
