@@ -123,6 +123,8 @@ class Spring:
         self.m1 = beginning_mass
         self.m2 = ending_mass
         
+        
+        
     def get_force_on_mass(self, mass : Particle, tol=1e-12, verbose=VERBOSE):
         
         distance = LA.norm(self.m1.center - self.m2.center)
@@ -134,7 +136,7 @@ class Spring:
             
         # Find the spring direction and normalize it (if it's not a zero vector like in point springs)
         normalized_dir = (self.m2.center - self.m1.center) / distance
-        if LA.norm(normalized_dir) > 1e-20: # If the direction is not a zero vector
+        if LA.norm(normalized_dir) > tol: # If the direction is not a zero vector
             assert LA.norm(normalized_dir) < 1.0+tol, f"Expected normalized direction. Provided {normalized_dir} has norm {LA.norm(normalized_dir)}."
             assert LA.norm(normalized_dir) > 1.0-tol, f"Expected normalized direction. Provided {normalized_dir} has norm {LA.norm(normalized_dir)}."
         
@@ -160,14 +162,121 @@ class Spring:
         
         
 class MassSpringSystem:
-    def __init__(self, dt):
-        print(">> Initiated empty mass-spring system")
+    def __init__(self, dt, mode="PBD"):
+        print(">> INFO: Initiated empty mass-spring system")
         self.masses = []
         self.fixed_indices = []
         self.connections = []
         self.dt =  dt
         
-    def simulate(self, dt=None):
+        print(">> INFO: Simulation integrator is set to ", mode)
+        self.integration_mode = mode
+        
+    def simulate(self, dt=None, integration=None):
+        """
+        Simulate the mass-spring system. Updates the mass locations in the 
+        system.
+        
+        Parameters
+        ----------
+        dt : float, optional
+            Timestep for the integration. When set to None, the time step of the simulator settings will
+            be used. The default is None.
+            
+        integration : str, optional
+            Type of integration to be used in the simulation. The default is None.
+            If set to None, the default simulator will be used.
+            Available options are (case insensitive): {PBD, Verlet, Euler}
+            
+        Returns
+        -------
+        None.
+        
+        """
+        if integration is None: integration = self.integration_mode
+        
+        assert type(integration) == str, f"Expected str type at integration parameter, got {type(integration)}."
+        integration = integration.upper()
+        
+        if integration == "PBD":
+                self.simulate_pbd(dt)
+                
+        elif integration == "VERLET":
+                 self.simulate_verlet(dt)
+        
+        elif integration == "EULER":
+                 self.simulate_euler(dt)
+         
+        else:
+                print(f"WARNING: Invalid integration scheme {integration} is given. Choosing default simulation...")
+                self.simulate_pbd(dt)
+    
+        return
+        
+    def simulate_pbd(self, dt=None):
+        """
+        Default simulator of mass spring system based on Position Based Dynamics
+        (excluding the constraint projections).
+
+        Parameters
+        ----------
+        dt : float, optional
+            Timestep for the integration. When set to None, the time step of the simulator settings will
+            be used. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        if dt is None:
+            dt = self.dt
+            
+        n_masses = len(self.masses)
+        for i in range(n_masses):
+            # Constraint: If a mass is zero, don't exert any force (f=ma=0)
+            # that makes the mass fixed in space (world position still can be changed globally)
+            # Also this allows us to not divide by zero in the acceleration computation.
+            m = self.masses[i].mass
+            if m < 1e-12:
+                continue
+            
+            force = self.masses[i].get_total_spring_forces() 
+            velocity = self.masses[i].velocity + dt * (force / m)
+            
+            # Optionally, damp velocities here
+            velocity = velocity * self.masses[i].dscale
+            
+            # (Omitting constraint projections x <- solveConstraints())
+        
+            x = self.masses[i].center.copy()
+            p = x + dt * velocity
+            velocity = (p - x) / dt
+            
+            self.masses[i].velocity = velocity
+            self.masses[i].center = p
+            
+            #self.masses[i].prev_center = previous_position
+            #self.masses[i].center += velocity * dt * self.masses[i].dscale
+            
+            # This update is unstable 
+            ##self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
+            
+    def simulate_euler(self, dt=None):
+        """
+        Mass-Spring simulation with explicit Euler Integration (TODO: needs verification).
+
+        Parameters
+        ----------
+        dt : float, optional
+            Timestep for the integration. When set to None, the time step of the simulator settings will
+            be used. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
         if dt is None:
             dt = self.dt
             
@@ -183,32 +292,28 @@ class MassSpringSystem:
             
             acc = force / self.masses[i].mass
             velocity = self.masses[i].velocity + acc * dt
-            #previous_position = self.masses[i].center.copy()
-            
+            #previous_position = self.masses[i].center.copy()            
             #self.masses[i].prev_center = previous_position
             self.masses[i].center += velocity * dt * self.masses[i].dscale
-            #self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
+            
     
-    
-    def simulate_zero_length(self, dt):
+    def simulate_verlet(self, dt=None):
         """
-        WARNING: This assumes the spring is zero-length spring. I.e. masses
-        of the spring are at the same location.
-        
-        Uses Verlet Integration 
+        Uses Explicit Verlet Integration 
         WARNING: This simulation has not been tested yet so don't rely on t.
         
         Parameters
         ----------
         dt : float, optional
-            DESCRIPTION. The default is None.
+            Timestep for the integration. When set to None, the time step of the simulator settings will
+            be used. The default is None.
 
         Returns
         -------
         None.
 
         """
-        if dt is None: dt = 1.0
+        if dt is None: dt = self.dt
         assert dt <= 1.0, f"Please provide a smaller time step, expected <= 1.0, got {dt}."
         
         n_masses = len(self.masses)
@@ -217,34 +322,20 @@ class MassSpringSystem:
             if self.masses[i].mass < 1e-12:
                 continue
             else:
-                m = self.masses[i]
-                p_current = m.center
-                velocity = p_current - m.prev_center
-                p_dragged = p_current + velocity
+                force = self.masses[i].get_total_spring_forces()
                 
-                forces = np.zeros(3)
-                for spring in m.springs:
-                    if spring.m1 == m:
-                        target = spring.m2.center
-                    elif spring.m2 == m:
-                        target = spring.m1.center
-                    else:
-                        print(">> Unexpected copy error occured.")
-                    
-                    damping = spring.kd
-                    stiffness = spring.k
-                    
-                    f_d = velocity * (1.0 - damping)
-                    f_s = (target - p_dragged) * stiffness
-                    forces += f_d + f_s
+                p_prev = self.masses[i].prev_center 
+                self.masses[i].prev_center  = self.masses[i].center
                 
-                p_new = p_current + forces
+                p_new =  p_prev + dt * self.masses[i].velocity + force * dt * dt / self.masses[i].mass
+                velocity = (p_new - p_prev) / dt
+                # Optionlly dampen the velocity 
+                velocity = velocity * self.masses[i].dscale
                 
+                self.masses[i].velocity = velocity
                 self.masses[i].center = p_new
-                self.masses[i].prev_center = p_current
                 
-                #previous_position = self.masses[i].center.copy()
-                #self.masses[i].velocity = (p_new - previous_position) #/ dt
+               
             
     
     def add_mass(self, mass_coordinate, mass=_DEFAULT_MASS, dscale=_DEFAULT_MASS_SCALE,

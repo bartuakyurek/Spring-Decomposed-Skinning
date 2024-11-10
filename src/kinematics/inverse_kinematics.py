@@ -68,6 +68,18 @@ def _get_bone_RST(bone_rest, bone_cur):
     M = get_RST(bone_rest, bone_cur)
     return M
 
+def _get_bone_trans_mat(bone_rest, bone_cur):
+    assert bone_rest.shape == (2,3)
+    assert bone_cur.shape == (2,3)
+    
+    M = np.eye(4)
+    
+    endtip_diff = bone_cur[-1] - bone_rest[-1]
+    
+    M[0:3,-1] = endtip_diff
+    return M
+    
+
 def get_absolute_transformations(rest_locations, 
                                  posed_locations, 
                                  return_mat=False, algorithm="RST"):
@@ -86,9 +98,11 @@ def get_absolute_transformations(rest_locations,
     algorithm : str
         Choice of algorithm to compute transformations. 
         Available options are:
+            - "RST" : Computes Rotation-Scale-Translation matrix
             - "SVD" : Computes SVD-based optimal rigid motion (see related .py script)
                       WARNING: Do not use it to directly feed to the skinning algorithm
                                because it causes volume collapse.
+            - "T" : Computes plain 4x4 translation matrices at the tip of the bones
             
     Returns
     -------
@@ -110,6 +124,7 @@ def get_absolute_transformations(rest_locations,
    
     if algorithm == "RST": get_bone_mats = _get_bone_RST
     elif algorithm == "SVD": get_bone_mats = _get_bone_SVD_optimal_rigid
+    elif algorithm == "T" : get_bone_mats = _get_bone_trans_mat
     else: raise ValueError(f"Unexpected algorithm type: {algorithm}.")
     
     # Loop over rest bones
@@ -118,7 +133,7 @@ def get_absolute_transformations(rest_locations,
         bone_rest = np.array([rest_locations[2*i], rest_locations[2*i+1]]) # TODO: Why don't you directly store np.array in bones?
         bone_cur = np.array([posed_locations[2*i], posed_locations[2*i+1]]) # TODO: get rid of root bone thing.
         
-        if algorithm != "RST": # TODO: this conditional can easily fail if algorithm is not SVD 
+        if algorithm == "SVD": 
             R_mat, t = get_bone_mats(bone_rest, bone_cur)
             if return_mat:  # Save transforms as a 4x4 matrix
                 abs_M[i] = compose_rigid_transform_matrix(t, R_mat, rot_is_mat=True)
@@ -127,7 +142,8 @@ def get_absolute_transformations(rest_locations,
                 abs_trans[i] = t
                 rot = Rotation.from_matrix(R_mat)
                 abs_rot_quats[i] = rot.as_quat()     
-        else: 
+        
+        else: # RST or T
             abs_M[i] = get_bone_mats(bone_rest, bone_cur)
             
     if return_mat: 

@@ -181,15 +181,15 @@ class Skeleton():
         
         # Check and configure translation parameters
         if trans is None: trans = np.zeros((n_bones,3))
-        else: assert trans.shape == (n_bones, 3), f"Expected trans to have shape (n_bones, 3), got {trans.shape}"
+        else: assert trans.shape == (n_bones, 3), f"Expected trans to have shape (n_bones={n_bones}, 3), got {trans.shape}"
         relative_trans = np.array(trans)
         
         # Check and configure rotation parameters
         if quats:
-            assert theta.shape == (n_bones, 4), f"Expected theta as quaternions to have shape (n_bones, 4), got {theta.shape}"
+            assert theta.shape == (n_bones, 4), f"Expected theta as quaternions to have shape (n_bones={n_bones}, 4), got {theta.shape}"
             relative_rot_q = theta
         else:
-            assert theta.shape == (n_bones, 3), f"Expected theta to have shape (n_bones, 3), got {theta.shape}"
+            assert theta.shape == (n_bones, 3), f"Expected theta to have shape (n_bones={n_bones}, 3), got {theta.shape}"
             relative_rot_q = np.empty((n_bones, 4))
             for i in range(n_bones):
                 rot = Rotation.from_euler('xyz', theta[i], degrees=degrees)
@@ -442,6 +442,24 @@ class Skeleton():
 # TODO: Could we move these functions to skeleton class so that every other test
 # can utilize them?
 def create_skeleton(joint_locations, kintree):
+    """
+    WARNING: This function is suited for SMPL-like data where joints are treated
+    as bones in the skeleton. If your skeleton have bone nodes instead of joint
+    nodes, don't call this function, use create_skeleton_from() instead.
+
+    Parameters
+    ----------
+    joint_locations : TYPE
+        DESCRIPTION.
+    kintree : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    test_skeleton : TYPE
+        DESCRIPTION.
+
+    """
     test_skeleton = Skeleton(root_vec = joint_locations[0])
     for edge in kintree:
          parent_idx, bone_idx = edge
@@ -449,6 +467,27 @@ def create_skeleton(joint_locations, kintree):
                                    parent_idx = parent_idx)   
     return test_skeleton
 
+def create_skeleton_from(bone_locations, kintree):
+    
+    assert kintree.shape[1] == 2, f"Expected kintree to have length 2 in dimension 1. Found shape {kintree.shape}."
+    assert bone_locations.shape[1] == 2, f"Expected bone locations to have shape (n_bones, 2, 3). Found shape {bone_locations.shape}."
+    assert kintree[0][0] == -1, f"Expected the first entry of kintree to be [-1, x], i.e. root node. Found {kintree[0]}."
+
+    n_bones = len(kintree)
+    
+    skeleton = Skeleton(root_vec=bone_locations[kintree[0][1]][0]) ## TODO: this would be global translation when we remove root_bone
+    
+    print(">> Warning: kintree is modified to fit the implementation. This should be removed once the root bone issue is resolved.")
+    for i in range(n_bones):
+        parent_id, bone_id = kintree[i]
+        skeleton.insert_bone(
+                              parent_idx = parent_id + 1 , # TODO: this is because of root bone issue
+                              startpoint =  bone_locations[bone_id][0],
+                              endpoint = bone_locations[bone_id][1]
+                             ) 
+    return skeleton
+                                  
+    
 # TODO: this could be a general function to add multiple bones because 
 # there's nothing specific about helper bones here.
 def add_helper_bones(test_skeleton, 

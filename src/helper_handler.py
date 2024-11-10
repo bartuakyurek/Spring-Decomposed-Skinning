@@ -14,14 +14,9 @@ from .mass_spring import MassSpringSystem
 class HelperBonesHandler:
     
     def _set_simulator(self, mode, dt):
-        self.simulator = MassSpringSystem(dt)
-        
-        if mode == 1:
-            self.simulate_rig = self.simulator.simulate_zero_length
-        elif mode == 0:
-            self.simulate_rig = self.simulator.simulate
-        else:
-            raise ValueError("Unexpected simulation mode. Please provide either 0 or 1.")
+        self.simulator = MassSpringSystem(dt, mode=mode)
+        self.simulate_rig = self.simulator.simulate
+       
     
     # TODO: We should be able to change the individual masses and stiffness, 
     # for optimization we should be able to provide an array of particle mass
@@ -35,7 +30,7 @@ class HelperBonesHandler:
                  damping=1.0,
                  mass_dscale=1.0, 
                  spring_dscale=1.0, dt=1./24,
-                 simulation_mode=0,
+                 simulation_mode="PBD",
                  fixed_scale=True,
                  ):
         """
@@ -54,9 +49,7 @@ class HelperBonesHandler:
         # ---------------------------------------------------------------------
         assert type(point_spring) == bool, f"Expected point_spring parameter to \
                                              be boolean. Got {type(point_spring)}."
-        if simulation_mode == 1:
-            assert point_spring, "Please set point_spring mode if you want to use simulation mode 1."
-        
+       
         # TODO: If what you're returning is actually the JOINT locations, why are you
         # calling these variables and functions as BONE locations? What is a location of
         # a bone afterall?

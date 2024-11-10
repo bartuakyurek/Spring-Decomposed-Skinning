@@ -100,11 +100,13 @@ def bind_weights(mesh_verts, skel_verts, method="Envelope", envelope=10.0):
     return weights
 
 
-def LBS_from_quat(V, W, abs_rot, abs_trans):
+def LBS_from_quat(V, W, abs_rot, abs_trans, use_normalized_weights=True):
     assert W.shape[0] == V.shape[0], f"Expected weights and verts to have same length at dimension 0, i.e. weights has shape (n_verts, n_bones)\
                                                  and verts has shape (n_verts, 3), got shape {W.shape} and {V.shape}."
-    try: _assert_normalized_weights(W)
-    except: W = normalize_weights(W)
+    
+    if use_normalized_weights:
+        try: _assert_normalized_weights(W)
+        except: W = normalize_weights(W)
     
     n_verts, n_bones = W.shape
     assert abs_rot.shape == (n_bones, 4), f"Expected absolute rotations in quaternions to have shape ({n_bones}, 4), got {abs_rot.shape}."
