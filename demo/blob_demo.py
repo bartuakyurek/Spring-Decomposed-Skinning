@@ -29,16 +29,16 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODE = "Rigid" #"Rigid" or "Dynamic" 
+MODE = "Dynamic" #"Rigid" or "Dynamic" 
 INTEGRATION = "PBD" # PBD or Euler
-ALGO = "RST" # RST, SVD, T
+ALGO = "T" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
 
-OPACITY = 1.0
+OPACITY = 0.8
 WINDOW_SIZE = (1200, 1200)
 RENDER_MESH = True
-RENDER_SKEL = False
-RENDER_PHYS_BASED = True
+RENDER_SKEL = True
+RENDER_PHYS_BASED = False
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.5
 
@@ -47,7 +47,7 @@ POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set 
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 N_REPEAT = 2
-N_REST = 2
+N_REST = 4
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
@@ -57,18 +57,20 @@ DAMPING = 1.
 MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
-FNAME = "monstera"      # For i/o files
+FNAME = "blob"      # For i/o files # ----------------------------------------------------  EDIT !
+keyframe_poses = poses.blob_rig_pose  # --------------------------------------------------  EDIT !
+helper_idxs = [16,21,22,25,26,27,33] #np.array([i for i in range(1, n_bones)])  # ----------------------------  EDIT !
+
 DATA_PATH = DATA_PATH + FNAME + "/"
 OBJ_PATH = DATA_PATH + FNAME + ".obj"
-MONSTERA_RIG_PATH = DATA_PATH + FNAME + "_rig_data.npz"
+RIG_PATH = DATA_PATH + FNAME + "_rig_data.npz"
 
 # ---------------------------------------------------------------------------- 
 # Set skeletal animation data 
 # ---------------------------------------------------------------------------- 
 V_rest, _, _, F, _, _ =  igl.read_obj(OBJ_PATH)
-keyframe_poses = poses.monstera_rig_pose
 
-with np.load(MONSTERA_RIG_PATH) as data:
+with np.load(RIG_PATH) as data: 
      W = data["weights"] # (n_verts, n_bones)
      B = data["joints"] # (n_bones, 2, 3)
      kintree = data["kintree"] # (n_bones, 2)
@@ -92,7 +94,6 @@ B = B * 0.37
 # ---------------------------------------------------------------------------- 
 n_bones = len(kintree)
 skeleton = create_skeleton_from(B, kintree)
-helper_idxs = np.array([i for i in range(1, n_bones)])
 
 helper_rig = HelperBonesHandler(skeleton, 
                                 helper_idxs,
@@ -112,9 +113,9 @@ helper_rig = HelperBonesHandler(skeleton,
 RENDER = True
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER, window_size = WINDOW_SIZE)
 plotter.camera_position = 'zy'
-plotter.camera.position = [-8.0, 2.0, 0]
+plotter.camera.position = [-15.0, 0.0, 0]
 plotter.camera.view_angle = 20 # This works like zoom actually
-plotter.camera.focal_point = (0.0, 0.65, 0.0)
+plotter.camera.focal_point = (0.0, 0.3, 0.0)
 
 # Add light
 light = pv.Light(position=(0, 1.5, 1.5), light_type='scene light')
@@ -134,7 +135,6 @@ if RENDER_SKEL:
     skel_mesh = add_skeleton(plotter, rest_bone_locations, line_segments)
 
 if RENDER_MESH: 
-    
     mesh, mesh_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True,
                                 pbr=RENDER_PHYS_BASED, metallic=MATERIAL_METALLIC, roughness=MATERIAL_ROUGHNESS)
     

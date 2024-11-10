@@ -189,7 +189,7 @@ class Skeleton():
             assert theta.shape == (n_bones, 4), f"Expected theta as quaternions to have shape (n_bones, 4), got {theta.shape}"
             relative_rot_q = theta
         else:
-            assert theta.shape == (n_bones, 3), f"Expected theta to have shape (n_bones, 3), got {theta.shape}"
+            assert theta.shape == (n_bones, 3), f"Expected theta to have shape (n_bones={n_bones}, 3), got {theta.shape}"
             relative_rot_q = np.empty((n_bones, 4))
             for i in range(n_bones):
                 rot = Rotation.from_euler('xyz', theta[i], degrees=degrees)
