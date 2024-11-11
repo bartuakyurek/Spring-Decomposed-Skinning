@@ -33,7 +33,7 @@ model_dict = {
   blob : {"OBJ_PATH": get_obj_path(blob),
           "RIG_PATH": get_rig_path(blob),
           "keyframe_poses": poses.blob_rig_pose,
-          "helper_idxs":  [16,21,22,25,26,27,33],
+          "helper_idxs": np.array([i for i in range(1, 35)]) #[5,6,21,22,25,26,27,33],
       },
   monstera : {"OBJ_PATH": get_obj_path(monstera),
           "RIG_PATH": get_rig_path(monstera),
@@ -60,7 +60,7 @@ def adjust_rig(B, MODEL_NAME):
     elif MODEL_NAME == "blob":
         r = Rotation.from_euler('x', -90, degrees=True)
         for i in range(len(B)): B[i] = r.apply(B[i])
-        B = B * 0.8
+        B = B * 0.6
         
     elif MODEL_NAME == "cloth":
         pass

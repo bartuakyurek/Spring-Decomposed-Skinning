@@ -30,14 +30,14 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODEL_NAME = "duck" # Available options: "duck", "blob", "cloth", "monstera"
+MODEL_NAME = "monstera" # Available options: "duck", "blob", "cloth", "monstera"
 
-COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
+COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
 RENDER_MESH = True
-RENDER_SKEL = False
+RENDER_SKEL = True
 RENDER_PHYS_BASED = True
 EYEDOME_LIGHT = False
-OPACITY = 1.0
+OPACITY = 0.6
 MATERIAL_METALLIC = 0.0
 MATERIAL_ROUGHNESS = 0.2
 WINDOW_SIZE = (1500 * 2, 1200)
@@ -112,7 +112,6 @@ if EYEDOME_LIGHT: plotter.enable_eye_dome_lighting()
 # ---------------------------------------------------------------------------- 
 # Add mesh actors
 # ----------------------------------------------------------------------------
-
     
 # ---------- First Plot ----------------
 plotter.subplot(0, 0)
