@@ -35,6 +35,7 @@ ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
 
 OPACITY = 0.6
+SPRING_BONE_COLOR = "blue"
 WINDOW_SIZE = (1200, 1200)
 RENDER_MESH = True
 RENDER_SKEL = True
@@ -46,15 +47,15 @@ FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-N_REPEAT = 2
-N_REST = 3
+N_REPEAT = 3
+N_REST = 2
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
-MASS = 10.5
-STIFFNESS = 100.
-DAMPING = 1.            
-MASS_DSCALE = 0.4       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+MASS = 3
+STIFFNESS = 150.
+DAMPING = 10.            
+MASS_DSCALE = 0.6       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 FNAME = "monstera"      # For i/o files
@@ -129,7 +130,7 @@ frame_text_actor = plotter.add_text("0", TEXT_POSITION, font_size=18)
 # ----------------------------------------------------------------------------
 
 if RENDER_SKEL:    
-    skel_mesh = add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs)
+    skel_mesh = add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs, spring_bone_color=SPRING_BONE_COLOR)
 
 if RENDER_MESH: 
     
