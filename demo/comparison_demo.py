@@ -17,10 +17,11 @@ import __init__
 from src.data import model_data
 from src import skinning
 from src.utils.linalg_utils import lerp
+from src.global_vars import RESULT_PATH
 from src.kinematics import inverse_kinematics
 from src.helper_handler import HelperBonesHandler
-from src.global_vars import RESULT_PATH
-from src.skeleton import Skeleton, create_skeleton_from
+from src.utils.linalg_utils import normalize_arr_np
+from src.skeleton import create_skeleton_from
 from src.render.pyvista_render_tools import (add_mesh, 
                                              add_skeleton_from_Skeleton, 
                                              set_mesh_color_scalars,
@@ -33,10 +34,10 @@ MODEL_NAME = "duck" # Available options: "duck", "blob", "cloth", "monstera"
 
 COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
 RENDER_MESH = True
-RENDER_SKEL = True
+RENDER_SKEL = False
 RENDER_PHYS_BASED = True
 EYEDOME_LIGHT = False
-OPACITY = 0.5
+OPACITY = 1.0
 MATERIAL_METALLIC = 0.0
 MATERIAL_ROUGHNESS = 0.2
 WINDOW_SIZE = (1500 * 2, 1200)
@@ -205,18 +206,22 @@ for rep in range(N_REPEAT + N_REST):         # This can be refactored too as it'
                 J_anim_dyn.append(skel_mesh_points_dyn)
 
 # Compute differences between rigid and jiggling
-#distance_err_dyn = np.linalg.norm(base_verts - V_dyn, axis=-1)  # (n_frames, n_verts)
-#tot_err_dyn =  np.sum(distance_err_dyn)
-#print(">> Total error: ", np.round(tot_err_dyn,4))
-#avg_err_dyn = tot_err_dyn / n_frames
-#print(">> Average error: ", np.round(avg_err_dyn, 4))
-#normalized_dists_dyn = normalize_arr_np(distance_err_dyn) 
+V_dyn = np.array(V_anim_dyn)
+V_rigid = np.array(V_anim_rigid)
+n_frames = max(len(V_anim_rigid), len(J_anim_rigid))
+
+distance_err_dyn = np.linalg.norm(V_rigid - V_dyn, axis=-1)  # (n_frames, n_verts)
+tot_err_dyn =  np.sum(distance_err_dyn)
+avg_err_dyn = tot_err_dyn / n_frames
+normalized_dists = normalize_arr_np(distance_err_dyn) 
+print(">> Total error: ", np.round(tot_err_dyn,4))
+print(">> Average error: ", np.round(avg_err_dyn, 4))
+
 
 # ---------------------------------------------------------------------------------
 # Show computed results
 # ---------------------------------------------------------------------------------
 
-n_frames = max(len(V_anim_rigid), len(J_anim_rigid))
 for frame in range(n_frames):
     # Set data for renderer
     if RENDER_MESH: 
@@ -228,8 +233,8 @@ for frame in range(n_frames):
         skel_mesh_dyn.points = J_anim_dyn[frame]
     
     # Color code jigglings 
-    #if COLOR_CODE:
-    #    set_mesh_color_scalars(mesh_dyn, normalized_dists[frame])  
+    if COLOR_CODE:
+        set_mesh_color_scalars(mesh_dyn, normalized_dists[frame])  
         
     frame_text_actor.input = str(frame+1)
     plotter.write_frame()   # Write a frame. This triggers a render.
