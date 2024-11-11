@@ -36,7 +36,7 @@ from src.render.pyvista_render_tools import (add_mesh,
 # -----------------------------------------------------------------------------
 # Config Parameters 
 # -----------------------------------------------------------------------------
-FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
+FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = False # Set true if pose is represented with degrees as Euler angles. 
@@ -44,18 +44,18 @@ DEGREES = False # Set true if pose is represented with degrees as Euler angles.
 
 FRAME_RATE = 24 #24
 TIME_STEP = 1./FRAME_RATE  
-MASS = 2.
-STIFFNESS = 10 #200.
+MASS = 5.
+STIFFNESS = 150 #200.
 DAMPING = 15. #50.            
-MASS_DSCALE = 0.5       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+MASS_DSCALE = 0.6       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
-ERR_MODE = "SMPL" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
+ERR_MODE = "DFAUST" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
 COLOR_CODE = True
-RENDER_MESH_RIGID, RENDER_MESH_DYN = False, False # Turn on/off mesh for SMPL and/or SDDS
-RENDER_SKEL_RIGID, RENDER_SKEL_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
+RENDER_MESH_RIGID, RENDER_MESH_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
+RENDER_SKEL_RIGID, RENDER_SKEL_DYN = True, False # Turn on/off mesh for SMPL and/or SDDS
 OPACITY = 0.8
-JIGGLE_SCALE = 1.0      # Set it greater than 1 to exaggerate the jiggling impact
+JIGGLE_SCALE = 5.0      # Set it greater than 1 to exaggerate the jiggling impact
 NORMALIZE_WEIGHTS = False # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
 ADD_GLOBAL_T = False    # Add the global translation given in the dataset 
@@ -63,8 +63,7 @@ ADD_GLOBAL_T = False    # Add the global translation given in the dataset
                         #  the jiggling of helper bones are intiated with rigid movement 
                         #  so it might be misleading, could be better to keep it False.)
      
-if JIGGLE_SCALE != 1.0:
-    print(f"WARNING: Jiggle scaling is set to {JIGGLE_SCALE}, use 1.0 for normal settings.")
+if JIGGLE_SCALE != 1.0: print(f"WARNING: Jiggle scaling is set to {JIGGLE_SCALE}, use 1.0 for normal settings.")
 # -----------------------------------------------------------------------------
 # Load animation sequence for the selected subject and pose
 # -----------------------------------------------------------------------------
@@ -248,10 +247,14 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
 
 # Visibility settings
 if not RENDER_MESH_DYN: dyn_smpl_actor.visibility = False
-if not RENDER_SKEL_DYN: dyn_skel_actor.visibility = False
+if not RENDER_SKEL_DYN: 
+    dyn_skel_actor[0].visibility = False
+    dyn_skel_actor[1].visibility = False
 
 if not RENDER_MESH_RIGID: rigid_smpl_actor.visibility = False
-if not RENDER_SKEL_RIGID: rigid_skel_actor.visibility = False
+if not RENDER_SKEL_RIGID: 
+    rigid_skel_actor[0].visibility = False
+    rigid_skel_actor[1].visibility = False
 # -----------------------------------------------------------------------------
 # Render and save results
 # -----------------------------------------------------------------------------

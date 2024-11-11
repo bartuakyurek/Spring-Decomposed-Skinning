@@ -112,7 +112,7 @@ def add_skeleton(plotter, joint_locations, edges, bone_color=None, colors=None, 
         colors = np.zeros_like(colors)
         cmap = [bone_color]
         
-    actor = plotter.add_mesh(skel_mesh, scalars=colors,
+    tube_actor = plotter.add_mesh(skel_mesh, scalars=colors,
                     render_lines_as_tubes=True,
                     style='wireframe',
                     line_width=10,
@@ -120,7 +120,7 @@ def add_skeleton(plotter, joint_locations, edges, bone_color=None, colors=None, 
                     show_scalar_bar=False)
     
     # Add spheres to indicate joints
-    _ = plotter.add_mesh(skel_mesh, 
+    sphere_actor = plotter.add_mesh(skel_mesh, 
                     point_size=joint_size,
                     render_points_as_spheres = True,
                     style='points',
@@ -128,7 +128,7 @@ def add_skeleton(plotter, joint_locations, edges, bone_color=None, colors=None, 
                     cmap=cmap,
                     show_scalar_bar=False)
     
-    if return_actor: return skel_mesh, actor
+    if return_actor: return skel_mesh,  (tube_actor, sphere_actor)
     return skel_mesh
 
 
@@ -155,7 +155,7 @@ def add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs=None, is_smpl=Fals
     colors[helper_idxs] = 1.0
 
     
-    actor = plotter.add_mesh(skel_mesh, 
+    tube_actor = plotter.add_mesh(skel_mesh, 
                     render_lines_as_tubes=True,
                     style='wireframe',
                     line_width=10,
@@ -164,7 +164,7 @@ def add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs=None, is_smpl=Fals
                     show_scalar_bar=False)
     
     # Add spheres to indicate joints
-    _ = plotter.add_mesh(skel_mesh, 
+    sphere_actor = plotter.add_mesh(skel_mesh, 
                     point_size=joint_size,
                     render_points_as_spheres = True,
                     style='points',
@@ -172,5 +172,5 @@ def add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs=None, is_smpl=Fals
                     cmap = [default_bone_color, spring_bone_color],
                     show_scalar_bar=False)
     
-    if return_actor: return skel_mesh, actor
+    if return_actor: return skel_mesh, (tube_actor, sphere_actor)
     return skel_mesh
