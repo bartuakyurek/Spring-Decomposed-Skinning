@@ -52,7 +52,7 @@ POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 N_REPEAT = 2
-N_REST = 3
+N_REST = 2
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
@@ -62,9 +62,6 @@ DAMPING = 35.
 MASS_DSCALE = 0.6       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
-#DATA_PATH = DATA_PATH + FNAME + "/"
-#OBJ_PATH = DATA_PATH + FNAME + ".obj"
-#RIG_PATH = DATA_PATH + FNAME + "_rig_data.npz"
 model_dict = model_data.model_dict[MODEL_NAME]
 OBJ_PATH = model_dict["OBJ_PATH"]
 RIG_PATH = model_dict["RIG_PATH"]
@@ -81,19 +78,8 @@ with np.load(RIG_PATH) as data:
      B = data["joints"] # (n_bones, 2, 3)
      kintree = data["kintree"] # (n_bones, 2)
 
-# ---- Rotate, translate, scale the rig data if needed --------------------------------------  EDIT !
-"""
-# Rotate 
-from scipy.spatial.transform import Rotation
-r = Rotation.from_euler('xyz',(0,90,180), degrees=True)
-for i in range(len(B)):   
-    B[i] = r.apply(B[i])
-"""
-# Translate to origin
-#B = B - np.array([0, 0, 0.6])
-
-# Scale
-B = B * 2.8
+# Rotate, translate, scale the rig data if needed
+B = model_data.adjust_rig(B, MODEL_NAME)
 
 # ---------------------------------------------------------------------------- 
 # Define helper spring bones on the existing skeleton
@@ -126,15 +112,11 @@ if EYEDOME_LIGHT: plotter.enable_eye_dome_lighting()
 # ---------------------------------------------------------------------------- 
 # Add mesh actors
 # ----------------------------------------------------------------------------
-def adjust_camera(plotter):
-    plotter.camera.tight(padding=3, view="yz")
-    plotter.camera.position = [0.0, 5.0, 4.0]
-    plotter.camera.focal_point = (0.0, 0.5, 3.5)
-    plotter.camera.roll = 180
+
     
 # ---------- First Plot ----------------
 plotter.subplot(0, 0)
-adjust_camera(plotter)
+model_data.adjust_camera(plotter, MODEL_NAME)
 
 plotter.add_text("Rigid Deformation (LBS)", "lower_left", font_size=18)
 frame_text_actor = plotter.add_text("0", (600,0), font_size=18) # Add frame number
@@ -148,7 +130,7 @@ if RENDER_SKEL: skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton)
 
 # ---------- Second Plot ---------------
 plotter.subplot(0, 1)
-adjust_camera(plotter)
+model_data.adjust_camera(plotter, MODEL_NAME)
 
 plotter.add_text("Dynamic Deformation (Ours)", "lower_left", font_size=18)
 
