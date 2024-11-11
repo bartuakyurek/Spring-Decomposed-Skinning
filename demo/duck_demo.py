@@ -29,7 +29,7 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODE = "Dynamic" #"Rigid" or "Dynamic" 
+MODE = "Rigid" #"Rigid" or "Dynamic" 
 INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
@@ -48,7 +48,7 @@ POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 N_REPEAT = 2
-N_REST = 10
+N_REST = 3
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
@@ -115,7 +115,7 @@ plotter = pv.Plotter(notebook=False, off_screen=not RENDER, window_size = WINDOW
 plotter.camera.tight(padding=5, view="yz")
 plotter.camera.position = [0.0, 5.0, 4.0]
 plotter.camera.focal_point = (0.0, 0.5, 3.5)
-plotter.camera.roll = 190
+plotter.camera.roll = 180
 
 # Add light
 if EYEDOME_LIGHT: plotter.enable_eye_dome_lighting()
@@ -153,16 +153,15 @@ trans = np.zeros((n_bones, 3)) # TODO: remove +1 when you remove root bone issue
 # ---------------------------------------------------------------------------------
 V_anim = []
 J_anim = []
+assert n_poses > 1, f"Expected keyframe poses to be at least 2. Got {n_poses} poses."
 for rep in range(N_REPEAT + N_REST):         # This can be refactored too as it's not related to render
-    for pose_idx in range(n_poses): # Loop keyframes, this could be refactored.
+    for pose_idx in range(n_poses-1): # Loop keyframes, this could be refactored.
         for frame_idx in range(FRAME_RATE):
             
             if rep < N_REPEAT:
-                if pose_idx: # If not the first pose
-                            theta = lerp(keyframe_poses[pose_idx-1], keyframe_poses[pose_idx], frame_idx/FRAME_RATE)
-                else:        # Lerp with the last pose for boomerang
-                            theta = lerp(keyframe_poses[pose_idx], keyframe_poses[-1], frame_idx/FRAME_RATE)
-                
+                # Lerp with next frame
+                theta = lerp(keyframe_poses[pose_idx], keyframe_poses[pose_idx+1], frame_idx/FRAME_RATE)
+              
             posed_locations = skeleton.pose_bones(theta, trans, degrees=DEGREES)
             abs_rot_quat, abs_trans = skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
             M_rigid = skinning.get_transform_mats_from_quat_rots(abs_trans, abs_rot_quat)[1:] # TODO...

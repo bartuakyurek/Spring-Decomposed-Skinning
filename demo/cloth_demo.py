@@ -154,16 +154,15 @@ trans = np.zeros((n_bones, 3)) # TODO: remove +1 when you remove root bone issue
 # ---------------------------------------------------------------------------------
 V_anim = []
 J_anim = []
+assert n_poses > 1, f"Expected keyframe poses to be at least 2. Got {n_poses} poses."
 for rep in range(N_REPEAT + N_REST):         # This can be refactored too as it's not related to render
-    for pose_idx in range(n_poses): # Loop keyframes, this could be refactored.
+    for pose_idx in range(n_poses-1): # Loop keyframes, this could be refactored.
         for frame_idx in range(FRAME_RATE):
             
             if rep < N_REPEAT:
-                if pose_idx: # If not the first pose
-                            theta = lerp(keyframe_poses[pose_idx-1], keyframe_poses[pose_idx], frame_idx/FRAME_RATE)
-                else:        # Lerp with the last pose for boomerang
-                            theta = lerp(keyframe_poses[pose_idx], keyframe_poses[-1], frame_idx/FRAME_RATE)
-                
+                # Lerp with next frame
+                theta = lerp(keyframe_poses[pose_idx], keyframe_poses[pose_idx+1], frame_idx/FRAME_RATE)
+              
             posed_locations = skeleton.pose_bones(theta, trans, degrees=DEGREES)
             abs_rot_quat, abs_trans = skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
             M_rigid = skinning.get_transform_mats_from_quat_rots(abs_trans, abs_rot_quat)[1:] # TODO...
