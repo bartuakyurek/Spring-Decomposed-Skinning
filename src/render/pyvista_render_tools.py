@@ -50,6 +50,7 @@ def add_mesh(plotter,
              verts, 
              faces, 
              opacity=1.0, 
+             show_edges=False,
              return_actor=False, 
              color=[0.8, 0.8, 1.0],
              texture=None,
@@ -72,12 +73,13 @@ def add_mesh(plotter,
                                     scalars='vert_colors',
                                     rgb=True,
                                     lighting=True,
-                                    show_edges=False,
+                                    show_edges=show_edges,
                                     opacity=opacity,
                                     texture=texture,
                                     pbr=pbr, 
                                     metallic=metallic,
                                     roughness=roughness,
+                                    
                                 )
     
     if return_actor:
