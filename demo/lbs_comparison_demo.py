@@ -30,14 +30,15 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODEL_NAME = "monstera" # Available options: "duck", "blob", "cloth", "monstera"
+MODEL_NAME = "duck" # Available options: "duck", "blob", "cloth", "monstera"
 
-COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
+COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
+WIREFRAME = False
 RENDER_MESH = True
-RENDER_SKEL = True
+RENDER_SKEL = False
 RENDER_PHYS_BASED = True
 EYEDOME_LIGHT = False
-OPACITY = 0.6
+OPACITY = 1.0
 MATERIAL_METALLIC = 0.0
 MATERIAL_ROUGHNESS = 0.2
 WINDOW_SIZE = (1500 * 2, 1200)
@@ -50,7 +51,7 @@ FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-N_REPEAT = 2
+N_REPEAT = 3
 N_REST = 2
 
 FRAME_RATE = 24 # 24, 30, 60
@@ -121,7 +122,7 @@ frame_text_actor = plotter.add_text("0", (600,0), font_size=18) # Add frame numb
 
 
 if RENDER_MESH: 
-    mesh_rigid, mesh_rigid_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True,
+    mesh_rigid, mesh_rigid_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True, show_edges=WIREFRAME,
                                             pbr=RENDER_PHYS_BASED, metallic=MATERIAL_METALLIC, roughness=MATERIAL_ROUGHNESS)
   
 if RENDER_SKEL: skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton)
@@ -135,7 +136,7 @@ plotter.add_text("Dynamic Deformation (Ours)", "lower_left", font_size=18)
 if RENDER_SKEL: skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs)
 
 if RENDER_MESH: 
-    mesh_dyn, mesh_dyn_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True,
+    mesh_dyn, mesh_dyn_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True, show_edges=WIREFRAME,
                                             pbr=RENDER_PHYS_BASED, metallic=MATERIAL_METALLIC, roughness=MATERIAL_ROUGHNESS)
     
  
@@ -194,8 +195,8 @@ distance_err_dyn = np.linalg.norm(V_rigid - V_dyn, axis=-1)  # (n_frames, n_vert
 tot_err_dyn =  np.sum(distance_err_dyn)
 avg_err_dyn = tot_err_dyn / n_frames
 normalized_dists = normalize_arr_np(distance_err_dyn) 
-print(">> Total error: ", np.round(tot_err_dyn,4))
-print(">> Average error: ", np.round(avg_err_dyn, 4))
+print(">> Total vertex distance difference: ", np.round(tot_err_dyn,4))
+print(">> Average per-vertex difference: ", np.round(avg_err_dyn, 4))
 
 
 # ---------------------------------------------------------------------------------
