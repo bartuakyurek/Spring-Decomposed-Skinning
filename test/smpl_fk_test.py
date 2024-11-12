@@ -23,7 +23,7 @@ import pyvista as pv
 import __init__
 from src.skeleton import Skeleton
 from src.models.smpl_torch_batch import SMPLModel
-from data.skeleton_data import get_smpl_skeleton
+from src.data.skeleton_data import get_smpl_skeleton
 from src.render.pyvista_render_tools import add_skeleton
 from src.global_vars import DATA_PATH, MODEL_PATH, RESULT_PATH
 
@@ -85,8 +85,8 @@ for _ in range(n_repeats):
         # TODO: (because it's global t, should be only applied to root)
         # we're not using t, we should handle it after correcting the FK.
      
-        posed_bone_locations = smpl_skeleton.pose_bones(theta, exclude_root=True)
-        skel_mesh.points = posed_bone_locations
+        posed_bone_locations = smpl_skeleton.pose_bones(theta)
+        skel_mesh.points = posed_bone_locations[2:]
         
         # Write a frame. This triggers a render.
         plotter.write_frame()
