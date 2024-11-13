@@ -355,6 +355,7 @@ class Skeleton():
         if not type(parent_idx) == int:
             assert np.issubdtype(parent_idx, np.integer), f"Expected parent index to be an integer, got {type(parent_idx)}"
        
+        assert parent_idx >= 0, f"Expected parent index to be a positive number, got {parent_idx}, more than one root bone is not allowed yet."
         assert parent_idx < len(self.rest_bones), f">> Invalid parent index {parent_idx}. Please select an index less than {len(self.rest_bones)}"
         assert offset_ratio <= 1.0 and offset_ratio >= 0.0, f"Offset ratio is expected to be in range [0.0, 1.0], got {offset_ratio}."
         
@@ -446,6 +447,9 @@ def create_skeleton(joint_locations, kintree):
     WARNING: This function is suited for SMPL-like data where joints are treated
     as bones in the skeleton. If your skeleton have bone nodes instead of joint
     nodes, don't call this function, use create_skeleton_from() instead.
+    
+    WARNING: This function assumes there's only one root node and that is given
+    in the joint_locations[0].
 
     Parameters
     ----------
