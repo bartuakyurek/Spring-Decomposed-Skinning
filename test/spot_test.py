@@ -236,8 +236,9 @@ n_bones = len(skeleton.rest_bones)
 V_anim_rigid = [verts_rest]
 J_anim_rigid = [skeleton.get_rest_bone_locations(exclude_root=True)]
 for i in range(1, n_frames):
-    cur_handles, prev_handles = handle_locations_rigid[i], handle_locations_rigid[i-1]
-    V_lbs = get_LBS_spot(cur_handles, prev_handles)
+    #cur_handles, prev_handles = handle_locations_rigid[i], handle_locations_rigid[i-1]
+    cur_handles, rest_handles = handle_locations_rigid[i], handle_locations_rigid[0] #[i-1]
+    V_lbs = get_LBS_spot(cur_handles, rest_handles)
     V_anim_rigid.append(V_lbs)
     J_anim_rigid.append(convert_points_to_bones(cur_handles))
     
@@ -271,7 +272,6 @@ for i in range(n_frames):
     V_dyn = skinning.LBS_from_mat(verts_rest, W, M_hybrid, 
                                   use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
                
-    
     V_anim_dyn.append(V_dyn)
     J_anim_dyn.append(J_dyn)
     
