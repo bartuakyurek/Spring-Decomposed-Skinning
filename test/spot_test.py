@@ -121,8 +121,8 @@ for point_location in handle_locations_rest:
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # SETUP PLOTS
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-plotter = pv.Plotter(notebook=False, off_screen=False) 
-                     #window_size = WINDOW_SIZE, border=False, shape = (1,1))
+plotter = pv.Plotter(notebook=False, off_screen=False,
+                     window_size = WINDOW_SIZE, border=False, shape = (1,2))
 
 def adjust_camera_spot(plotter):
     plotter.camera.tight(padding=1, view="zy")
@@ -142,35 +142,52 @@ if RENDER_MESH:
 if RENDER_SKEL: 
     skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton, default_bone_color=DEFAULT_BONE_COLOR)
 adjust_camera_spot(plotter)
-frame_text_actor = plotter.add_text("0", (600,0), font_size=18) # Add frame number
+frame_text_actor = plotter.add_text("0", (30,0), font_size=18) # Add frame number
+
+# ---------- Second Plot ----------------
+plotter.subplot(0, 1)
+if RENDER_MESH: 
+    mesh_cpbd, mesh_cpbd_actor = add_mesh(plotter, verts_rest, faces, 
+                                            return_actor=True, 
+                                            opacity=OPACITY, 
+                                            show_edges=WIREFRAME,
+                                            pbr=RENDER_PHYS_BASED, 
+                                            metallic=MATERIAL_METALLIC, 
+                                            roughness=MATERIAL_ROUGHNESS)
+  
+if RENDER_SKEL: 
+    skel_mesh_cpbd = add_skeleton_from_Skeleton(plotter, skeleton, default_bone_color=CPBD_BONE_COLOR)
+adjust_camera_spot(plotter)
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # COMPUTE DEFORMATION
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 print(">> WARNING: This demo assumes the handles are only translated.")
+def get_LBS_spot(cur_handles, prev_handles):
+    diff = cur_handles - prev_handles
+    M = np.array([translation_vector_to_matrix(t) for t in diff])
+    V_lbs = skinning.LBS_from_mat(verts_rest, W, M, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
+
+    return V_lbs # Note: I didn't compute LBS joints via FK since we are given the positions
+
+def convert_points_to_bones(handles, flatten=True):
+    point_bones =[[p,p] for p in handles]
+    if flatten : point_bones =  np.reshape(point_bones, (-1,3))
+    return point_bones
 
 n_frames = len(handle_locations_rigid)
 n_bones = len(skeleton.rest_bones)
 V_anim_rigid = [verts_rest]
 J_anim_rigid = [skeleton.get_rest_bone_locations(exclude_root=True)]
 for i in range(1, n_frames):
-    diff = handle_locations_rigid[i] - handle_locations_rigid[i-1]
     
-    M = np.array([translation_vector_to_matrix(t) for t in diff])
-    V_lbs = skinning.LBS_from_mat(verts_rest, W, M, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
-    
-    V_anim_rigid.append(V_lbs)
-    
-    point_bones = np.reshape([[p,p] for p in handle_locations_rigid[i]],(-1,3))
-    J_anim_rigid.append(point_bones)
-    #t = np.append(np.zeros((1,3)), diff, axis=0) # TODO: remove pseudo root
-    #pose = np.zeros((n_bones, 3)
-    #posed_handles = skeleton.pose_bones(pose, t, degrees=True)
-    #tmp = posed_handles[2:]
-    #idxs = [j for j in range(1,len(tmp),2)]
-    #assert np.sum(tmp[idxs] - handle_locations_rigid[i]) < 1e-10
-    
+    # --------- LBS -----------------------------------------------------------
+    cur_handles, prev_handles = handle_locations_rigid[i], handle_locations_rigid[i-1]
+    V_lbs = get_LBS_spot(cur_handles, prev_handles)
 
+    V_anim_rigid.append(V_lbs)
+    J_anim_rigid.append(convert_points_to_bones(cur_handles))
+    
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # DISPLAY ANIMATION
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -179,10 +196,12 @@ for frame in range(n_frames):
     # Set data for renderer
     if RENDER_MESH: 
         mesh_rigid.points = V_anim_rigid[frame]
+        mesh_cpbd.points = verts_cpbd[frame]
         #mesh_dyn.points = V_anim_dyn[frame]
         
     if RENDER_SKEL: 
         skel_mesh_rigid.points = J_anim_rigid[frame] 
+        skel_mesh_cpbd.points = convert_points_to_bones(handle_locations_cpbd[frame])
         #skel_mesh_dyn.points = J_anim_dyn[frame]
     
     # Color code jigglings 
