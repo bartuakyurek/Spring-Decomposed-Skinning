@@ -231,32 +231,28 @@ def convert_points_to_bones(handles, flatten=True):
 
 n_frames = len(handle_locations_rigid)
 n_bones = len(skeleton.rest_bones)
-
-# --------- LBS -----------------------------------------------------------
-V_anim_rigid = [verts_rest]
-J_anim_rigid = [skeleton.get_rest_bone_locations(exclude_root=True)]
-for i in range(1, n_frames):
-    #cur_handles, prev_handles = handle_locations_rigid[i], handle_locations_rigid[i-1]
-    cur_handles, rest_handles = handle_locations_rigid[i], handle_locations_rigid[0] #[i-1]
-    V_lbs = get_LBS_spot(cur_handles, rest_handles)
-    V_anim_rigid.append(V_lbs)
-    J_anim_rigid.append(convert_points_to_bones(cur_handles))
-    
-# --------- Ours -----------------------------------------------------------
 V_anim_dyn, J_anim_dyn = [], []
 n_bones_dyn = len(skeleton_dyn.rest_bones)
 n_additional_bones = n_bones_dyn - n_bones
+V_anim_rigid = []
+J_anim_rigid = []
 rest_bone_locations = skeleton_dyn.get_rest_bone_locations(exclude_root=False)
 for i in range(n_frames):
     
     cur_handles, rest_handles = handle_locations_rigid[i], handle_locations_rigid[0] #[i-1]
     diff = cur_handles - rest_handles
     
+    # --------- LBS -----------------------------------------------------------
+    V_lbs = get_LBS_spot(cur_handles, rest_handles)
+    V_anim_rigid.append(V_lbs)
+    J_anim_rigid.append(convert_points_to_bones(cur_handles))
+    
+    # --------- Ours -----------------------------------------------------------
     # Prepare transformations
     t = np.append(np.zeros((1,3)), diff, axis=0) # TODO: remove pseudo root
     if n_additional_bones: t = np.append(t, np.zeros((n_additional_bones,3)), axis=0)
     pose = np.zeros((n_bones_dyn, 3))
-                    
+     
     # Pose with FK 
     rigidly_posed_handles = skeleton_dyn.pose_bones(pose, t, degrees=True)
     assert np.linalg.norm(J_anim_rigid[i] - rigidly_posed_handles[2:]) < 1e-12, "Expected computed FK to match with the given data!"
