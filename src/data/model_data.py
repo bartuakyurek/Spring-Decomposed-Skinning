@@ -54,6 +54,14 @@ model_dict = {
 }
 
 def adjust_rig(B, MODEL_NAME):
+    
+    if MODEL_NAME == "spot":
+        r = Rotation.from_euler('x', -90, degrees=True)
+        for i in range(len(B)): B[i] = r.apply(B[i])
+        
+        B = B - np.array([0, 0, -0.8])  # Translate to origin
+        B = B * 0.35 # Scale
+    
     if MODEL_NAME == "duck":
         B = B * 2.8 # Scale
     

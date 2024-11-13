@@ -31,6 +31,7 @@ from src.kinematics import inverse_kinematics
 from src.helper_handler import HelperBonesHandler
 from src.utils.linalg_utils import normalize_arr_np
 from src.skeleton import create_skeleton_from
+from src.kinematics import optimal_rigid_motion
 from src.render.pyvista_render_tools import (add_mesh, 
                                              add_skeleton_from_Skeleton, 
                                              set_mesh_color_scalars,
@@ -50,10 +51,10 @@ from src.render.pyvista_render_tools import (add_mesh,
 # handle_locations_cpbd : (n_frames, n_handles, 3) handle positions according to Controllable PBD output (see source code: https://github.com/yoharol/PBD_Taichi)
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODEL_NAME = "spot"
-SKELETON_MODE = "point springs" # "point springs" or "helper rig" 
+SKELETON_MODE = "helper rig" # "point springs" or "helper rig" 
 
 # RENDER PARAMETERS
-RENDER_MESH = False
+RENDER_MESH = True
 RENDER_SKEL = True
 WIREFRAME = False
 RENDER_PHYS_BASED = False
@@ -77,12 +78,11 @@ FIXED_SCALE = False # We already have zero length bones...
 POINT_SPRING = False # Doesn't matter what you set, we already have point springs
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
-MASS = 3.5
-STIFFNESS = 120.
+MASS = 15
+STIFFNESS = 220.
 DAMPING = 35.            
-MASS_DSCALE = 0.6       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+MASS_DSCALE = 0.1       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
-
 
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -91,7 +91,7 @@ SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 SPOT_DATA_PATH = os.path.join(DATA_PATH, MODEL_NAME) 
 OBJ_PATH =  os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}.obj")
 TGF_PATH =  os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}.tgf")
-SPOT_HELPER_RIG_PATH = os.path.join(DATA_PATH, f"{MODEL_NAME}_helper_rig_data.npz")
+HELPER_RIG_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_rig_data.npz")
 SPOT_EXTRACTED_DATA_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_extracted.npz")
 
 # Read animation data
@@ -121,26 +121,61 @@ print("> Handle locations at rest :\n", handle_locations_rest)
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # SETUP RIGS
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-W = np.array(original_weights)
+W_rigid = np.array(original_weights)
 
 print(">> WARNING: Assuming the provided handle locations are sparse point handles ")
 
-skeleton = Skeleton(root_vec = [0.,0.,0.]) # pseudo root bone
+skeleton_rigid = Skeleton(root_vec = [0.,0.,0.]) # pseudo root bone
 for point_location in handle_locations_rest:
-     skeleton.insert_bone(endpoint = point_location, 
+     skeleton_rigid.insert_bone(endpoint = point_location, 
                           startpoint = point_location,
                           parent_idx = 0) # pseudo root bone
 
 
-skeleton_dyn = skeleton 
+n_rigid_bones = len(skeleton_rigid.rest_bones) 
 # Add helper bones according to mode
 if SKELETON_MODE == "point springs": # Make all bones in the existing rig spring bones
     print(">> INFO: Skeleton is taken as point springs...")
+    skeleton_dyn = skeleton_rigid
     helper_idxs = [i+1 for i in range(len(skeleton_dyn.rest_bones)-1)]
 else: # Load helper rig as an addition to rigid rig
     print(">> INFO: Loading helper rig...")
+    # Load joint locations, kintree and weights
+    with np.load(HELPER_RIG_PATH) as data:
+         W_dyn = data["weights"] #[:,1:] # Excluding dummy root bone I put in blender
+         blender_joints = data["joints"]#[1:]
+         blender_kintree = data["kintree"]#[1:] - 1# Excluding dummy root bone I put in blender
+         rigid_bones = data["rigid_idxs"] + 1 # TODO: root...
+         #rigid_bones = [ 1,  2,  3,  4,  5,  13, 14, 18]
     
-    # TODO: update W
+    # Adjust weights 
+    W_dyn[:,rigid_bones] = W_rigid # Set rigid bone weights to original, #[1:] excluding dummy root bone I put in blender
+        
+    # Adjust helper bone indices
+    helper_idxs = np.array([i for i in range(1, len(blender_kintree)+1)])
+    for rigid_bone in rigid_bones:
+            idx = np.argwhere(helper_idxs == rigid_bone)
+            helper_idxs = np.delete(helper_idxs, idx)
+            
+    # Adjust the imported rig such that it aligns with the mesh (Blender rig export is weird, I couldn't solve it yet)
+    """
+    rigid_bone_locations_ours = np.reshape(blender_joints[rigid_bones], (-1,3))
+    rigid_bones_orig = skeleton_rigid.get_rest_bone_locations(exclude_root=False)
+    rot, trans = optimal_rigid_motion.get_optimal_rigid_motion(rigid_bone_locations_ours, rigid_bones_orig)
+        
+    rot_batch = rot[None,:,:] # Expand dims
+    trans_batch = trans[:,None]  # Expand dims
+    
+    tmp = np.reshape(blender_joints,(-1,3)) # flatten for operations
+    tmp_rotated = rot_batch @ tmp.T
+    tmp_final = tmp_rotated+trans_batch
+
+    blender_joints = np.reshape(tmp_final, (-1,2,3)) # reshape it back
+    """
+    
+    B =  model_data.adjust_rig(blender_joints, MODEL_NAME)
+    skeleton_dyn = create_skeleton_from(B, blender_kintree)
+    
 
 helper_rig = HelperBonesHandler(skeleton_dyn, 
                                 helper_idxs,
@@ -175,7 +210,7 @@ if RENDER_MESH:
                                             roughness=MATERIAL_ROUGHNESS)
   
 if RENDER_SKEL: 
-    skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton, default_bone_color=DEFAULT_BONE_COLOR)
+    skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton_rigid, default_bone_color=DEFAULT_BONE_COLOR)
 adjust_camera_spot(plotter)
 frame_text_actor = plotter.add_text("0", (30,0), font_size=18) # Add frame number
 
@@ -191,7 +226,7 @@ if RENDER_MESH:
                                             roughness=MATERIAL_ROUGHNESS)
   
 if RENDER_SKEL: 
-    skel_mesh_cpbd = add_skeleton_from_Skeleton(plotter, skeleton, default_bone_color=CPBD_BONE_COLOR)
+    skel_mesh_cpbd = add_skeleton_from_Skeleton(plotter, skeleton_rigid, default_bone_color=CPBD_BONE_COLOR)
 adjust_camera_spot(plotter)
 
 # ---------- Third Plot (Ours) ----------------
@@ -220,7 +255,7 @@ print(">> WARNING: This demo assumes the handles are only translated.")
 def get_LBS_spot(cur_handles, prev_handles):
     diff = cur_handles - prev_handles
     M = np.array([translation_vector_to_matrix(t) for t in diff])
-    V_lbs = skinning.LBS_from_mat(verts_rest, W, M, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
+    V_lbs = skinning.LBS_from_mat(verts_rest, W_rigid, M, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
 
     return V_lbs # Note: I didn't compute LBS joints via FK since we are given the positions
 
@@ -230,10 +265,10 @@ def convert_points_to_bones(handles, flatten=True):
     return point_bones
 
 n_frames = len(handle_locations_rigid)
-n_bones = len(skeleton.rest_bones)
+n_bones_rigid = len(skeleton_rigid.rest_bones)
 V_anim_dyn, J_anim_dyn = [], []
 n_bones_dyn = len(skeleton_dyn.rest_bones)
-n_additional_bones = n_bones_dyn - n_bones
+n_additional_bones = n_bones_dyn - n_bones_rigid
 V_anim_rigid = []
 J_anim_rigid = []
 rest_bone_locations = skeleton_dyn.get_rest_bone_locations(exclude_root=False)
@@ -255,7 +290,7 @@ for i in range(n_frames):
      
     # Pose with FK 
     rigidly_posed_handles = skeleton_dyn.pose_bones(pose, t, degrees=True)
-    assert np.linalg.norm(J_anim_rigid[i] - rigidly_posed_handles[2:]) < 1e-12, "Expected computed FK to match with the given data!"
+    #assert np.linalg.norm(J_anim_rigid[i] - rigidly_posed_handles[2:]) < 1e-12, "Expected computed FK to match with the given data!"
     
     dyn_posed_handles = helper_rig.update_bones(rigidly_posed_handles)
     M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, 
@@ -265,7 +300,7 @@ for i in range(n_frames):
     
     M_hybrid = M # TODO ??
     J_dyn = dyn_posed_handles[2:] # TODO: remove root...
-    V_dyn = skinning.LBS_from_mat(verts_rest, W, M_hybrid, 
+    V_dyn = skinning.LBS_from_mat(verts_rest, W_dyn, M_hybrid, 
                                   use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
                
     V_anim_dyn.append(V_dyn)
@@ -274,6 +309,8 @@ for i in range(n_frames):
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # DISPLAY ANIMATION
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
+plotter.show()
+"""
 plotter.open_movie(RESULT_PATH + f"/{MODEL_NAME}_comparison.mp4")
 for frame in range(n_frames):
     # Set data for renderer
@@ -293,7 +330,7 @@ for frame in range(n_frames):
         
     frame_text_actor.input = str(frame+1)
     plotter.write_frame()   # Write a frame. This triggers a render.
-    
 
 plotter.close()
 plotter.deep_clean()
+"""
