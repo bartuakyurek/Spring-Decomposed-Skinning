@@ -151,6 +151,7 @@ trans = np.zeros((n_bones, 3)) # TODO: remove +1 when you remove root bone issue
 # ---------------------------------------------------------------------------------
 V_anim_rigid, V_anim_dyn = [], []
 J_anim_rigid, J_anim_dyn = [], []
+rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False) 
 assert n_poses > 1, f"Expected keyframe poses to be at least 2. Got {n_poses} poses."
 for rep in range(N_REPEAT + N_REST):         # This can be refactored too as it's not related to render
     for pose_idx in range(n_poses-1): # Loop keyframes, this could be refactored.
@@ -171,7 +172,6 @@ for rep in range(N_REPEAT + N_REST):         # This can be refactored too as it'
             dyn_posed_locations = helper_rig.update_bones(rigidly_posed_locations) # Update the rigidly posed locations
             skel_mesh_points_dyn = dyn_posed_locations[2:] # TODO: get rid of root bone convention
                    
-            rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False) # TODO: Remove this line from here
             M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, dyn_posed_locations, return_mat=True, algorithm=ALGO)[1:]  # TODO: get rid of root
                     
             M_hybrid = M_rigid

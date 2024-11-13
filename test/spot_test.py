@@ -72,7 +72,8 @@ SPRING_BONE_COLOR = "blue"
 WINDOW_SIZE = (1500 * 3, 1200)
 
 # SIMULATION PARAMETERS
-FIXED_SCALE = True
+ALGO = "T"  
+FIXED_SCALE = False # We already have zero length bones... 
 POINT_SPRING = False # Doesn't matter what you set, we already have point springs
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
@@ -242,11 +243,34 @@ for i in range(1, n_frames):
     
 # --------- Ours -----------------------------------------------------------
 V_anim_dyn, J_anim_dyn = [], []
+n_bones_dyn = len(skeleton_dyn.rest_bones)
+n_additional_bones = n_bones_dyn - n_bones
+rest_bone_locations = skeleton_dyn.get_rest_bone_locations(exclude_root=False)
 for i in range(n_frames):
     
+    cur_handles, rest_handles = handle_locations_rigid[i], handle_locations_rigid[0] #[i-1]
+    diff = cur_handles - rest_handles
     
-    J_dyn = 
-    V_dyn = 
+    # Prepare transformations
+    t = np.append(np.zeros((1,3)), diff, axis=0) # TODO: remove pseudo root
+    if n_additional_bones: t = np.append(t, np.zeros((n_additional_bones,3)), axis=0)
+    pose = np.zeros((n_bones_dyn, 3))
+                    
+    # Pose with FK 
+    rigidly_posed_handles = skeleton_dyn.pose_bones(pose, t, degrees=True)
+    assert np.linalg.norm(J_anim_rigid[i] - rigidly_posed_handles[2:]) < 1e-12, "Expected computed FK to match with the given data!"
+    
+    dyn_posed_handles = helper_rig.update_bones(rigidly_posed_handles)
+    M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, 
+                                                        dyn_posed_handles, 
+                                                        return_mat=True, 
+                                                        algorithm=ALGO)[1:]  # TODO: get rid of root
+    
+    M_hybrid = M # TODO ??
+    J_dyn = dyn_posed_handles[2:] # TODO: remove root...
+    V_dyn = skinning.LBS_from_mat(verts_rest, W, M_hybrid, 
+                                  use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
+               
     
     V_anim_dyn.append(V_dyn)
     J_anim_dyn.append(J_dyn)
