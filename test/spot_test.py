@@ -50,7 +50,9 @@ from src.render.pyvista_render_tools import (add_mesh,
 # handle_locations_cpbd : (n_frames, n_handles, 3) handle positions according to Controllable PBD output (see source code: https://github.com/yoharol/PBD_Taichi)
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODEL_NAME = "spot"
+SKELETON_MODE = "point springs" # "point springs" or "helper rig" 
 
+# RENDER PARAMETERS
 RENDER_MESH = True
 RENDER_SKEL = True
 WIREFRAME = False
@@ -63,12 +65,22 @@ MATERIAL_ROUGHNESS = 0.2
 
 DEFAULT_BONE_COLOR = "white"
 CPBD_BONE_COLOR ="green" # CPBD stands for Controllable PBD (the paper we compare against)
-#SPRING_BONE_COLOR = "blue"
+SPRING_BONE_COLOR = "blue"
 
 #COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
-
 #EYEDOME_LIGHT = False
-WINDOW_SIZE = (1500 * 2, 1200)
+WINDOW_SIZE = (1500 * 3, 1200)
+
+# SIMULATION PARAMETERS
+FIXED_SCALE = True
+POINT_SPRING = False # Doesn't matter what you set, we already have point springs
+FRAME_RATE = 24 # 24, 30, 60
+TIME_STEP = 1./FRAME_RATE  
+MASS = 3.5
+STIFFNESS = 120.
+DAMPING = 35.            
+MASS_DSCALE = 0.6       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 
 
@@ -117,18 +129,40 @@ for point_location in handle_locations_rest:
      skeleton.insert_bone(endpoint = point_location, 
                           startpoint = point_location,
                           parent_idx = 0) # pseudo root bone
+
+
+skeleton_dyn = skeleton 
+# Add helper bones according to mode
+if SKELETON_MODE == "point springs": # Make all bones in the existing rig spring bones
+    print(">> INFO: Skeleton is taken as point springs...")
+    helper_idxs = [i+1 for i in range(len(skeleton_dyn.rest_bones)-1)]
+else: # Load helper rig as an addition to rigid rig
+    print(">> INFO: Loading helper rig...")
     
+    # TODO: update W
+
+helper_rig = HelperBonesHandler(skeleton_dyn, 
+                                helper_idxs,
+                                mass          = MASS, 
+                                stiffness     = STIFFNESS,
+                                damping       = DAMPING,
+                                mass_dscale   = MASS_DSCALE,
+                                spring_dscale = SPRING_DSCALE,
+                                dt            = TIME_STEP,
+                                point_spring  = POINT_SPRING,
+                                fixed_scale   = FIXED_SCALE) 
+
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # SETUP PLOTS
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 plotter = pv.Plotter(notebook=False, off_screen=False,
-                     window_size = WINDOW_SIZE, border=False, shape = (1,2))
+                     window_size = WINDOW_SIZE, border=False, shape = (1,3))
 
 def adjust_camera_spot(plotter):
     plotter.camera.tight(padding=1, view="zy")
     plotter.camera.azimuth = 180
 
-# ---------- First Plot ----------------
+# ---------- First Plot (LBS) ----------------
 plotter.subplot(0, 0)
 if RENDER_MESH: 
     mesh_rigid, mesh_rigid_actor = add_mesh(plotter, verts_rest, faces, 
@@ -144,7 +178,7 @@ if RENDER_SKEL:
 adjust_camera_spot(plotter)
 frame_text_actor = plotter.add_text("0", (30,0), font_size=18) # Add frame number
 
-# ---------- Second Plot ----------------
+# ---------- Second Plot (CPBD) ----------------
 plotter.subplot(0, 1)
 if RENDER_MESH: 
     mesh_cpbd, mesh_cpbd_actor = add_mesh(plotter, verts_rest, faces, 
@@ -157,6 +191,25 @@ if RENDER_MESH:
   
 if RENDER_SKEL: 
     skel_mesh_cpbd = add_skeleton_from_Skeleton(plotter, skeleton, default_bone_color=CPBD_BONE_COLOR)
+adjust_camera_spot(plotter)
+
+# ---------- Third Plot (Ours) ----------------
+plotter.subplot(0, 2)
+if RENDER_MESH: 
+    mesh_dyn, mesh_dyn_actor = add_mesh(plotter, verts_rest, faces, 
+                                            return_actor=True, 
+                                            opacity=OPACITY, 
+                                            show_edges=WIREFRAME,
+                                            pbr=RENDER_PHYS_BASED, 
+                                            metallic=MATERIAL_METALLIC, 
+                                            roughness=MATERIAL_ROUGHNESS)
+
+if RENDER_SKEL: 
+    skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton_dyn, 
+                                               helper_idxs=helper_idxs, 
+                                               is_smpl=True, # TODO: This is ridiculous, but I have to update the data cause I want to omit the root bone...
+                                               default_bone_color=DEFAULT_BONE_COLOR, 
+                                               spring_bone_color=SPRING_BONE_COLOR)
 adjust_camera_spot(plotter)
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -177,16 +230,26 @@ def convert_points_to_bones(handles, flatten=True):
 
 n_frames = len(handle_locations_rigid)
 n_bones = len(skeleton.rest_bones)
+
+# --------- LBS -----------------------------------------------------------
 V_anim_rigid = [verts_rest]
 J_anim_rigid = [skeleton.get_rest_bone_locations(exclude_root=True)]
 for i in range(1, n_frames):
-    
-    # --------- LBS -----------------------------------------------------------
     cur_handles, prev_handles = handle_locations_rigid[i], handle_locations_rigid[i-1]
     V_lbs = get_LBS_spot(cur_handles, prev_handles)
-
     V_anim_rigid.append(V_lbs)
     J_anim_rigid.append(convert_points_to_bones(cur_handles))
+    
+# --------- Ours -----------------------------------------------------------
+V_anim_dyn, J_anim_dyn = [], []
+for i in range(n_frames):
+    
+    
+    J_dyn = 
+    V_dyn = 
+    
+    V_anim_dyn.append(V_dyn)
+    J_anim_dyn.append(J_dyn)
     
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # DISPLAY ANIMATION
@@ -197,12 +260,12 @@ for frame in range(n_frames):
     if RENDER_MESH: 
         mesh_rigid.points = V_anim_rigid[frame]
         mesh_cpbd.points = verts_cpbd[frame]
-        #mesh_dyn.points = V_anim_dyn[frame]
+        mesh_dyn.points = V_anim_dyn[frame]
         
     if RENDER_SKEL: 
         skel_mesh_rigid.points = J_anim_rigid[frame] 
         skel_mesh_cpbd.points = convert_points_to_bones(handle_locations_cpbd[frame])
-        #skel_mesh_dyn.points = J_anim_dyn[frame]
+        skel_mesh_dyn.points = J_anim_dyn[frame]
     
     # Color code jigglings 
     #if COLOR_CODE:
