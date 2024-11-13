@@ -155,12 +155,14 @@ def add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs=None, is_smpl=Fals
     
     # Define colors
     colors = np.zeros((n_bones))
-    colors[helper_idxs] = 1.0
+    if helper_idxs is not None: colors[helper_idxs] = 1.0
 
     cmap = [default_bone_color, spring_bone_color]
     if np.sum(colors) == n_bones:
         cmap = [spring_bone_color] # If all are spring bones
- 
+    if helper_idxs is None: 
+        cmap = [default_bone_color]
+        
     tube_actor = plotter.add_mesh(skel_mesh, 
                     render_lines_as_tubes=True,
                     style='wireframe',

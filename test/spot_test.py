@@ -53,7 +53,7 @@ MODEL_NAME = "spot"
 SKELETON_MODE = "point springs" # "point springs" or "helper rig" 
 
 # RENDER PARAMETERS
-RENDER_MESH = True
+RENDER_MESH = False
 RENDER_SKEL = True
 WIREFRAME = False
 RENDER_PHYS_BASED = False
