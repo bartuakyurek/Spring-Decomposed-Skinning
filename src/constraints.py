@@ -29,12 +29,21 @@ class Constraint:
         self.C_grad = np.zeros((n_particles, space_dims)) # Constraint gradient per particle
        
     def solve(self):
+        self.C_error = self._error()
+        self.C_grad = self._gradient()
+    
+    def get_corrections(self, mass, masses, alpha, dt):
+        lmbd = self._get_constraint_lambda(masses, alpha, dt)
+        delta_x = lmbd * mass.w * self.C_grad
+        return delta_x
+    
+    def _error(self):
+        pass # Implementation is up to the specific constraint
+        
+    def _gradient(self):
         pass # Implementation is up to the specific constraint
     
-    def gradient(self):
-        pass # Implementation is up to the specific constraint
-    
-    def get_constraint_lambda(self, masses, alpha, dt):
+    def _get_constraint_lambda(self, masses, alpha, dt):
         """
         Get the constraint projection scalar Lambda for General Constraint in
         PBD, (see Matthias Müller's great explanation in:
@@ -68,24 +77,13 @@ class Constraint:
         lmbd = -self.C / (grad_sum + complience)
         return lmbd
     
-"""
-class KinematicsConstraint(Constraint): # Or CollisionConstraint
-    def __init__(self, ):
-        pass
-    
-    def solve(self):
-        pass
-    
-    def gradient(self):
-        pass
-"""
 
 class SpringLengthConstraint(Constraint):
     def __init__(self, n_particles, rest_length):
         self.rest_length = rest_length
     
-    def solve(self, springs):
+    def _error(self, springs):
         pass
         
-    def gradient(self):
+    def _gradient(self):
         pass

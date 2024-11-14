@@ -18,6 +18,7 @@ from numpy import linalg as LA
 
 from .utils.sanity_check import _is_equal
 from .global_vars import _SPACE_DIMS_, VERBOSE
+from .constraints import SpringLengthConstraint
 
 _DEFAULT_STIFFNESS = 1.5
 _DEFAULT_DAMPING = 0.5
@@ -73,7 +74,7 @@ class Particle:
         
         self.velocity = np.zeros(_SPACE_DIMS_)
         self.springs = []
-        
+        self.distace_constraint = None
         if gravity is not None and gravity is not False:
             # If gravity is set to True:
             if gravity is True:
@@ -86,9 +87,20 @@ class Particle:
         # If gravity is set to False:
         else:
             self.gravity = np.array([0.0, 0.0, 0.0]) # Set no gravitational acceleration.
-            
-    def add_spring(self, s):
-        self.springs.append(s)
+    
+    def get_opposite_mass(self, spring_idx):
+        spr = self.springs[spring_idx]
+        if spr.m1 == self:
+            return True, spr.m2
+        elif spr.m2 == self:
+            return False, spr.m1
+        else:
+            raise ValueError("Unexpected case. The mass not found on the spring.")
+        
+    def add_spring(self, spring, distance_constraint=False):
+        self.springs.append(spring)
+        if distance_constraint:
+            self.distance_constraint = SpringLengthConstraint(2, spring.rest_length)
         return
     
     def get_total_spring_forces(self):
@@ -168,7 +180,7 @@ class Spring:
         
         
 class MassSpringSystem:
-    def __init__(self, dt, mode="PBD"):
+    def __init__(self, dt, mode="PBD", distance_constraint=False):
         print(">> INFO: Initiated empty mass-spring system")
         self.masses = []
         self.fixed_indices = []
@@ -177,6 +189,55 @@ class MassSpringSystem:
         
         print(">> INFO: Simulation integrator is set to ", mode)
         self.integration_mode = mode
+        self.distance_constraint = distance_constraint
+        
+    def generate_edge_constraints(self, P):
+        """
+        Given the updated positions data P, generate constraints C
+        that will be used to update the particle positions in the 
+        simulator.
+
+        Parameters
+        ----------
+        P : np.ndarray
+            DESCRIPTION.
+
+        Returns
+        -------
+        C : np.ndarray
+            DESCRIPTION.
+
+        """
+        #C = []
+        #n_masses = len(self.masses)
+        #for i in range(n_masses):
+        #    cons = self.masses[i].distance_constraint
+        #    if cons is not None: 
+        #        cons.solve(self.masses[i].center, P[i])
+            #C.append(cons)
+            
+        #return C
+    
+    def project_edge_constraints(self, C, P alpha=0, dt=None):
+        if dt is None: dt = self.dt # Option to set custom time step
+        pass
+        #for i, mass in enumerate(self.masses):
+        #    cons = mass.distance_constraint
+        #    if cons is not None:
+        #        opposite_mass = mass.get_opposite_mass
+        
+        for edge in self.connections:
+            m1_idx, m2_idx = edge         
+        #    cons1 = self.masses[m1_idx].distance_constraint  
+        #    lmbd = cons.get_constraint_lambda(spring, alpha, dt)
+        
+        #n_masses = len(self.masses)
+        #delta_x = np.empty((n_masses, 3))
+        #for i in range(n_masses):
+        #    delta_x[i] = lmbd * self.masses[i].w * C_grad[i]
+        #    self.masses[i].center += delta_x[i]
+            
+        #return delta_x # For sanity checks 
         
     def simulate(self, dt=None, integration=None):
         """
@@ -235,34 +296,35 @@ class MassSpringSystem:
         None.
 
         """
-        if dt is None:
-            dt = self.dt
-            
+        # Setup variables
+        if dt is None:  dt = self.dt
         n_masses = len(self.masses)
+        
+        # Compute velocities
+        velocities = np.empty((n_masses, 3))
         for i in range(n_masses):
-            # Constraint: If a mass is zero, don't exert any force (f=ma=0)
-            # that makes the mass fixed in space (world position still can be changed globally)
-            # Also this allows us to not divide by zero in the acceleration computation.
-            m = self.masses[i].mass
-            if m < 1e-12:
-                continue
-            
             w = self.masses[i].w
             force = self.masses[i].get_total_spring_forces() 
             velocity = self.masses[i].velocity + dt * w * force
             
-            # Optionally, damp velocities here
+            # Optionally, damp velocities
             velocity = velocity * self.masses[i].dscale
-            
-            # (Omitting constraint projections x <- solveConstraints())
-            
-            x = self.masses[i].center.copy()
-            p = x + dt * velocity
-            velocity = (p - x) / dt
-            
+            velocities[i] = velocity
+        
+        # Store initially simulated locations in P
+        P = np.empty((n_masses, 3))
+        for i in range(n_masses):
+            P[i] = self.masses[i].center + dt * velocities[i]
+        
+        # Solve for constraints C (I omit collisions though, only distance is applied) 
+        C  = self.generate_constraints(P)
+        P = self.project_constraints(C, P) # Optionally you could iterate (algorithm line 9 in PBD paper)
+        
+        # Update final mass locations and velocities
+        for i in range(n_masses):
+            velocity = (P[i] - self.masses[i].center) / dt
             self.masses[i].velocity = velocity
-            self.masses[i].center = p
-            
+            self.masses[i].center = P[i]
             
             
     def simulate_euler(self, dt=None):
@@ -353,6 +415,9 @@ class MassSpringSystem:
             print(f"Expected Particle class, got {type(mass)}")
             
     def fix_mass(self, mass_idx, verbose=VERBOSE):
+        # Constraint: If a mass is zero, don't exert any force (f=ma=0)
+        # that makes the mass fixed in space (world position still can be changed globally)
+        # Also this allows us to not divide by zero in the acceleration computation.
         self.masses[mass_idx].mass = 0.0
         self.fixed_indices.append(mass_idx)
         if verbose: print(f">> Fixed mass at location {self.masses[mass_idx].center}")
@@ -397,8 +462,8 @@ class MassSpringSystem:
         spring = Spring(self.masses[first_mass_idx], 
                         self.masses[second_mass_idx], 
                         stiffness=stiffness, damping=damping, dscale=dscale)
-        self.masses[first_mass_idx].add_spring(spring)
-        self.masses[second_mass_idx].add_spring(spring)
+        self.masses[first_mass_idx].add_spring(spring, self.distance_constraint)
+        self.masses[second_mass_idx].add_spring(spring, self.distance_constraint)
         self.connections.append([first_mass_idx, second_mass_idx])
         return
     

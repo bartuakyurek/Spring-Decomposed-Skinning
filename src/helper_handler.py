@@ -52,10 +52,9 @@ class HelperBonesHandler:
         self.prev_sim_locations = None
         
         self.POINT_SPRINGS = point_spring
-        self.FIXED_SCALE = fixed_scale
-        
+
         self.helper_idxs = np.array(helper_idxs, dtype=int)
-        self.simulator = MassSpringSystem(dt, mode=simulation_mode)
+        self.simulator = MassSpringSystem(dt, mode=simulation_mode, distance_constraint=fixed_scale)
             
         self.helper_lengths = []
         helper_bones = np.array(skeleton.rest_bones)[helper_idxs]
@@ -204,15 +203,6 @@ class HelperBonesHandler:
             bone = self.skeleton.rest_bones[helper_idx]
             end_idx = helper_idx * 2 + 1
             
-            # Adjust the bone to preserve its original length (optional)
-            if self.FIXED_SCALE:
-                free_idx = self.free_idxs[i]  # Warning: this assumes every bone has one free index (and one fixed) 
-                start_idx = helper_idx * 2    # TODO: could we change the data storage such that we don't have to remember to multiply by 2 every time?
-                orig_length = self.helper_lengths[i]         
-                bone_start = simulated_locations[start_idx]
-                _, new_endpoint = self._preserve_bone_length(bone_start, free_idx, orig_length)
-                simulated_locations[end_idx] = new_endpoint
-              
             # Adjust the child bones' starting points
             for child in bone.children:
                 child_start_idx = child.idx * 2
@@ -224,7 +214,6 @@ class HelperBonesHandler:
                 translation_amount = child_bone_start - previous_start
                 #if np.sum(translation_amount) > 0: print("translation: ", translation_amount)
                 simulated_locations[child_start_idx + 1] += translation_amount
-            
                 
         # Step 5 - Save the simulated locations for the next iteration
         self.prev_sim_locations = simulated_locations

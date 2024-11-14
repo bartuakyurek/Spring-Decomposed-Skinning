@@ -76,7 +76,7 @@ WINDOW_SIZE = (2112, 1200)
 # SIMULATION PARAMETERS
 ALGO = "T"  
 
-FIXED_SCALE = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
+FIXED_SCALE = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
 POINT_SPRING = False # Doesn't matter what you set, we already have point springs
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
