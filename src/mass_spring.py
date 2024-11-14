@@ -59,6 +59,12 @@ class Particle:
         assert mass < MAX_ALLOWED_MASS, f"Provided mass {mass} is greater than maximum allowed mass {MAX_ALLOWED_MASS}"
         
         self.mass = mass
+        
+        if mass > 1e-15: self.w = 1 / mass 
+        else: 
+            self.w = 0.0
+            print(">> WARNING: Found zero mass, initializing its weight to zero.")
+        
         self.radius = radius
         self.dscale = dscale
         
@@ -241,14 +247,15 @@ class MassSpringSystem:
             if m < 1e-12:
                 continue
             
+            w = self.masses[i].w
             force = self.masses[i].get_total_spring_forces() 
-            velocity = self.masses[i].velocity + dt * (force / m)
+            velocity = self.masses[i].velocity + dt * w * force
             
             # Optionally, damp velocities here
             velocity = velocity * self.masses[i].dscale
             
             # (Omitting constraint projections x <- solveConstraints())
-        
+            
             x = self.masses[i].center.copy()
             p = x + dt * velocity
             velocity = (p - x) / dt
@@ -256,11 +263,7 @@ class MassSpringSystem:
             self.masses[i].velocity = velocity
             self.masses[i].center = p
             
-            #self.masses[i].prev_center = previous_position
-            #self.masses[i].center += velocity * dt * self.masses[i].dscale
             
-            # This update is unstable 
-            ##self.masses[i].velocity = (self.masses[i].center - previous_position) / dt
             
     def simulate_euler(self, dt=None):
         """
