@@ -51,14 +51,15 @@ from src.render.pyvista_render_tools import (add_mesh,
 # handle_locations_cpbd : (n_frames, n_handles, 3) handle positions according to Controllable PBD output (see source code: https://github.com/yoharol/PBD_Taichi)
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODEL_NAME = "spot"
-SKELETON_MODE = "helper rig" # "point springs" or "helper rig" 
+AVAILABLE_MODES = ["point springs", "helper rig"]
+SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
 
 # RENDER PARAMETERS
 RENDER_MESH = True
 RENDER_SKEL = True
 WIREFRAME = False
 RENDER_PHYS_BASED = False
-AUTO_NORMALIZE_WEIGHTS = False
+AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
 
 OPACITY = 0.8
 MATERIAL_METALLIC = 0.0
@@ -70,7 +71,7 @@ SPRING_BONE_COLOR = "blue"
 
 #COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
 #EYEDOME_LIGHT = False
-WINDOW_SIZE = (1500 * 3, 1200)
+WINDOW_SIZE = (700 * 3, 1200)
 
 # SIMULATION PARAMETERS
 ALGO = "T"  
@@ -137,6 +138,7 @@ n_rigid_bones = len(skeleton_rigid.rest_bones)
 if SKELETON_MODE == "point springs": # Make all bones in the existing rig spring bones
     print(">> INFO: Skeleton is taken as point springs...")
     skeleton_dyn = skeleton_rigid
+    W_dyn = W_rigid
     helper_idxs = [i+1 for i in range(len(skeleton_dyn.rest_bones)-1)]
 else: # Load helper rig as an addition to rigid rig
     print(">> INFO: Loading helper rig...")
@@ -147,10 +149,8 @@ else: # Load helper rig as an addition to rigid rig
          blender_kintree = data["kintree"]#[1:] - 1# Excluding dummy root bone I put in blender
          rigid_bones_blender = data["rigid_idxs"] 
         
-         #rigid_bones = [ 1,  2,  3,  4,  5,  13, 14, 18]
-    
     # Adjust weights 
-    rigid_bones = rigid_bones_blender + 1 # TODO: root...
+    rigid_bones = rigid_bones_blender + 1 # [ 1,  2,  3,  4,  5,  13, 14, 18] TODO: root...
     W_dyn[:,rigid_bones] = W_rigid # Set rigid bone weights to original, #[1:] excluding dummy root bone I put in blender
         
     # Adjust helper bone indices
@@ -199,7 +199,7 @@ plotter = pv.Plotter(notebook=False, off_screen=False,
                      window_size = WINDOW_SIZE, border=False, shape = (1,3))
 
 def adjust_camera_spot(plotter):
-    plotter.camera.tight(padding=1, view="zy")
+    plotter.camera.tight(padding=0.5, view="zy", adjust_render_window=False)
     plotter.camera.azimuth = 180
 
 # ---------- First Plot (LBS) ----------------
@@ -313,8 +313,8 @@ for i in range(n_frames):
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # DISPLAY ANIMATION
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-plotter.show()
-"""
+#plotter.show()
+
 plotter.open_movie(RESULT_PATH + f"/{MODEL_NAME}_comparison.mp4")
 for frame in range(n_frames):
     # Set data for renderer
@@ -337,4 +337,3 @@ for frame in range(n_frames):
 
 plotter.close()
 plotter.deep_clean()
-"""
