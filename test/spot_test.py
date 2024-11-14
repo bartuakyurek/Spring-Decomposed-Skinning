@@ -81,8 +81,8 @@ POINT_SPRING = False # Doesn't matter what you set, we already have point spring
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 1.
-STIFFNESS = 200.
-DAMPING = 30.            
+STIFFNESS = 20.
+DAMPING = 3.            
 MASS_DSCALE = 0.3       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 

@@ -12,6 +12,7 @@ DISCLAIMER: The simulation code is heavily based on these sources:
 
 @author: bartu
 """
+import math
 import numpy as np
 import pyvista as pv
 from numpy import linalg as LA
@@ -185,51 +186,48 @@ class MassSpringSystem:
         self.masses = []
         self.fixed_indices = []
         self.connections = []
+        self.rest_lengths = [] # Store the rest lengths for quick access in constraint projections
         self.dt =  dt
         
         print(">> INFO: Simulation integrator is set to ", mode)
         self.integration_mode = mode
         self.distance_constraint = distance_constraint
-        
-    def generate_edge_constraints(self, P):
-        """
-        Given the updated positions data P, generate constraints C
-        that will be used to update the particle positions in the 
-        simulator.
-
-        Parameters
-        ----------
-        P : np.ndarray
-            DESCRIPTION.
-
-        Returns
-        -------
-        C : np.ndarray
-            DESCRIPTION.
-
-        """
-        #C = []
-        #n_masses = len(self.masses)
-        #for i in range(n_masses):
-        #    cons = self.masses[i].distance_constraint
-        #    if cons is not None: 
-        #        cons.solve(self.masses[i].center, P[i])
-            #C.append(cons)
-            
-        #return C
     
-    def project_edge_constraints(self, C, P alpha=0, dt=None):
+    def satisfy_edge_constraints(self, P, alpha=0, dt=None):
+        
         if dt is None: dt = self.dt # Option to set custom time step
-        pass
+        
+        for spring_idx, edge in enumerate(self.connections):
+            idx1, idx2 = edge
+            w1 = self.masses[idx1].w
+            w2 = self.masses[idx2].w
+            spring_vec = P[idx2] - P[idx1]
+            spring_len = np.linalg.norm(spring_vec)
+            
+            if spring_len < 1e-20:
+                continue # Avoid division by zero
+    
+            C = spring_len - self.rest_lengths[spring_idx]
+            grad_C1 = spring_vec / spring_len
+            grad_C2 = - spring_vec / spring_len
+            assert math.isclose(np.linalg.norm(grad_C1), 1.0) # Gradients are 1 for distance constratins
+            assert math.isclose(np.linalg.norm(grad_C2), 1.0) # Gradients are 1 for distance constratins
+            
+            complience = alpha / (dt*dt)
+            grad_sum = w1 + w2  # Gradients are 1 for distance constratins
+            lmbd = -C / (grad_sum + complience)
+            
+            delta_x1 = lmbd * w1 * grad_C1
+            delta_x2 = lmbd * w2 * grad_C2
+            
+            P[idx1] += delta_x1
+            P[idx2] += delta_x2
+        
+        return P
         #for i, mass in enumerate(self.masses):
         #    cons = mass.distance_constraint
         #    if cons is not None:
         #        opposite_mass = mass.get_opposite_mass
-        
-        for edge in self.connections:
-            m1_idx, m2_idx = edge         
-        #    cons1 = self.masses[m1_idx].distance_constraint  
-        #    lmbd = cons.get_constraint_lambda(spring, alpha, dt)
         
         #n_masses = len(self.masses)
         #delta_x = np.empty((n_masses, 3))
@@ -317,8 +315,9 @@ class MassSpringSystem:
             P[i] = self.masses[i].center + dt * velocities[i]
         
         # Solve for constraints C (I omit collisions though, only distance is applied) 
-        C  = self.generate_constraints(P)
-        P = self.project_constraints(C, P) # Optionally you could iterate (algorithm line 9 in PBD paper)
+        #C  = self.generate_constraints(P)
+        #P = self.project_constraints(C, P) # Optionally you could iterate (algorithm line 9 in PBD paper)
+        P = self.satisfy_edge_constraints(P)
         
         # Update final mass locations and velocities
         for i in range(n_masses):
@@ -462,9 +461,12 @@ class MassSpringSystem:
         spring = Spring(self.masses[first_mass_idx], 
                         self.masses[second_mass_idx], 
                         stiffness=stiffness, damping=damping, dscale=dscale)
+        
         self.masses[first_mass_idx].add_spring(spring, self.distance_constraint)
         self.masses[second_mass_idx].add_spring(spring, self.distance_constraint)
+        
         self.connections.append([first_mass_idx, second_mass_idx])
+        self.rest_lengths.append(spring.rest_length)
         return
     
     def disconnect_masses(self, mass_first : Particle, mass_second : Particle):
