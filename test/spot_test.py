@@ -288,8 +288,10 @@ for i in range(n_frames):
     
     # --------- Ours -----------------------------------------------------------
     # Prepare transformations
-    t = np.append(np.zeros((1,3)), diff, axis=0) # TODO: remove pseudo root
-    if n_additional_bones: t = np.append(t, np.zeros((n_additional_bones,3)), axis=0)
+    t = np.zeros((n_bones_dyn,3))
+    t[rigid_bones,:] = diff
+    #t = np.append(np.zeros((1,3)), diff, axis=0) # TODO: remove pseudo root
+    #if n_additional_bones: t = np.append(t, np.zeros((n_additional_bones,3)), axis=0)
     pose = np.zeros((n_bones_dyn, 3))
      
     # Pose with FK 
