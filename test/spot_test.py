@@ -145,10 +145,12 @@ else: # Load helper rig as an addition to rigid rig
          W_dyn = data["weights"] #[:,1:] # Excluding dummy root bone I put in blender
          blender_joints = data["joints"]#[1:]
          blender_kintree = data["kintree"]#[1:] - 1# Excluding dummy root bone I put in blender
-         rigid_bones = data["rigid_idxs"] + 1 # TODO: root...
+         rigid_bones_blender = data["rigid_idxs"] 
+        
          #rigid_bones = [ 1,  2,  3,  4,  5,  13, 14, 18]
     
     # Adjust weights 
+    rigid_bones = rigid_bones_blender + 1 # TODO: root...
     W_dyn[:,rigid_bones] = W_rigid # Set rigid bone weights to original, #[1:] excluding dummy root bone I put in blender
         
     # Adjust helper bone indices
@@ -158,22 +160,24 @@ else: # Load helper rig as an addition to rigid rig
             helper_idxs = np.delete(helper_idxs, idx)
             
     # Adjust the imported rig such that it aligns with the mesh (Blender rig export is weird, I couldn't solve it yet)
-    """
-    rigid_bone_locations_ours = np.reshape(blender_joints[rigid_bones], (-1,3))
-    rigid_bones_orig = skeleton_rigid.get_rest_bone_locations(exclude_root=False)
-    rot, trans = optimal_rigid_motion.get_optimal_rigid_motion(rigid_bone_locations_ours, rigid_bones_orig)
-        
-    rot_batch = rot[None,:,:] # Expand dims
-    trans_batch = trans[:,None]  # Expand dims
-    
-    tmp = np.reshape(blender_joints,(-1,3)) # flatten for operations
-    tmp_rotated = rot_batch @ tmp.T
-    tmp_final = tmp_rotated+trans_batch
-
-    blender_joints = np.reshape(tmp_final, (-1,2,3)) # reshape it back
-    """
-    
     B =  model_data.adjust_rig(blender_joints, MODEL_NAME)
+    
+    # Adjust rigid bone locations to the original locations (Bleder impored locations differ a bit)
+    for i,rigid_idx in enumerate(rigid_bones_blender): # assumes the rigid bones are aligned with handle locations! 
+        # Adjust endpoint
+        B[rigid_idx, 1] = handle_locations_rest[i]
+        
+        # Adjust startpoint
+        kintree_children = blender_kintree[:,1]
+        kintree_idx = kintree_children[kintree_children == rigid_idx]
+        selected_kintree = blender_kintree[kintree_idx]
+        for parent_child in selected_kintree:
+            parent_idx, child_idx = parent_child
+            assert child_idx == rigid_idx
+            if parent_idx != -1: 
+                B[rigid_idx, 0] = B[parent_idx, 1]     
+        
+    # Create a skeleton instance
     skeleton_dyn = create_skeleton_from(B, blender_kintree)
     
 
