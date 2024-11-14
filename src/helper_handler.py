@@ -27,7 +27,7 @@ class HelperBonesHandler:
                  spring_dscale=1.0, dt=1./24,
                  simulation_mode="PBD",
                  fixed_scale=True,
-                 complience=0.0, # Only works for PBD
+                 compliance=0.0, # Only works for PBD
                  ):
         """
         Create a mass-spring system provided an array of Bone objects.
@@ -53,8 +53,8 @@ class HelperBonesHandler:
         self.prev_sim_locations = None
         
         self.POINT_SPRINGS = point_spring
-        self.complience = complience
-        if complience and simulation_mode != "PBD" : print(f">> WARNING: Complience is set but simulation mode {simulation_mode} is not PBD, complience will have no effect.")
+        self.compliance = compliance
+        if compliance and simulation_mode != "PBD" : print(f">> WARNING: Complience is set but simulation mode {simulation_mode} is not PBD, compliance will have no effect.")
         
         self.helper_idxs = np.array(helper_idxs, dtype=int)
         self.simulator = MassSpringSystem(dt, mode=simulation_mode, edge_constraint=fixed_scale)
@@ -194,7 +194,7 @@ class HelperBonesHandler:
             self.simulator.translate_mass(self.fixed_idxs[i], translate_vec[i])
         
         # Step 2 - Simulate the mass spring system with the new mass locations
-        self.simulator.simulate(dt, alpha=self.complience)
+        self.simulator.simulate(dt, alpha=self.compliance)
            
         # Step 3 - Get simulated mass positions
         cur_mass_locations = self.simulator.get_mass_locations()
