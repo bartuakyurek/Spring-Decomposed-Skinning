@@ -52,11 +52,12 @@ from src.render.pyvista_render_tools import (add_mesh,
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODEL_NAME = "spot"
 AVAILABLE_MODES = ["point springs", "helper rig"]
+MAKE_ALL_SPRING = False
 SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
 
 # RENDER PARAMETERS
 RENDER_MESH = True
-RENDER_SKEL = True
+RENDER_SKEL = False
 WIREFRAME = False
 RENDER_PHYS_BASED = False
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
@@ -76,14 +77,15 @@ WINDOW_SIZE = (2112, 1200)
 # SIMULATION PARAMETERS
 ALGO = "T"  
 
-FIXED_SCALE = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
-POINT_SPRING = False # Doesn't matter what you set, we already have point springs
+COMPLIENCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
+EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
+POINT_SPRING = False # Currently it doesn't move at all if EDGE_CONSTRAINT=True
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 1.
 STIFFNESS = 20.
-DAMPING = 3.            
-MASS_DSCALE = 0.3       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+DAMPING = 10.  
+MASS_DSCALE = 0.6       # Mass velocity damping (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 
@@ -141,6 +143,7 @@ if SKELETON_MODE == "point springs": # Make all bones in the existing rig spring
     skeleton_dyn = skeleton_rigid
     W_dyn = W_rigid
     helper_idxs = [i+1 for i in range(len(skeleton_dyn.rest_bones)-1)]
+    original_bones = helper_idxs
 else: # Load helper rig as an addition to rigid rig
     print(">> INFO: Loading helper rig...")
     # Load joint locations, kintree and weights
@@ -151,12 +154,12 @@ else: # Load helper rig as an addition to rigid rig
          rigid_bones_blender = data["rigid_idxs"] 
         
     # Adjust weights 
-    rigid_bones = rigid_bones_blender + 1 # [ 1,  2,  3,  4,  5,  13, 14, 18] TODO: root...
-    W_dyn[:,rigid_bones] = W_rigid # Set rigid bone weights to original, #[1:] excluding dummy root bone I put in blender
+    original_bones = rigid_bones_blender + 1 # [ 1,  2,  3,  4,  5,  13, 14, 18] TODO: root...
+    W_dyn[:,original_bones] = W_rigid # Set rigid bone weights to original, #[1:] excluding dummy root bone I put in blender
         
     # Adjust helper bone indices
     helper_idxs = np.array([i for i in range(1, len(blender_kintree)+1)])
-    for rigid_bone in rigid_bones:
+    for rigid_bone in original_bones:
             idx = np.argwhere(helper_idxs == rigid_bone)
             helper_idxs = np.delete(helper_idxs, idx)
             
@@ -191,7 +194,8 @@ helper_rig = HelperBonesHandler(skeleton_dyn,
                                 spring_dscale = SPRING_DSCALE,
                                 dt            = TIME_STEP,
                                 point_spring  = POINT_SPRING,
-                                fixed_scale   = FIXED_SCALE) 
+                                fixed_scale   = EDGE_CONSTRAINT,
+                                complience    = COMPLIENCE) 
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # SETUP PLOTS
@@ -290,7 +294,7 @@ for i in range(n_frames):
     # --------- Ours -----------------------------------------------------------
     # Prepare translation and rotations
     t = np.zeros((n_bones_dyn,3))
-    t[rigid_bones,:] = diff
+    t[original_bones,:] = diff
     pose = np.zeros((n_bones_dyn, 3))
      
     # Pose with FK 
@@ -315,7 +319,7 @@ for i in range(n_frames):
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #plotter.show()
 
-plotter.open_movie(RESULT_PATH + f"/{MODEL_NAME}_comparison.mp4")
+plotter.open_movie(RESULT_PATH + f"/{MODEL_NAME}_PBD_Complience_{COMPLIENCE}.mp4")
 for frame in range(n_frames):
     # Set data for renderer
     if RENDER_MESH: 

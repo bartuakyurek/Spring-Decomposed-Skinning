@@ -191,7 +191,7 @@ class MassSpringSystem:
         self.integration_mode = mode
         self.edge_constraint = edge_constraint
     
-    def satisfy_edge_constraints(self, P, alpha=0, dt=None):
+    def satisfy_edge_constraints(self, P, alpha, dt=None):
         
         if dt is None: dt = self.dt # Option to set custom time step
         
@@ -235,7 +235,7 @@ class MassSpringSystem:
             
         #return delta_x # For sanity checks 
         
-    def simulate(self, dt=None, integration=None):
+    def simulate(self, dt=None, integration=None, alpha=0.0):
         """
         Simulate the mass-spring system. Updates the mass locations in the 
         system.
@@ -262,7 +262,7 @@ class MassSpringSystem:
         integration = integration.upper()
         
         if integration == "PBD":
-                self.simulate_pbd(dt)
+                self.simulate_pbd(dt, alpha=alpha)
                 
         elif integration == "VERLET":
                  self.simulate_verlet(dt)
@@ -272,11 +272,11 @@ class MassSpringSystem:
          
         else:
                 print(f"WARNING: Invalid integration scheme {integration} is given. Choosing default simulation...")
-                self.simulate_pbd(dt)
+                self.simulate_pbd(dt, alpha=alpha)
     
         return
         
-    def simulate_pbd(self, dt=None):
+    def simulate_pbd(self, dt=None, alpha=0.0):
         """
         Default simulator of mass spring system based on Position Based Dynamics
         (excluding the constraint projections).
@@ -316,7 +316,7 @@ class MassSpringSystem:
         #C  = self.generate_constraints(P)
         #P = self.project_constraints(C, P) # Optionally you could iterate (algorithm line 9 in PBD paper)
         if self.edge_constraint:
-            P = self.satisfy_edge_constraints(P)
+            P = self.satisfy_edge_constraints(P, alpha=alpha)
         
         # Update final mass locations and velocities
         for i in range(n_masses):
