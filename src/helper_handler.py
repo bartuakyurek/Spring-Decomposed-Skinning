@@ -15,7 +15,6 @@ class HelperBonesHandler:
     
     def _set_simulator(self, mode, dt):
         self.simulator = MassSpringSystem(dt, mode=mode)
-        self.simulate_rig = self.simulator.simulate
        
     
     # TODO: We should be able to change the individual masses and stiffness, 
@@ -197,7 +196,7 @@ class HelperBonesHandler:
             self.simulator.translate_mass(self.fixed_idxs[i], translate_vec[i])
         
         # Step 2 - Simulate the mass spring system with the new mass locations
-        self.simulate_rig(dt)
+        self.simulator.simulate(dt)
            
         # Step 3 - Get simulated mass positions
         cur_mass_locations = self.simulator.get_mass_locations()
