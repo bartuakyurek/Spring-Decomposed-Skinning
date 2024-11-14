@@ -19,7 +19,6 @@ from numpy import linalg as LA
 
 from .utils.sanity_check import _is_equal
 from .global_vars import _SPACE_DIMS_, VERBOSE
-from .constraints import SpringLengthConstraint
 
 _DEFAULT_STIFFNESS = 1.5
 _DEFAULT_DAMPING = 0.5
