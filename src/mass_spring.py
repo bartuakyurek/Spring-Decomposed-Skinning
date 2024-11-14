@@ -210,7 +210,7 @@ class MassSpringSystem:
             assert math.isclose(np.linalg.norm(grad_C1), 1.0) # Gradients are 1 for distance constratins
             assert math.isclose(np.linalg.norm(grad_C2), 1.0) # Gradients are 1 for distance constratins
             
-            complience = alpha / (dt*dt)
+            complience = alpha / dt / dt # alpha / dt^2
             grad_sum = w1 + w2  # Gradients are 1 for distance constratins
             lmbd = - C / (grad_sum + complience)
             
@@ -221,18 +221,7 @@ class MassSpringSystem:
             P[idx2] += delta_x2
         
         return P
-        #for i, mass in enumerate(self.masses):
-        #    cons = mass.edge_constraint
-        #    if cons is not None:
-        #        opposite_mass = mass.get_opposite_mass
-        
-        #n_masses = len(self.masses)
-        #delta_x = np.empty((n_masses, 3))
-        #for i in range(n_masses):
-        #    delta_x[i] = lmbd * self.masses[i].w * C_grad[i]
-        #    self.masses[i].center += delta_x[i]
-            
-        #return delta_x # For sanity checks 
+       
         
     def simulate(self, dt=None, integration=None, alpha=0.0):
         """
