@@ -71,18 +71,19 @@ SPRING_BONE_COLOR = "blue"
 
 #COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
 #EYEDOME_LIGHT = False
-WINDOW_SIZE = (700 * 3, 1200)
+WINDOW_SIZE = (2112, 1200)
 
 # SIMULATION PARAMETERS
 ALGO = "T"  
-FIXED_SCALE = False # We already have zero length bones... 
+
+FIXED_SCALE = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
 POINT_SPRING = False # Doesn't matter what you set, we already have point springs
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
-MASS = 15
-STIFFNESS = 220.
-DAMPING = 35.            
-MASS_DSCALE = 0.1       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+MASS = 1.
+STIFFNESS = 200.
+DAMPING = 30.            
+MASS_DSCALE = 0.3       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 
@@ -287,24 +288,21 @@ for i in range(n_frames):
     J_anim_rigid.append(convert_points_to_bones(cur_handles))
     
     # --------- Ours -----------------------------------------------------------
-    # Prepare transformations
+    # Prepare translation and rotations
     t = np.zeros((n_bones_dyn,3))
     t[rigid_bones,:] = diff
-    #t = np.append(np.zeros((1,3)), diff, axis=0) # TODO: remove pseudo root
-    #if n_additional_bones: t = np.append(t, np.zeros((n_additional_bones,3)), axis=0)
     pose = np.zeros((n_bones_dyn, 3))
      
     # Pose with FK 
-    rigidly_posed_handles = skeleton_dyn.pose_bones(pose, t, degrees=True)
-    #assert np.linalg.norm(J_anim_rigid[i] - rigidly_posed_handles[2:]) < 1e-12, "Expected computed FK to match with the given data!"
-    
+    rigidly_posed_handles = skeleton_dyn.pose_bones(pose, t, degrees=True)    
     dyn_posed_handles = helper_rig.update_bones(rigidly_posed_handles)
+    
     M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, 
                                                         dyn_posed_handles, 
                                                         return_mat=True, 
                                                         algorithm=ALGO)[1:]  # TODO: get rid of root
     
-    M_hybrid = M # TODO ??
+    M_hybrid = M # TODO -> _, q,t = pose_bones(get_transformas=True) and M_rigid = compose_mat(q,t)
     J_dyn = dyn_posed_handles[2:] # TODO: remove root...
     V_dyn = skinning.LBS_from_mat(verts_rest, W_dyn, M_hybrid, 
                                   use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
