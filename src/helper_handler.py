@@ -13,10 +13,6 @@ from .mass_spring import MassSpringSystem
 
 class HelperBonesHandler:
     
-    def _set_simulator(self, mode, dt):
-        self.simulator = MassSpringSystem(dt, mode=mode)
-       
-    
     # TODO: We should be able to change the individual masses and stiffness, 
     # for optimization we should be able to provide an array of particle mass
     # that will update the individual Particle.mass in the system
@@ -59,7 +55,7 @@ class HelperBonesHandler:
         self.FIXED_SCALE = fixed_scale
         
         self.helper_idxs = np.array(helper_idxs, dtype=int)
-        self._set_simulator(simulation_mode, dt)
+        self.simulator = MassSpringSystem(dt, mode=simulation_mode)
             
         self.helper_lengths = []
         helper_bones = np.array(skeleton.rest_bones)[helper_idxs]
