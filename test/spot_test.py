@@ -52,12 +52,12 @@ from src.render.pyvista_render_tools import (add_mesh,
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 MODEL_NAME = "spot"
 AVAILABLE_MODES = ["point springs", "helper rig"]
-MAKE_ALL_SPRING = False
+MAKE_ALL_SPRING = True # Set true to turn all bones spring bones
 SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
 
 # RENDER PARAMETERS
 RENDER_MESH = True
-RENDER_SKEL = False
+RENDER_SKEL = True
 WIREFRAME = False
 RENDER_PHYS_BASED = False
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
@@ -77,15 +77,15 @@ WINDOW_SIZE = (2112, 1200)
 # SIMULATION PARAMETERS
 ALGO = "T"  
 
-COMPLIENCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
+COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
 POINT_SPRING = False # Currently it doesn't move at all if EDGE_CONSTRAINT=True
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 1.
-STIFFNESS = 20.
+STIFFNESS = 150.
 DAMPING = 10.  
-MASS_DSCALE = 0.6       # Mass velocity damping (Use [0.0, 1.0] range to slow down)
+MASS_DSCALE = 0.2       # Mass velocity damping (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 
@@ -159,9 +159,10 @@ else: # Load helper rig as an addition to rigid rig
         
     # Adjust helper bone indices
     helper_idxs = np.array([i for i in range(1, len(blender_kintree)+1)])
-    for rigid_bone in original_bones:
-            idx = np.argwhere(helper_idxs == rigid_bone)
-            helper_idxs = np.delete(helper_idxs, idx)
+    if not MAKE_ALL_SPRING:
+        for rigid_bone in original_bones:
+                idx = np.argwhere(helper_idxs == rigid_bone)
+                helper_idxs = np.delete(helper_idxs, idx)
             
     # Adjust the imported rig such that it aligns with the mesh (Blender rig export is weird, I couldn't solve it yet)
     B =  model_data.adjust_rig(blender_joints, MODEL_NAME)
@@ -195,7 +196,7 @@ helper_rig = HelperBonesHandler(skeleton_dyn,
                                 dt            = TIME_STEP,
                                 point_spring  = POINT_SPRING,
                                 fixed_scale   = EDGE_CONSTRAINT,
-                                complience    = COMPLIENCE) 
+                                compliance    = COMPLIANCE) 
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # SETUP PLOTS
@@ -319,7 +320,7 @@ for i in range(n_frames):
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #plotter.show()
 
-plotter.open_movie(RESULT_PATH + f"/{MODEL_NAME}_PBD_Complience_{COMPLIENCE}.mp4")
+plotter.open_movie(RESULT_PATH + f"/{MODEL_NAME}_PBD_Complience_{COMPLIANCE}.mp4")
 for frame in range(n_frames):
     # Set data for renderer
     if RENDER_MESH: 
