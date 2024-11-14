@@ -42,9 +42,10 @@ TIME_STEP = 1. / 30 # Time step of 1/24 is too large for the system, make it at 
 DAMPING = 5.0       # Setting it 0.0 or more than 25.0 explodes the system.
 SPRING_DSCALE = 1.0 # This is for scaling the spring force, better be set to 1.0 for no scale (it's handy for finetuning sometimes).
 GRAVITY = [0.0, -9.81, 0.0]
+EDGE_CONSTRAINT = True
 
 # Initiate the mass spring system
-mass_spring_system = MassSpringSystem(TIME_STEP)
+mass_spring_system = MassSpringSystem(TIME_STEP, edge_constraint=EDGE_CONSTRAINT)
 
 # Add masses at vertex locations
 n_masses = lattice_verts.shape[0]

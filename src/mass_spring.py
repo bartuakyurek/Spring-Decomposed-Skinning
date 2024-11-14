@@ -98,10 +98,8 @@ class Particle:
         else:
             raise ValueError("Unexpected case. The mass not found on the spring.")
         
-    def add_spring(self, spring, distance_constraint=False):
+    def add_spring(self, spring):
         self.springs.append(spring)
-        if distance_constraint:
-            self.distance_constraint = SpringLengthConstraint(2, spring.rest_length)
         return
     
     def get_total_spring_forces(self):
@@ -181,7 +179,7 @@ class Spring:
         
         
 class MassSpringSystem:
-    def __init__(self, dt, mode="PBD", distance_constraint=False):
+    def __init__(self, dt, mode="PBD", edge_constraint=False):
         print(">> INFO: Initiated empty mass-spring system")
         self.masses = []
         self.fixed_indices = []
@@ -191,7 +189,7 @@ class MassSpringSystem:
         
         print(">> INFO: Simulation integrator is set to ", mode)
         self.integration_mode = mode
-        self.distance_constraint = distance_constraint
+        self.edge_constraint = edge_constraint
     
     def satisfy_edge_constraints(self, P, alpha=0, dt=None):
         
@@ -201,7 +199,7 @@ class MassSpringSystem:
             idx1, idx2 = edge
             w1 = self.masses[idx1].w
             w2 = self.masses[idx2].w
-            spring_vec = P[idx2] - P[idx1]
+            spring_vec = P[idx1] - P[idx2] #P[idx2] - P[idx1]
             spring_len = np.linalg.norm(spring_vec)
             
             if spring_len < 1e-20:
@@ -215,7 +213,7 @@ class MassSpringSystem:
             
             complience = alpha / (dt*dt)
             grad_sum = w1 + w2  # Gradients are 1 for distance constratins
-            lmbd = -C / (grad_sum + complience)
+            lmbd = - C / (grad_sum + complience)
             
             delta_x1 = lmbd * w1 * grad_C1
             delta_x2 = lmbd * w2 * grad_C2
@@ -225,7 +223,7 @@ class MassSpringSystem:
         
         return P
         #for i, mass in enumerate(self.masses):
-        #    cons = mass.distance_constraint
+        #    cons = mass.edge_constraint
         #    if cons is not None:
         #        opposite_mass = mass.get_opposite_mass
         
@@ -317,7 +315,8 @@ class MassSpringSystem:
         # Solve for constraints C (I omit collisions though, only distance is applied) 
         #C  = self.generate_constraints(P)
         #P = self.project_constraints(C, P) # Optionally you could iterate (algorithm line 9 in PBD paper)
-        P = self.satisfy_edge_constraints(P)
+        if self.edge_constraint:
+            P = self.satisfy_edge_constraints(P)
         
         # Update final mass locations and velocities
         for i in range(n_masses):
@@ -418,6 +417,7 @@ class MassSpringSystem:
         # that makes the mass fixed in space (world position still can be changed globally)
         # Also this allows us to not divide by zero in the acceleration computation.
         self.masses[mass_idx].mass = 0.0
+        self.masses[mass_idx].w = 0.0
         self.fixed_indices.append(mass_idx)
         if verbose: print(f">> Fixed mass at location {self.masses[mass_idx].center}")
         return
@@ -462,8 +462,8 @@ class MassSpringSystem:
                         self.masses[second_mass_idx], 
                         stiffness=stiffness, damping=damping, dscale=dscale)
         
-        self.masses[first_mass_idx].add_spring(spring, self.distance_constraint)
-        self.masses[second_mass_idx].add_spring(spring, self.distance_constraint)
+        self.masses[first_mass_idx].add_spring(spring)
+        self.masses[second_mass_idx].add_spring(spring)
         
         self.connections.append([first_mass_idx, second_mass_idx])
         self.rest_lengths.append(spring.rest_length)

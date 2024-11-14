@@ -54,7 +54,7 @@ class HelperBonesHandler:
         self.POINT_SPRINGS = point_spring
 
         self.helper_idxs = np.array(helper_idxs, dtype=int)
-        self.simulator = MassSpringSystem(dt, mode=simulation_mode, distance_constraint=fixed_scale)
+        self.simulator = MassSpringSystem(dt, mode=simulation_mode, edge_constraint=fixed_scale)
             
         self.helper_lengths = []
         helper_bones = np.array(skeleton.rest_bones)[helper_idxs]
