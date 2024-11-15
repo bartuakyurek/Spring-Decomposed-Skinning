@@ -16,6 +16,8 @@ Created on Thu Nov 12, 2024
 """
 
 import os
+import igl
+import time
 import numpy as np
 import pyvista as pv
 
@@ -45,14 +47,16 @@ from src.render.pyvista_render_tools import (add_mesh,
 # handle_locations_rigid : (n_frames, n_handles, 3) handle positions at every frame (WARNING: We assume handles are translated for this demo)
 # handle_locations_cpbd : (n_frames, n_handles, 3) handle positions according to Controllable PBD output (see source code: https://github.com/yoharol/PBD_Taichi)
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-MODEL_NAME = "spot"
+EXTRACT_REST_OBJ = True
+
+MODEL_NAME = "spot_high" # "spot" or "spot_high"
 AVAILABLE_MODES = ["point springs", "helper rig"]
 MAKE_ALL_SPRING = True # Set true to turn all bones spring bones
 SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
 
 # RENDER PARAMETERS
 RENDER_MESH = True
-RENDER_SKEL = False
+RENDER_SKEL = True
 WIREFRAME = False
 
 ADD_LIGHT = True
@@ -61,7 +65,7 @@ LIGHT_POS = (10.5, 3.5, 3.5)
                        
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = False
-OPACITY = 1.0
+OPACITY = 0.2
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.3
 BASE_COLOR = [0.8,0.7,1.0] # RGB
@@ -75,7 +79,7 @@ WINDOW_SIZE = (1200, 1600)
 
 # SIMULATION PARAMETERS
 ALGO = "T" # ["T", "RST", "SVD"] RST doesn't work good with this demo, SVD never works good either
-INTEGRATION = "Euler" # PBD or Euler
+INTEGRATION = "PBD" # PBD or Euler
 
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
 COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
@@ -112,6 +116,9 @@ with np.load(SPOT_EXTRACTED_DATA_PATH) as data:
     
 verts_rest = verts_cpbd[0]
 handle_locations_rest = handle_locations_rigid[0] #cpbd[0]
+
+if EXTRACT_REST_OBJ:
+    igl.write_obj(OBJ_PATH, verts_rest, np.array(faces, dtype=int))
 
 assert len(verts_cpbd) == len(handle_locations_cpbd), f"Expected verts and handles to have same length at dim 0. Got shapes {verts_cpbd.shape}, {handle_locations_cpbd.shape}."
 assert verts_cpbd.shape[1] == len(verts_rest), "Expected the loaded data vertices to match with the loaded .obj rest vertices."
@@ -310,22 +317,28 @@ n_additional_bones = n_bones_dyn - n_bones_rigid
 V_anim_rigid = []
 J_anim_rigid = []
 rest_bone_locations = skeleton_dyn.get_rest_bone_locations(exclude_root=False)
+tot_time_lbs, tot_time_ours = 0.0, 0.0
 for i in range(n_frames):
     
     cur_handles, rest_handles = handle_locations_rigid[i], handle_locations_rigid[0] #[i-1]
     diff = cur_handles - rest_handles
     
     # --------- LBS -----------------------------------------------------------
+    start_time = time.time()
+    
     V_lbs = get_LBS_spot(cur_handles, rest_handles)
     V_anim_rigid.append(V_lbs)
     J_anim_rigid.append(convert_points_to_bones(cur_handles))
     
+    tot_time_lbs += start_time - time.time()
     # --------- Ours -----------------------------------------------------------
     # Prepare translation and rotations
     t = np.zeros((n_bones_dyn,3))
     t[original_bones,:] = diff
     pose = np.zeros((n_bones_dyn, 3))
-     
+    
+    start_time = time.time()
+    
     # Pose with FK 
     rigidly_posed_handles = skeleton_dyn.pose_bones(pose, t, degrees=True)    
     dyn_posed_handles = helper_rig.update_bones(rigidly_posed_handles)
@@ -339,10 +352,20 @@ for i in range(n_frames):
     J_dyn = dyn_posed_handles[2:] # TODO: remove root...
     V_dyn = skinning.LBS_from_mat(verts_rest, W_dyn, M_hybrid, 
                                   use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
-               
+
+    tot_time_ours += start_time - time.time()
     V_anim_dyn.append(V_dyn)
     J_anim_dyn.append(J_dyn)
+
+def report_timing(tot_time, n_frames, note):
+    print("\n===========================================================")
+    print(f">> INFO: Total time ({note}): ", tot_time * 1000, " ms")
+    print(f">> INFO: Average time ({note}): ", tot_time/n_frames * 1000 , " ms")
+    print("===========================================================\n")
     
+report_timing(tot_time_lbs, n_frames, "LBS")
+report_timing(tot_time_ours, n_frames, "ours")
+
 # =============================================================================
 #  Compute differences between LBS and Dynamic results   
 # =============================================================================
