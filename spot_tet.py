@@ -1,3 +1,9 @@
+
+import os
+import sys
+path_to_cpbd = "/Users/bartu/Desktop/Controllable_PBD_3D/" # !!!! EDIT !!!!
+sys.path.insert(0, path_to_cpbd)
+
 import taichi as ti
 import numpy as np
 
@@ -14,11 +20,30 @@ import time
 
 ti.init(arch=ti.x64, cpu_max_num_threads=1)
 
-# ========================== load data ==========================
-modelname = 'spot_high'
-tgf_path = f'assets/{modelname}/{modelname}.tgf'
-model_path = f'assets/{modelname}/{modelname}.mesh'
-weight_path = f'assets/{modelname}/{modelname}_w.txt'
+# =============================================================================
+# Editable parameters !!!!!!!!!!
+# =============================================================================
+modelname = 'spot_high' # "spot" or "spot_high"
+
+idxs = [6,7] # Indices to translate the handles (there are 8) 
+trans_base = np.array([0.0, 0.0, 0.0], dtype=np.float32)  # relative translation 
+pose_base = np.array([0.,  0., 0.]) # xyz rotation degrees
+
+save_path = "/Users/bartu/Documents/Github/Spring-Decomp/data/" + \
+            f"{modelname}/{modelname}_extracted.npz" # !!!! EDIT !!!!
+            
+# =============================================================================
+# Load data
+# =============================================================================
+tgf_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}.tgf')
+model_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}.mesh')
+weight_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}_w.txt')
+
+
+start_frame = 0
+end_frame = 200
+save_npz = True
+
 scale = 1.0
 repose = (0.0, 0.7, 0.0)
 
@@ -104,10 +129,7 @@ pbd.init_rest_status(0)
 pbd.init_rest_status(1)
 
 # ========================== usd rneder ==========================
-start_frame = 0
-end_frame = 200
-save_npz = True
-save_path = "/Users/bartu/Documents/Github/Spring-Decomp/data/" + f"{modelname}/{modelname}_extracted.npz"
+
 verts, handles = [], []
 handles_rigid = []
 if save_npz:
@@ -144,21 +166,18 @@ def set_movement():
   t = window.get_time() - 1.0
   p_input = points_ik.c_p_ref.to_numpy()
   
-  idxs = [6] # Indices to translate the handles (there are 8)
-  scale = 0.1
-  base_vec = np.array([0.0, 1.0, 1.0], dtype=np.float32)
   if t > 0.0:
-    translation_vec = base_vec * math.sin( t * math.pi) * scale
+    translation_vec = trans_base * math.sin( t * math.pi)
     
-    rot = Rotation.from_euler('xyz', np.array([10.,  2, 0.]) * math.sin( t * math.pi) , degrees=True)
+    rot = Rotation.from_euler('xyz', pose_base * math.sin( t * math.pi) , degrees=True)
     rot_mat = rot.as_matrix()
     
     for i in idxs:
         p = np.reshape(p_input[i], (3,))
         translation_from_rotation = (rot_mat @ p) - p
         
-        #p_input[i] += translation_vec
-        p_input[i] += translation_from_rotation
+        p_input[i] += translation_vec  
+        p_input[i] += translation_from_rotation 
 
   points.c_p_input.from_numpy(p_input)
   #points.c_rot.from_numpy(p_rot_input)
@@ -168,7 +187,7 @@ def set_movement():
     mesh.update_surface_verts()
     meshio.Mesh(mesh.surface_v_p.to_numpy(), [
         ("triangle", mesh.surface_f_i.to_numpy().reshape(-1, 3))
-    ]).write("out/spot_tet_ref.obj")
+    ]).write(os.path.join(path_to_cpbd, "out/spot_tet_ref.obj"))
     print("write to output obj file")
     print("control points:", points_ik.c_p)
     written[0] = True
