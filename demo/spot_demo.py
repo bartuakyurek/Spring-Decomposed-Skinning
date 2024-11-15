@@ -333,7 +333,7 @@ for i in range(n_frames):
     V_anim_rigid.append(V_lbs)
     J_anim_rigid.append(convert_points_to_bones(cur_handles))
     
-    tot_time_lbs += start_time - time.time()
+    tot_time_lbs += time.time() - start_time 
     # --------- Ours -----------------------------------------------------------
     # Prepare translation and rotations
     t = np.zeros((n_bones_dyn,3))
@@ -356,7 +356,7 @@ for i in range(n_frames):
     V_dyn = skinning.LBS_from_mat(verts_rest, W_dyn, M_hybrid, 
                                   use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
 
-    tot_time_ours += start_time - time.time()
+    tot_time_ours += time.time() - start_time 
     V_anim_dyn.append(V_dyn)
     J_anim_dyn.append(J_dyn)
 
