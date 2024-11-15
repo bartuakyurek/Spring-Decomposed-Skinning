@@ -16,26 +16,21 @@ Created on Thu Nov 12, 2024
 """
 
 import os
-import igl
 import numpy as np
 import pyvista as pv
 
 import __init__
-from src.global_vars import DATA_PATH, RESULT_PATH
-from src.skeleton import Skeleton, add_helper_bones
-from src.data import model_data
 from src import skinning
-from src.utils.linalg_utils import lerp, translation_vector_to_matrix
-from src.global_vars import RESULT_PATH
+from src.data import model_data
 from src.kinematics import inverse_kinematics
 from src.helper_handler import HelperBonesHandler
+from src.global_vars import DATA_PATH, RESULT_PATH
 from src.utils.linalg_utils import normalize_arr_np
-from src.skeleton import create_skeleton_from
-from src.kinematics import optimal_rigid_motion
+from src.skeleton import Skeleton, create_skeleton_from
+from src.utils.linalg_utils import translation_vector_to_matrix
 from src.render.pyvista_render_tools import (add_mesh, 
                                              add_skeleton_from_Skeleton, 
-                                             set_mesh_color_scalars,
-                                             set_mesh_color)
+                                             set_mesh_color_scalars)
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Main variables
@@ -57,26 +52,32 @@ SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig"
 
 # RENDER PARAMETERS
 RENDER_MESH = True
-RENDER_SKEL = True
+RENDER_SKEL = False
 WIREFRAME = False
-RENDER_PHYS_BASED = False
-AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
 
-OPACITY = 0.8
-MATERIAL_METALLIC = 0.0
-MATERIAL_ROUGHNESS = 0.2
+ADD_LIGHT = True
+LIGHT_POS = (2.0, 3.5, 3.5)
+#EYEDOME_LIGHT = True  # PyVista disables other subplots when eyedome is used in other subplots
+                       # See https://github.com/pyvista/pyvista/issues/256
+                       
+SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
+RENDER_PHYS_BASED = False
+OPACITY = 1.0
+MATERIAL_METALLIC = 0.2
+MATERIAL_ROUGHNESS = 1.0
+BASE_COLOR = [0.8,0.7,1.0] # RGB
 
 DEFAULT_BONE_COLOR = "white"
 CPBD_BONE_COLOR ="green" # CPBD stands for Controllable PBD (the paper we compare against)
 SPRING_BONE_COLOR = "blue"
 
-#COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
-#EYEDOME_LIGHT = False
-WINDOW_SIZE = (2112, 1200)
+COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
+WINDOW_SIZE = (1200, 1600)
 
 # SIMULATION PARAMETERS
 ALGO = "T"  
 
+AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
 COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
 POINT_SPRING = False # Currently it doesn't move at all if EDGE_CONSTRAINT=True
@@ -94,6 +95,7 @@ SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 SPOT_DATA_PATH = os.path.join(DATA_PATH, MODEL_NAME) 
 OBJ_PATH =  os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}.obj")
 TGF_PATH =  os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}.tgf")
+TEXTURE_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_texture.png")
 HELPER_RIG_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_rig_data.npz")
 SPOT_EXTRACTED_DATA_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_extracted.npz")
 
@@ -201,53 +203,78 @@ helper_rig = HelperBonesHandler(skeleton_dyn,
 # SETUP PLOTS
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 plotter = pv.Plotter(notebook=False, off_screen=False,
-                     window_size = WINDOW_SIZE, border=False, shape = (1,3))
+                     window_size = WINDOW_SIZE, border=False, shape = (3,1))
+
+def set_lights(plotter):
+    if ADD_LIGHT:
+        light = pv.Light(position=LIGHT_POS, light_type='scene light')
+        plotter.add_light(light)
 
 def adjust_camera_spot(plotter):
     plotter.camera.tight(padding=0.5, view="zy", adjust_render_window=False)
-    plotter.camera.azimuth = 180
+    plotter.camera.azimuth = 210
+
+#def add_texture(polydata, actor, img_path):
+#    tex = pv.read_texture(img_path)
+#    polydata.texture_map_to_plane(inplace=True)
+#    actor.texture = tex
+
+set_lights(plotter)
+#if EYEDOME_LIGHT: plotter.enable_eye_dome_lighting()
 
 # ---------- First Plot (LBS) ----------------
 plotter.subplot(0, 0)
+
 if RENDER_MESH: 
-    mesh_rigid, mesh_rigid_actor = add_mesh(plotter, verts_rest, faces, 
+    mesh_rigid, mesh_rigid_actor = add_mesh(plotter, verts_rest, faces,
+                                            color = BASE_COLOR,
                                             return_actor=True, 
                                             opacity=OPACITY, 
                                             show_edges=WIREFRAME,
                                             pbr=RENDER_PHYS_BASED, 
                                             metallic=MATERIAL_METALLIC, 
-                                            roughness=MATERIAL_ROUGHNESS)
+                                            roughness=MATERIAL_ROUGHNESS,
+                                            smooth_shading=SMOOTH_SHADING)
+    #if RENDER_TEXTURE:
+    #    add_texture(mesh_rigid, mesh_rigid_actor, TEXTURE_PATH)
   
 if RENDER_SKEL: 
     skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton_rigid, default_bone_color=DEFAULT_BONE_COLOR)
+
 adjust_camera_spot(plotter)
 frame_text_actor = plotter.add_text("0", (30,0), font_size=18) # Add frame number
 
 # ---------- Second Plot (CPBD) ----------------
-plotter.subplot(0, 1)
+plotter.subplot(1, 0)
 if RENDER_MESH: 
     mesh_cpbd, mesh_cpbd_actor = add_mesh(plotter, verts_rest, faces, 
+                                            color = BASE_COLOR,
                                             return_actor=True, 
                                             opacity=OPACITY, 
                                             show_edges=WIREFRAME,
                                             pbr=RENDER_PHYS_BASED, 
                                             metallic=MATERIAL_METALLIC, 
-                                            roughness=MATERIAL_ROUGHNESS)
+                                            roughness=MATERIAL_ROUGHNESS,
+                                            smooth_shading=SMOOTH_SHADING)
   
 if RENDER_SKEL: 
     skel_mesh_cpbd = add_skeleton_from_Skeleton(plotter, skeleton_rigid, default_bone_color=CPBD_BONE_COLOR)
+
+#set_lights(plotter)
 adjust_camera_spot(plotter)
 
 # ---------- Third Plot (Ours) ----------------
-plotter.subplot(0, 2)
+plotter.subplot(2, 0)
 if RENDER_MESH: 
     mesh_dyn, mesh_dyn_actor = add_mesh(plotter, verts_rest, faces, 
+                                            color = BASE_COLOR,
                                             return_actor=True, 
                                             opacity=OPACITY, 
                                             show_edges=WIREFRAME,
                                             pbr=RENDER_PHYS_BASED, 
                                             metallic=MATERIAL_METALLIC, 
-                                            roughness=MATERIAL_ROUGHNESS)
+                                            roughness=MATERIAL_ROUGHNESS,
+                                            smooth_shading=SMOOTH_SHADING)
 
 if RENDER_SKEL: 
     skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton_dyn, 
@@ -255,7 +282,9 @@ if RENDER_SKEL:
                                                is_smpl=True, # TODO: This is ridiculous, but I have to update the data cause I want to omit the root bone...
                                                default_bone_color=DEFAULT_BONE_COLOR, 
                                                spring_bone_color=SPRING_BONE_COLOR)
+
 adjust_camera_spot(plotter)
+#set_lights(plotter)
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # COMPUTE DEFORMATION
@@ -314,11 +343,20 @@ for i in range(n_frames):
     V_anim_dyn.append(V_dyn)
     J_anim_dyn.append(J_dyn)
     
-# --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# DISPLAY ANIMATION
-# --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#plotter.show()
+# =============================================================================
+#  Compute differences between LBS and Dynamic results   
+# =============================================================================
+V_anim_rigid = np.array(V_anim_rigid)
+V_anim_dyn = np.array(V_anim_dyn)
+distance_err_cpbd = np.linalg.norm(V_anim_rigid - verts_cpbd, axis=-1)  # (n_frames, n_verts)
+distance_err_dyn = np.linalg.norm(V_anim_rigid - V_anim_dyn, axis=-1)  # (n_frames, n_verts)
 
+normalized_dists_cpbd = normalize_arr_np(distance_err_cpbd)
+normalized_dists_dyn = normalize_arr_np(distance_err_dyn)
+
+# =============================================================================
+# Display animation
+# =============================================================================
 plotter.open_movie(RESULT_PATH + f"/{MODEL_NAME}_PBD_Complience_{COMPLIANCE}.mp4")
 for frame in range(n_frames):
     # Set data for renderer
@@ -333,8 +371,9 @@ for frame in range(n_frames):
         skel_mesh_dyn.points = J_anim_dyn[frame]
     
     # Color code jigglings 
-    #if COLOR_CODE:
-    #    set_mesh_color_scalars(mesh_dyn, normalized_dists[frame])  
+    if COLOR_CODE:
+        set_mesh_color_scalars(mesh_cpbd, normalized_dists_cpbd[frame])  
+        set_mesh_color_scalars(mesh_dyn, normalized_dists_dyn[frame])  
         
     frame_text_actor.input = str(frame+1)
     plotter.write_frame()   # Write a frame. This triggers a render.

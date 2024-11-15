@@ -56,7 +56,8 @@ def add_mesh(plotter,
              texture=None,
              pbr=False, 
              metallic=1.0, 
-             roughness=0.5):
+             roughness=0.5,
+             smooth_shading=False):
     
     assert faces.shape[-1] == 3, f"Non-triangular meshes are not supported yet. Expected faces has shape (n_faces, 3), got {faces.shape}"
     assert verts.shape[-1] == 3, f"Expected vertices to have shape (n_verts, 3), got {verts.shape}."
@@ -79,7 +80,7 @@ def add_mesh(plotter,
                                     pbr=pbr, 
                                     metallic=metallic,
                                     roughness=roughness,
-                                    
+                                    smooth_shading=smooth_shading
                                 )
     
     if return_actor:
