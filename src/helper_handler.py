@@ -26,7 +26,7 @@ class HelperBonesHandler:
                  mass_dscale=1.0, 
                  spring_dscale=1.0, dt=1./24,
                  simulation_mode="PBD",
-                 fixed_scale=True,
+                 fixed_scale=False,
                  edge_constraint=False,
                  compliance=0.0, # Only works for PBD
                  ):
