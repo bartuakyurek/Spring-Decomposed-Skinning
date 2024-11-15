@@ -26,8 +26,8 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 modelname = 'spot_high' # "spot" or "spot_high"
 
 idxs = [6,7] # Indices to translate the handles (there are 8) 
-trans_base = np.array([0.1, 0.0, 0.0], dtype=np.float32)  # relative translation 
-pose_base = np.array([0.,  0., 0.]) # xyz rotation degrees
+trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
+pose_base = np.array([10.,  0., 0.]) # xyz rotation degrees
 
 save_path = "/Users/bartu/Documents/Github/Spring-Decomp/data/" + \
             f"{modelname}/{modelname}_extracted.npz" # !!!! EDIT !!!!

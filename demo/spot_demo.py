@@ -52,7 +52,7 @@ EXTRACT_REST_OBJ = True
 MODEL_NAME = "spot_high" # "spot" or "spot_high"
 AVAILABLE_MODES = ["point springs", "helper rig"]
 MAKE_ALL_SPRING = True # Set true to turn all bones spring bones
-SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
+SKELETON_MODE = AVAILABLE_MODES[0] # "point springs" or "helper rig" 
 
 # RENDER PARAMETERS
 RENDER_MESH = True
@@ -75,7 +75,7 @@ CPBD_BONE_COLOR ="green" # CPBD stands for Controllable PBD (the paper we compar
 SPRING_BONE_COLOR = "blue"
 
 COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
-CLOSE_AFTER_FIRST_ITER = True
+CLOSE_AFTER_FIRST_ITER = False
 WINDOW_SIZE = (1200, 1600)
 
 # SIMULATION PARAMETERS
@@ -84,7 +84,7 @@ INTEGRATION = "PBD" # PBD or Euler
 
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
 COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
-EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
+EDGE_CONSTRAINT = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
 FIXED_SCALE = False
 POINT_SPRING = False # Currently it doesn't move at all if EDGE_CONSTRAINT=True
 FRAME_RATE = 24 # 24, 30, 60
@@ -113,7 +113,8 @@ with np.load(SPOT_EXTRACTED_DATA_PATH) as data:
     
     handle_locations_cpbd = data["handles_yoharol"]
     handle_locations_rigid = data["handles_rigid"]
-
+    handle_poses = data["handles_pose"]
+    handle_trans = data["handles_t"]
     original_weights = data["weights"]
     
 verts_rest = verts_cpbd[0]
@@ -299,13 +300,13 @@ adjust_camera_spot(plotter)
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # COMPUTE DEFORMATION
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-print(">> WARNING: This demo assumes the handles are only translated.")
+#print(">> WARNING: This demo assumes the handles are only translated.")
 def get_LBS_spot(cur_handles, prev_handles):
-    diff = cur_handles - prev_handles
-    M = np.array([translation_vector_to_matrix(t) for t in diff])
-    V_lbs = skinning.LBS_from_mat(verts_rest, W_rigid, M, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
+   diff = cur_handles - prev_handles
+   M = np.array([translation_vector_to_matrix(t) for t in diff])
+   V_lbs = skinning.LBS_from_mat(verts_rest, W_rigid, M, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
 
-    return V_lbs # Note: I didn't compute LBS joints via FK since we are given the positions
+   return V_lbs # Note: I didn't compute LBS joints via FK since we are given the positions
 
 def convert_points_to_bones(handles, flatten=True):
     point_bones =[[p,p] for p in handles]
@@ -321,15 +322,29 @@ V_anim_rigid = []
 J_anim_rigid = []
 rest_bone_locations = skeleton_dyn.get_rest_bone_locations(exclude_root=False)
 tot_time_lbs, tot_time_ours = 0.0, 0.0
+rest_handles = handle_locations_rigid[0]
 for i in range(n_frames):
     
     start_time = time.time()
-    cur_handles, rest_handles = handle_locations_rigid[i], handle_locations_rigid[0] #[i-1]
+    
+    ###
+    dummy_t, dummy_theta = np.zeros((1,3)),  np.zeros((1,3))
+    theta = np.append(dummy_theta, handle_poses[i], axis=0)
+    trans = np.append(dummy_t, handle_trans[i], axis=0)
+    rigidly_posed_locations = skeleton_rigid.pose_bones(theta, trans, degrees=True)
+    abs_rot_quat, abs_trans = skeleton_rigid.get_absolute_transformations(theta, trans, degrees=True)
+    M_rigid = skinning.get_transform_mats_from_quat_rots(abs_trans, abs_rot_quat)[1:] # TODO...
+   
+    V_lbs_dummy = skinning.LBS_from_mat(verts_rest, W_rigid, M_rigid, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
+    
+    hand_diff_dummy = rigidly_posed_locations[range(2,18,2)] -  handle_locations_rigid[i]
+    print(np.sum(hand_diff_dummy))
+    ####   
+    
+    cur_handles = handle_locations_rigid[i]
     diff = cur_handles - rest_handles
     
-    # --------- LBS -----------------------------------------------------------
-    
-    
+    # --------- LBS -----------------------------------------------------------    
     V_lbs = get_LBS_spot(cur_handles, rest_handles)
     V_anim_rigid.append(V_lbs)
     J_anim_rigid.append(convert_points_to_bones(cur_handles))
@@ -405,7 +420,6 @@ while (plotter.render_window):
         set_mesh_color_scalars(mesh_dyn, normalized_dists_dyn[frame])  
         
     frame_text_actor.input = str(frame+1)
-    
     
     if frame < n_frames-1: 
         frame += 1
