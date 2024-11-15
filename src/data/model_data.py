@@ -55,7 +55,7 @@ model_dict = {
 
 def adjust_rig(B, MODEL_NAME):
     
-    if MODEL_NAME == "spot":
+    if MODEL_NAME == "spot" or MODEL_NAME == "spot_high":
         r = Rotation.from_euler('x', -90, degrees=True)
         for i in range(len(B)): B[i] = r.apply(B[i])
         
