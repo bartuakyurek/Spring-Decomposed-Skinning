@@ -10,7 +10,9 @@ import numpy as np
 
 from .utils.linalg_utils import compose_rigid_transform_matrix
 from .global_vars import VERBOSE
-
+# =============================================================================
+# Bone Class
+# =============================================================================
 class Bone():
     def __init__(self, endpoint_location, idx, parent=None):
         assert type(idx) == int, f"Expected bone index to be type int, got {type(idx)}"
@@ -112,7 +114,9 @@ class Bone():
 
 
   
-        
+# =============================================================================
+#  Skeleton Class       
+# =============================================================================
 class Skeleton():
     def __init__(self, root_vec=[0., 0., 1.]):
         """
@@ -437,9 +441,9 @@ class Skeleton():
             
         return np.array(bone_endpoints)
     
-# ---------------------------------------------------------------------------- 
-# Declare helper functions
-# ---------------------------------------------------------------------------- 
+# =============================================================================
+# Helper Routines    
+# =============================================================================
 # TODO: Could we move these functions to skeleton class so that every other test
 # can utilize them?
 def create_skeleton(joint_locations, kintree):

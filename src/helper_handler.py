@@ -106,50 +106,6 @@ class HelperBonesHandler:
                                                  free mass. Got {len(self.free_idxs)} masses \
                                                  for {n_helper} jiggle bones."
         
-        
-    def _preserve_bone_length(self, bone_start : np.ndarray,  
-                                    free_mass_idx  : int, 
-                                    original_length : float ):
-        """
-        Given the original length and start-end locations of the bone, rescale 
-        the bone vector to its original length. The scaling is done at the bone 
-        tip. 
-
-        Parameters
-        ----------
-        bone_start : np.ndarray
-            3D vector of the bone start point.
-        free_mass_idx : int
-            Index of the free mass that we'll consider as the new bone length.
-        original_length : float
-            Original bone length that is from the T-pose. 
-
-        Returns
-        -------
-        adjust_vec : TYPE
-            DESCRIPTION.
-
-        """
-        
-        assert type(free_mass_idx) is int or np.int64, f"Expected free mass type int, got {type(free_mass_idx)}"
-        
-        free_mass = self.simulator.masses[free_mass_idx] 
-        assert free_mass.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {free_mass.mass}."
-        
-        direction = bone_start - free_mass.center
-        d_norm = np.linalg.norm(direction) 
-        scale = d_norm - original_length
-        adjust_vec = (direction/d_norm) * scale # Normalize direction and scale it
-        
-        # Change the free mass location aligned with the bone length.
-        self.simulator.masses[free_mass_idx].center = free_mass.center + adjust_vec
-        
-        # Sanity check
-        new_length = np.linalg.norm(bone_start - self.simulator.masses[free_mass_idx].center)
-        assert np.abs(new_length - original_length) < 1e-4, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {original_length}." 
-        
-        return adjust_vec, self.simulator.masses[free_mass_idx].center
-    
     def update_bones(self, rigidly_posed_locations, dt=None):
         """
         Given the relative rotations, update the skeleton joints with mass-spring
@@ -168,11 +124,7 @@ class HelperBonesHandler:
             array has shape (2*(n_bones-1), 3) where every consecutive points 
             are defining two endpoints of a bone, where bone is a line segment.
         """
-        # ---------------------------------------------------------------------
-        # Precomputation checks
-        # ---------------------------------------------------------------------
-
-
+ 
         # ---------------------------------------------------------------------
         # Compute the new mass positions and update helper bone locations
         # ---------------------------------------------------------------------

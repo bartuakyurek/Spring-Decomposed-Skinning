@@ -26,6 +26,9 @@ _DEFAULT_MASS = 2.5
 _DEFAULT_SPRING_SCALE = 1.
 _DEFAULT_MASS_SCALE = 1.
 
+# =============================================================================
+# Particle Class
+# =============================================================================
 class Particle:
     def __init__(self, 
                  coordinate, 
@@ -115,7 +118,10 @@ class Particle:
         
         tot_force += self.mass * self.gravity # F = mg where g is graviational acceleration
         return tot_force
-        
+
+# =============================================================================
+# Spring Class
+# =============================================================================
 class Spring:
     def __init__(self, 
                  beginning_mass : Particle, 
@@ -176,7 +182,9 @@ class Spring:
         assert not np.any(np.abs(force) > 1e10), f"WARNING: System got unstable with force {force}, stopping execution..."
         return force
         
-        
+# =============================================================================
+# Mass Spring System Class     
+# =============================================================================
 class MassSpringSystem:
     def __init__(self, dt, mode="PBD", edge_constraint=False):
         print(">> INFO: Initiated empty mass-spring system")
