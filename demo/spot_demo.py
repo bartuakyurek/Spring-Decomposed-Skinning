@@ -323,11 +323,12 @@ rest_bone_locations = skeleton_dyn.get_rest_bone_locations(exclude_root=False)
 tot_time_lbs, tot_time_ours = 0.0, 0.0
 for i in range(n_frames):
     
+    start_time = time.time()
     cur_handles, rest_handles = handle_locations_rigid[i], handle_locations_rigid[0] #[i-1]
     diff = cur_handles - rest_handles
     
     # --------- LBS -----------------------------------------------------------
-    start_time = time.time()
+    
     
     V_lbs = get_LBS_spot(cur_handles, rest_handles)
     V_anim_rigid.append(V_lbs)
@@ -335,13 +336,12 @@ for i in range(n_frames):
     
     tot_time_lbs += time.time() - start_time 
     # --------- Ours -----------------------------------------------------------
+    start_time = time.time()
     # Prepare translation and rotations
     t = np.zeros((n_bones_dyn,3))
     t[original_bones,:] = diff
     pose = np.zeros((n_bones_dyn, 3))
-    
-    start_time = time.time()
-    
+     
     # Pose with FK 
     rigidly_posed_handles = skeleton_dyn.pose_bones(pose, t, degrees=True)    
     dyn_posed_handles = helper_rig.update_bones(rigidly_posed_handles)
