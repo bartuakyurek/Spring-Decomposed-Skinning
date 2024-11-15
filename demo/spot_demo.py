@@ -75,6 +75,7 @@ WINDOW_SIZE = (1200, 1600)
 
 # SIMULATION PARAMETERS
 ALGO = "T" # ["T", "RST", "SVD"] RST doesn't work good with this demo, SVD never works good either
+INTEGRATION = "Euler" # PBD or Euler
 
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
 COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
@@ -196,7 +197,8 @@ helper_rig = HelperBonesHandler(skeleton_dyn,
                                 dt            = TIME_STEP,
                                 point_spring  = POINT_SPRING,
                                 edge_constraint   = EDGE_CONSTRAINT,
-                                compliance    = COMPLIANCE) 
+                                compliance    = COMPLIANCE,
+                                simulation_mode = INTEGRATION) 
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # SETUP PLOTS
