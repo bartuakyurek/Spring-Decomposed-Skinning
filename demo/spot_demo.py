@@ -52,7 +52,7 @@ EXTRACT_REST_OBJ = True
 MODEL_NAME = "spot_high" # "spot" or "spot_high"
 AVAILABLE_MODES = ["point springs", "helper rig"]
 MAKE_ALL_SPRING = True # Set true to turn all bones spring bones
-SKELETON_MODE = AVAILABLE_MODES[0] # "point springs" or "helper rig" 
+SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
 
 # RENDER PARAMETERS
 RENDER_MESH = True
@@ -75,7 +75,7 @@ CPBD_BONE_COLOR ="green" # CPBD stands for Controllable PBD (the paper we compar
 SPRING_BONE_COLOR = "blue"
 
 COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
-CLOSE_AFTER_FIRST_ITER = False
+CLOSE_AFTER_ITER = 1 # Set to False or an int, for number of repetitions before closing
 WINDOW_SIZE = (1200, 1600)
 
 # SIMULATION PARAMETERS
@@ -85,14 +85,14 @@ INTEGRATION = "PBD" # PBD or Euler
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
 COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
-FIXED_SCALE = False
+FIXED_SCALE = True
 POINT_SPRING = False # Currently it doesn't move at all if EDGE_CONSTRAINT=True
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 1.
 STIFFNESS = 150.
 DAMPING = 10.  
-MASS_DSCALE = 0.2       # Mass velocity damping (Use [0.0, 1.0] range to slow down)
+MASS_DSCALE = 0.3       # Mass velocity damping (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -401,7 +401,7 @@ normalized_dists_dyn = normalize_arr_np(distance_err_dyn)
 plotter.open_movie(os.path.join(RESULT_PATH, f"{MODEL_NAME}_PBD_Complience_{COMPLIANCE}.mp4"))
 #for frame in range(n_frames):
 
-frame = 0
+frame, rep = 0, 0
 while (plotter.render_window):
     # Set data for renderer
     if RENDER_MESH: 
@@ -426,7 +426,9 @@ while (plotter.render_window):
         plotter.write_frame()   # Write a frame. This triggers a render.
         
     else: 
-        if CLOSE_AFTER_FIRST_ITER: break
+        rep += 1
+        if CLOSE_AFTER_ITER: 
+            if rep == CLOSE_AFTER_ITER: break
         frame = 0
 
 plotter.close()
