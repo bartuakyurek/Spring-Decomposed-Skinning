@@ -196,7 +196,7 @@ helper_rig = HelperBonesHandler(skeleton_dyn,
                                 spring_dscale = SPRING_DSCALE,
                                 dt            = TIME_STEP,
                                 point_spring  = POINT_SPRING,
-                                fixed_scale   = EDGE_CONSTRAINT,
+                                edge_constraint   = EDGE_CONSTRAINT,
                                 compliance    = COMPLIANCE) 
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -357,7 +357,7 @@ normalized_dists_dyn = normalize_arr_np(distance_err_dyn)
 # =============================================================================
 # Display animation
 # =============================================================================
-plotter.open_movie(RESULT_PATH + f"/{MODEL_NAME}_PBD_Complience_{COMPLIANCE}.mp4")
+plotter.open_movie(os.path.join(RESULT_PATH, f"{MODEL_NAME}_PBD_Complience_{COMPLIANCE}.mp4"))
 for frame in range(n_frames):
     # Set data for renderer
     if RENDER_MESH: 

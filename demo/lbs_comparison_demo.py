@@ -8,7 +8,7 @@ Created on Thu Oct 10 14:34:34 2024
 @author: bartu
 """
 
-
+import os
 import igl
 import numpy as np
 import pyvista as pv
@@ -48,6 +48,7 @@ ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
 
 FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
+EDGE_CONSTRAINT = False # Recommended to set either FIXED_SCALE or EDGE_CONSTRAINT True
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
@@ -96,6 +97,7 @@ helper_rig = HelperBonesHandler(skeleton,
                                 dt            = TIME_STEP,
                                 point_spring  = POINT_SPRING,
                                 fixed_scale   = FIXED_SCALE, 
+                                edge_constraint = EDGE_CONSTRAINT,
                                 simulation_mode = INTEGRATION) 
 
 # ---------------------------------------------------------------------------- 
@@ -141,7 +143,7 @@ if RENDER_MESH:
     
  
     
-plotter.open_movie(RESULT_PATH + f"/{MODEL_NAME}-{ALGO}.mp4")
+plotter.open_movie(os.path.join(RESULT_PATH, f"{MODEL_NAME}-{ALGO}.mp4"))
 n_poses = keyframe_poses.shape[0]
 n_bones = len(skeleton.rest_bones)
 trans = np.zeros((n_bones, 3)) # TODO: remove +1 when you remove root bone issue
