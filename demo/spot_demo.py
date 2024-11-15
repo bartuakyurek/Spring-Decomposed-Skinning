@@ -75,6 +75,7 @@ CPBD_BONE_COLOR ="green" # CPBD stands for Controllable PBD (the paper we compar
 SPRING_BONE_COLOR = "blue"
 
 COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
+CLOSE_AFTER_FIRST_ITER = True
 WINDOW_SIZE = (1200, 1600)
 
 # SIMULATION PARAMETERS
@@ -84,6 +85,7 @@ INTEGRATION = "PBD" # PBD or Euler
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
 COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
+FIXED_SCALE = False
 POINT_SPRING = False # Currently it doesn't move at all if EDGE_CONSTRAINT=True
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
@@ -205,6 +207,7 @@ helper_rig = HelperBonesHandler(skeleton_dyn,
                                 point_spring  = POINT_SPRING,
                                 edge_constraint   = EDGE_CONSTRAINT,
                                 compliance    = COMPLIANCE,
+                                fixed_scale = FIXED_SCALE,
                                 simulation_mode = INTEGRATION) 
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -381,7 +384,10 @@ normalized_dists_dyn = normalize_arr_np(distance_err_dyn)
 # Display animation
 # =============================================================================
 plotter.open_movie(os.path.join(RESULT_PATH, f"{MODEL_NAME}_PBD_Complience_{COMPLIANCE}.mp4"))
-for frame in range(n_frames):
+#for frame in range(n_frames):
+
+frame = 0
+while (plotter.render_window):
     # Set data for renderer
     if RENDER_MESH: 
         mesh_rigid.points = V_anim_rigid[frame]
@@ -399,7 +405,15 @@ for frame in range(n_frames):
         set_mesh_color_scalars(mesh_dyn, normalized_dists_dyn[frame])  
         
     frame_text_actor.input = str(frame+1)
-    plotter.write_frame()   # Write a frame. This triggers a render.
+    
+    
+    if frame < n_frames-1: 
+        frame += 1
+        plotter.write_frame()   # Write a frame. This triggers a render.
+        
+    else: 
+        if CLOSE_AFTER_FIRST_ITER: break
+        frame = 0
 
 plotter.close()
 plotter.deep_clean()
