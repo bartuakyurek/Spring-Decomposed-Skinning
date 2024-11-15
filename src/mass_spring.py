@@ -175,9 +175,9 @@ class Spring:
         else:
             print(">> WARNING: Unexpected case occured, given mass location does not exist for this spring. No force is exerted.")
         
-        if verbose:
-            if LA.norm(self.m1.velocity) + LA.norm(self.m2.velocity) < tol: 
-                print(f">>> Equilibrium reached at distance {np.round(distance,6)} with spring rest length {np.round(self.rest_length,6)}")
+        # if verbose:
+        #     if LA.norm(self.m1.velocity) + LA.norm(self.m2.velocity) < tol: 
+        #         print(f">>> Equilibrium reached at distance {np.round(distance,6)} with spring rest length {np.round(self.rest_length,6)}")
             
         assert not np.any(np.abs(force) > 1e10), f"WARNING: System got unstable with force {force}, stopping execution..."
         return force
