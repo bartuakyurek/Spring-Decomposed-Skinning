@@ -26,7 +26,7 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 modelname = 'spot_high' # "spot" or "spot_high"
 
 idxs = [6,7] # Indices to translate the handles (there are 8) 
-trans_base = np.array([0.0, 0.0, 0.0], dtype=np.float32)  # relative translation 
+trans_base = np.array([0.1, 0.0, 0.0], dtype=np.float32)  # relative translation 
 pose_base = np.array([0.,  0., 0.]) # xyz rotation degrees
 
 save_path = "/Users/bartu/Documents/Github/Spring-Decomp/data/" + \
@@ -129,9 +129,14 @@ pbd.init_rest_status(0)
 pbd.init_rest_status(1)
 
 # ========================== usd rneder ==========================
+n_handles = len(points.c_p.to_numpy())
+rest_pose = np.zeros((n_handles, 3))
+rest_t = np.zeros((n_handles, 3))
 
 verts, handles = [], []
 handles_rigid = []
+handles_pose = []
+handles_t = []
 if save_npz:
   
   point_color = np.zeros((points.n_points, 3), dtype=np.float32)
@@ -142,9 +147,12 @@ if save_npz:
   verts.append(mesh.surface_v_p.to_numpy())
   faces_np = mesh.surface_f_i.to_numpy() 
   weights_np = points.weights_np[mesh.surface_v_i.to_numpy()] # To extract weights of surface
-  handles.append(points.c_p.to_numpy()) # _input
-  handles_rigid.append(points.c_p_input.to_numpy()) 
   
+  handles.append(points.c_p.to_numpy()) # Dynamically posed handles
+  handles_rigid.append(points.c_p_input.to_numpy()) # Rigidly posed handles
+  
+  handles_pose.append(np.array(rest_pose))
+  handles_t.append(np.array(rest_t))
   def update_usd(frame: int):
     if frame < start_frame or frame > end_frame:
         return
@@ -155,32 +163,40 @@ if save_npz:
     verts.append(mesh.surface_v_p.to_numpy())
     handles.append(points.c_p.to_numpy()) #_input
     handles_rigid.append(points.c_p_input.to_numpy()) #  try also c_p_input, it might be the same
-
+    
+    handles_pose.append(np.array(rest_pose))
+    handles_t.append(np.array(rest_t))
 
 # =============================================================================
 # Set movement here
 # =============================================================================
 # ========================== use input ========================================
 written = [False]
+
 def set_movement():
   t = window.get_time() - 1.0
-  p_input = points_ik.c_p_ref.to_numpy()
+  p_input = points_ik.c_p_ref.to_numpy() # Handles at rest
+  #rest_pose = np.zeros((n_handles, 3))
+  #rest_t = np.zeros((n_handles, 3))
   
   if t > 0.0:
-    translation_vec = trans_base * math.sin( t * math.pi)
+    translation_vec = trans_base * math.sin( t * math.pi) # Translation from rest -> posed
     
-    rot = Rotation.from_euler('xyz', pose_base * math.sin( t * math.pi) , degrees=True)
+    rotation_degrees = pose_base * math.sin( t * math.pi) # Rotation from rest -> posed
+    rot = Rotation.from_euler('xyz', rotation_degrees , degrees=True)
     rot_mat = rot.as_matrix()
     
     for i in idxs:
-        p = np.reshape(p_input[i], (3,))
-        translation_from_rotation = (rot_mat @ p) - p
+        
+        translation_from_rotation = (rot_mat @ p_input[i]) - p_input[i]
         
         p_input[i] += translation_vec  
         p_input[i] += translation_from_rotation 
-
+        
+        rest_pose[i] = rotation_degrees # Save rotation for skinning
+        rest_t[i] = translation_vec # Save translation for skinning
+    
   points.c_p_input.from_numpy(p_input)
-  #points.c_rot.from_numpy(p_rot_input)
 
   if abs(0.5 * t - (-0.5)) < 1e-2 and not written[0]:
     import meshio
@@ -232,13 +248,20 @@ if save_npz:
   handles_np = np.array(handles)
   faces_np = np.reshape(faces_np, (-1,3)) 
   handles_rigid_np = np.array(handles_rigid)
+  
+  handles_pose_np = np.array(handles_pose)
+  handles_t_np = np.array(handles_t)
+  
   print(">> WARNING: Assuming every face is triangular.")
   
   data  = {"verts_yoharol":verts_np, 
            "faces": faces_np, 
            "weights" : weights_np,
            "handles_yoharol":handles_np,
-           "handles_rigid": handles_rigid}
+           "handles_rigid": handles_rigid_np,
+           "handles_t" : handles_t_np,
+           "handles_pose" : handles_pose_np}
+  
   np.savez(save_path, **data)
   print("Saved data at ", save_path)
   
