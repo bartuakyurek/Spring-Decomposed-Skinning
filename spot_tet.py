@@ -7,13 +7,15 @@ from cons import deform3d, framework
 import compdyn.base, compdyn.inverse, compdyn.IK, compdyn.point
 from utils import objs
 from interface import usd_objs, usd_render
+from scipy.spatial.transform import Rotation
 
+import math
 import time
 
 ti.init(arch=ti.x64, cpu_max_num_threads=1)
 
 # ========================== load data ==========================
-modelname = 'spot'
+modelname = 'spot_high'
 tgf_path = f'assets/{modelname}/{modelname}.tgf'
 model_path = f'assets/{modelname}/{modelname}.mesh'
 weight_path = f'assets/{modelname}/{modelname}_w.txt'
@@ -103,7 +105,7 @@ pbd.init_rest_status(1)
 
 # ========================== usd rneder ==========================
 start_frame = 0
-end_frame = 500
+end_frame = 200
 save_npz = True
 save_path = "/Users/bartu/Documents/Github/Spring-Decomp/data/" + f"{modelname}/{modelname}_extracted.npz"
 verts, handles = [], []
@@ -126,32 +128,40 @@ if save_npz:
         return
     
     print("update verts and handles at frame", frame)
-
     mesh.update_surface_verts()    
     
     verts.append(mesh.surface_v_p.to_numpy())
     handles.append(points.c_p.to_numpy()) #_input
     handles_rigid.append(points.c_p_input.to_numpy()) #  try also c_p_input, it might be the same
 
-# ========================== use input ==========================
-import math
 
+# =============================================================================
+# Set movement here
+# =============================================================================
+# ========================== use input ========================================
 written = [False]
-
 def set_movement():
   t = window.get_time() - 1.0
   p_input = points_ik.c_p_ref.to_numpy()
-  #c_p_rigid = points.c_p_ref.to_numpy()
-
-  idxs = [6]
+  
+  idxs = [6] # Indices to translate the handles (there are 8)
+  scale = 0.1
+  base_vec = np.array([0.0, 1.0, 1.0], dtype=np.float32)
   if t > 0.0:
-    translation_vec = np.array([0.0, 1.0, 1.0], dtype=np.float32) * math.sin(0.5 * t * (2.0 * math.pi)) * 0.25
+    translation_vec = base_vec * math.sin( t * math.pi) * scale
+    
+    rot = Rotation.from_euler('xyz', np.array([10.,  2, 0.]) * math.sin( t * math.pi) , degrees=True)
+    rot_mat = rot.as_matrix()
+    
     for i in idxs:
-        p_input[i] += translation_vec
-        #c_p_rigid[i] += translation_vec
+        p = np.reshape(p_input[i], (3,))
+        translation_from_rotation = (rot_mat @ p) - p
+        
+        #p_input[i] += translation_vec
+        p_input[i] += translation_from_rotation
 
   points.c_p_input.from_numpy(p_input)
-  #points.c_p_rigid.from_numpy(c_p_rigid)
+  #points.c_rot.from_numpy(p_rot_input)
 
   if abs(0.5 * t - (-0.5)) < 1e-2 and not written[0]:
     import meshio
@@ -162,7 +172,6 @@ def set_movement():
     print("write to output obj file")
     print("control points:", points_ik.c_p)
     written[0] = True
-
 
 t_total = 0.0
 t_ik = 0.0
@@ -185,9 +194,9 @@ while window.running():
     pbd.update_vel()
 
   t_total += time.time() - t
-  if window.get_total_frames() == 480:
-    print(f'average time: {t_total / 480}')
-    print(f'average ik time: {t_ik / 480}')
+  if window.get_total_frames() == end_frame:
+    print(f'average time: {t_total / end_frame * 1000} ms')
+    print(f'average ik time: {t_ik / end_frame * 1000} ms')
 
   if save_npz:
     update_usd(window.get_total_frames())
@@ -196,7 +205,9 @@ while window.running():
   window.render()
   window.show()
 
-window.terminate()
+# =============================================================================
+# Save after window loop
+# =============================================================================
 if save_npz:
   verts_np = np.array(verts)
   handles_np = np.array(handles)
@@ -211,3 +222,5 @@ if save_npz:
            "handles_rigid": handles_rigid}
   np.savez(save_path, **data)
   print("Saved data at ", save_path)
+  
+window.terminate()
