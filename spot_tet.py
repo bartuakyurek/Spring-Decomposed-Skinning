@@ -26,7 +26,7 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 modelname = 'spot_high' # "spot" or "spot_high"
 
 idxs = [4,5,6,7] # Indices to translate the handles (there are 8) 
-fixed = [2, 3, 7] # Fixed handles
+fixed = [0, 1, 2, 3, 7] # Fixed handles
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
 pose_base = np.array([10.,  0., 0.]) # xyz rotation degrees
 
@@ -248,6 +248,7 @@ if save_npz:
            "weights" : weights_np,
            "handles_yoharol":handles_np,
            "fixed_yoharol" : fixed,
+           "user_input" : idxs,
            "handles_rigid": handles_rigid_np,
            "handles_t" : handles_t_np,
            "handles_pose" : handles_pose_np}

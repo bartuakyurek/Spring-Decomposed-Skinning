@@ -75,6 +75,7 @@ DEFAULT_BONE_COLOR = "white"
 CPBD_BONE_COLOR ="green" # CPBD stands for Controllable PBD (the paper we compare against)
 CPBD_FIXED_BONE_COLOR = "red"
 SPRING_BONE_COLOR = "blue"
+LBS_INPUT_BONE_COLOR = "yellow"
 
 COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
 CLOSE_AFTER_ITER = 1 # Set to False or an int, for number of repetitions before closing
@@ -113,6 +114,7 @@ with np.load(SPOT_EXTRACTED_DATA_PATH) as data:
     verts_cpbd = data["verts_yoharol"]
     faces = data["faces"]
     fixed_handles = data["fixed_yoharol"]
+    user_input_idxs = data["user_input"]
     
     handle_locations_cpbd = data["handles_yoharol"]
     handle_locations_rigid = data["handles_rigid"]
@@ -254,7 +256,10 @@ if RENDER_MESH:
     #    add_texture(mesh_rigid, mesh_rigid_actor, TEXTURE_PATH)
   
 if RENDER_SKEL: 
-    skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton_rigid, default_bone_color=DEFAULT_BONE_COLOR)
+    skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton_rigid, 
+                                                 default_bone_color=DEFAULT_BONE_COLOR,
+                                                 alt_idxs=user_input_idxs,
+                                                 alt_bone_color=LBS_INPUT_BONE_COLOR)
 
 adjust_camera_spot(plotter)
 frame_text_actor = plotter.add_text("0", (30,0), font_size=18) # Add frame number
