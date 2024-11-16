@@ -34,11 +34,11 @@ MODEL_NAME = "duck" # Available options: "duck", "blob", "cloth", "monstera"
 
 COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
 WIREFRAME = False
-RENDER_MESH = True
-RENDER_SKEL = False
+RENDER_MESH = False
+RENDER_SKEL = True
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = True
-OPACITY = 1.0
+OPACITY = 0.6
 MATERIAL_METALLIC = 0.0
 MATERIAL_ROUGHNESS = 0.2
 WINDOW_SIZE = (1500 * 2, 1200)
@@ -216,15 +216,13 @@ for frame in range(n_frames):
     if RENDER_MESH: 
         mesh_rigid.points = V_anim_rigid[frame]
         mesh_dyn.points = V_anim_dyn[frame]
+        if COLOR_CODE:  # Color code jigglings 
+            set_mesh_color_scalars(mesh_dyn, normalized_dists[frame])  
         
     if RENDER_SKEL: 
         skel_mesh_rigid.points = J_anim_rigid[frame] 
         skel_mesh_dyn.points = J_anim_dyn[frame]
     
-    # Color code jigglings 
-    if COLOR_CODE:
-        set_mesh_color_scalars(mesh_dyn, normalized_dists[frame])  
-        
     frame_text_actor.input = str(frame+1)
     plotter.write_frame()   # Write a frame. This triggers a render.
     
