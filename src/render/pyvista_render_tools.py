@@ -218,3 +218,15 @@ def add_skeleton_from_Skeleton(plotter, skeleton, alt_idxs=None, is_smpl=False,
     
     if return_actor: return skel_mesh, (bones_actor, joints_actor)
     return skel_mesh
+
+
+"""
+def save_texture_coordinates_as_obj(mesh_polydata):
+    mesh_polydata.texture_map_to_plane(inplace=True)
+    tc = mesh_polydata.active_texture_coordinates
+    
+    x, y = np.meshgrid(tc[:,0], tc[:,1])
+    z = np.zeros_like(x)
+    
+    grid = pv.StructuredGrid(x, y, z)
+"""

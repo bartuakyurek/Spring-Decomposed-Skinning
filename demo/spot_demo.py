@@ -56,9 +56,11 @@ SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig"
 USE_ORIGINAL_WEIGHTS = False # To keep/override the given weights of original handles in helper rig mode
 
 # RENDER PARAMETERS
-RENDER_MESH = False
+RENDER_MESH = True
 RENDER_SKEL = True
 WIREFRAME = False
+RENDER_TEXTURE = True # Automatically treated as False if COLOR_CODE is True
+COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
 
 ADD_LIGHT = True
 LIGHT_INTENSITY = 0.6 # Between [0, 1]
@@ -77,7 +79,6 @@ CPBD_FIXED_BONE_COLOR = "red"
 SPRING_BONE_COLOR = "blue"
 LBS_INPUT_BONE_COLOR = "yellow"
 
-COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
 CLOSE_AFTER_ITER = 1 # Set to False or an int, for number of repetitions before closing
 WINDOW_SIZE = (1200, 1600)
 
@@ -104,7 +105,7 @@ SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 SPOT_DATA_PATH = os.path.join(DATA_PATH, MODEL_NAME) 
 OBJ_PATH =  os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}.obj")
 TGF_PATH =  os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}.tgf")
-TEXTURE_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_texture.png")
+#TEXTURE_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_texture.png")
 HELPER_RIG_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_rig_data.npz")
 SPOT_EXTRACTED_DATA_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_extracted.npz")
 
@@ -220,9 +221,6 @@ helper_rig = HelperBonesHandler(skeleton_dyn,
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # SETUP PLOTS
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-plotter = pv.Plotter(notebook=False, off_screen=False,
-                     window_size = WINDOW_SIZE, border=False, shape = (3,1))
-
 def set_lights(plotter):
     if ADD_LIGHT:
         light = pv.Light(position=LIGHT_POS, light_type='headlight', intensity=LIGHT_INTENSITY)
@@ -232,13 +230,30 @@ def adjust_camera_spot(plotter):
     plotter.camera.tight(padding=0.5, view="zy", adjust_render_window=False)
     plotter.camera.azimuth = 210
 
-#def add_texture(polydata, actor, img_path):
-#    tex = pv.read_texture(img_path)
-#    polydata.texture_map_to_plane(inplace=True)
-#    actor.texture = tex
+
+def add_texture(polydata, actor, img_path=None):
+    if img_path is None:
+        arr = np.array([
+                        [255, 255, 255],
+                        [255, 0, 0],
+                        [0, 255, 0],
+                        [0, 0, 255]
+                        ],dtype=np.uint8)
+        
+        arr = arr.reshape((2, 2, 3))
+        tex = pv.Texture(arr)
+    else:
+        tex = pv.read_texture(img_path)
+    
+    polydata.texture_map_to_plane(inplace=True)
+    actor.texture = tex
+
+
+# Create plotter and set lights
+plotter = pv.Plotter(notebook=False, off_screen=False,
+                     window_size = WINDOW_SIZE, border=False, shape = (3,1))
 
 set_lights(plotter)
-
 # ---------- First Plot (LBS) ----------------
 plotter.subplot(0, 0)
 
@@ -252,8 +267,8 @@ if RENDER_MESH:
                                             metallic=MATERIAL_METALLIC, 
                                             roughness=MATERIAL_ROUGHNESS,
                                             smooth_shading=SMOOTH_SHADING)
-    #if RENDER_TEXTURE:
-    #    add_texture(mesh_rigid, mesh_rigid_actor, TEXTURE_PATH)
+    if not COLOR_CODE and RENDER_TEXTURE:
+         add_texture(mesh_rigid, mesh_rigid_actor)#, TEXTURE_PATH)
   
 if RENDER_SKEL: 
     skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton_rigid, 
@@ -276,7 +291,10 @@ if RENDER_MESH:
                                             metallic=MATERIAL_METALLIC, 
                                             roughness=MATERIAL_ROUGHNESS,
                                             smooth_shading=SMOOTH_SHADING)
-  
+    
+    if not COLOR_CODE and RENDER_TEXTURE:
+       add_texture(mesh_cpbd, mesh_cpbd_actor)
+       
 if RENDER_SKEL: 
     skel_mesh_cpbd = add_skeleton_from_Skeleton(plotter, skeleton_rigid, 
                                                 default_bone_color=CPBD_BONE_COLOR,
@@ -298,6 +316,8 @@ if RENDER_MESH:
                                             metallic=MATERIAL_METALLIC, 
                                             roughness=MATERIAL_ROUGHNESS,
                                             smooth_shading=SMOOTH_SHADING)
+    if not COLOR_CODE and RENDER_TEXTURE:
+       add_texture(mesh_dyn, mesh_dyn_actor)
 
 if RENDER_SKEL: 
     skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton_dyn, 
