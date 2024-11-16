@@ -1,5 +1,7 @@
 igl
-torch
+usd-core --> for cpbd comparison
+torch --> for smpl
+h5py --> for smpl
 pyvista
 imageio-ffmpeg
 
