@@ -54,10 +54,11 @@ AVAILABLE_MODES = ["point springs", "helper rig"]
 MAKE_ALL_SPRING = False # Set true to turn all bones spring bones
 SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
 USE_ORIGINAL_WEIGHTS = False # To keep/override the given weights of original handles in helper rig mode
+USE_POINT_HANDLES_IN_OURS = True # Render the handles as points instead of bones (to match with given point handle rig)
 
 # RENDER PARAMETERS
-RENDER_MESH = True
-RENDER_SKEL = False
+RENDER_MESH = False
+RENDER_SKEL = True
 WIREFRAME = True
 RENDER_TEXTURE = False # Automatically treated as False if COLOR_CODE is True
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
@@ -79,7 +80,7 @@ CPBD_FIXED_BONE_COLOR = "red"
 SPRING_BONE_COLOR = "blue"
 LBS_INPUT_BONE_COLOR = "yellow"
 
-CLOSE_AFTER_ITER = 1 # Set to False or an int, for number of repetitions before closing
+CLOSE_AFTER_ITER = 2 # Set to False or an int, for number of repetitions before closing
 WINDOW_SIZE = (1200, 1600)
 
 # SIMULATION PARAMETERS
@@ -181,15 +182,18 @@ else: # Load helper rig as an addition to rigid rig
         B[rigid_idx, 1] = handle_locations_rest[i]
         
         # Adjust startpoint
-        kintree_children = blender_kintree[:,1]
-        kintree_idx = kintree_children[kintree_children == rigid_idx]
-        selected_kintree = blender_kintree[kintree_idx]
-        for parent_child in selected_kintree:
-            parent_idx, child_idx = parent_child
-            assert child_idx == rigid_idx
-            if parent_idx != -1: 
-                B[rigid_idx, 0] = B[parent_idx, 1]   
-                
+        if USE_POINT_HANDLES_IN_OURS:
+            B[rigid_idx, 0] = handle_locations_rest[i]
+        else:
+            kintree_children = blender_kintree[:,1]
+            kintree_idx = kintree_children[kintree_children == rigid_idx]
+            selected_kintree = blender_kintree[kintree_idx]
+            for parent_child in selected_kintree:
+                parent_idx, child_idx = parent_child
+                assert child_idx == rigid_idx
+                if parent_idx != -1: 
+                    B[rigid_idx, 0] = B[parent_idx, 1]   
+                    
     # Adjust weights 
     # ---------------
     # Imported blender joint indices might differ from original data,
