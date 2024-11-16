@@ -47,7 +47,7 @@ from src.render.pyvista_render_tools import (add_mesh,
 # handle_locations_rigid : (n_frames, n_handles, 3) handle positions at every frame (WARNING: We assume handles are translated for this demo)
 # handle_locations_cpbd : (n_frames, n_handles, 3) handle positions according to Controllable PBD output (see source code: https://github.com/yoharol/PBD_Taichi)
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-EXTRACT_REST_OBJ = True
+EXTRACT_REST_OBJ = False # To save the rest pose as .obj for using it in Blender
 
 MODEL_NAME = "spot_high" # "spot" or "spot_high"
 AVAILABLE_MODES = ["point springs", "helper rig"]
@@ -57,9 +57,9 @@ USE_ORIGINAL_WEIGHTS = False # To keep/override the given weights of original ha
 
 # RENDER PARAMETERS
 RENDER_MESH = True
-RENDER_SKEL = True
-WIREFRAME = False
-RENDER_TEXTURE = True # Automatically treated as False if COLOR_CODE is True
+RENDER_SKEL = False
+WIREFRAME = True
+RENDER_TEXTURE = False # Automatically treated as False if COLOR_CODE is True
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
 
 ADD_LIGHT = True
@@ -68,7 +68,7 @@ LIGHT_POS = (10.5, 3.5, 3.5)
                        
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = False
-OPACITY = 1.0
+OPACITY = 1.
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.3
 BASE_COLOR = [0.8,0.7,1.0] # RGB
@@ -88,15 +88,15 @@ INTEGRATION = "PBD" # PBD or Euler
 
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
 COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
-EDGE_CONSTRAINT = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
-FIXED_SCALE = True
+EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
+FIXED_SCALE = False
 POINT_SPRING = False # Currently it doesn't move at all if EDGE_CONSTRAINT=True
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 1.
-STIFFNESS = 25.
-DAMPING = 10.  
-MASS_DSCALE = 1.0       # Mass velocity damping (Use [0.0, 1.0] range to slow down)
+STIFFNESS = 125.
+DAMPING = 20.  
+MASS_DSCALE = 0.3       # Mass velocity damping (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -169,19 +169,9 @@ else: # Load helper rig as an addition to rigid rig
          blender_joints = data["joints"]#[1:]
          blender_kintree = data["kintree"]#[1:] - 1# Excluding dummy root bone I put in blender
          rigid_bones_blender = data["rigid_idxs"] 
-        
-    # Adjust weights 
+    
     original_bones = rigid_bones_blender + 1 # [ 1,  2,  3,  4,  5,  13, 14, 18] TODO: root...
-    if USE_ORIGINAL_WEIGHTS: # Override rigid bones' weights with original weights
-        W_dyn[:,original_bones] = W_rigid # Set rigid bone weights to original, #[1:] excluding dummy root bone I put in blender
-        
-    # Adjust helper bone indices
-    helper_idxs = np.array([i for i in range(1, len(blender_kintree)+1)])
-    if not MAKE_ALL_SPRING:
-        for rigid_bone in original_bones:
-                idx = np.argwhere(helper_idxs == rigid_bone)
-                helper_idxs = np.delete(helper_idxs, idx)
-            
+    
     # Adjust the imported rig such that it aligns with the mesh (Blender rig export is weird, I couldn't solve it yet)
     B =  model_data.adjust_rig(blender_joints, MODEL_NAME)
     
@@ -198,7 +188,25 @@ else: # Load helper rig as an addition to rigid rig
             parent_idx, child_idx = parent_child
             assert child_idx == rigid_idx
             if parent_idx != -1: 
-                B[rigid_idx, 0] = B[parent_idx, 1]     
+                B[rigid_idx, 0] = B[parent_idx, 1]   
+                
+    # Adjust weights 
+    # ---------------
+    # Imported blender joint indices might differ from original data,
+    # The rig adjustment step ensures the indices align with that, so set the
+    # weights after the alignment.
+    w_idxs = original_bones 
+    if USE_ORIGINAL_WEIGHTS: # Override rigid bones' weights with original weights
+        W_dyn[:,w_idxs] = W_rigid # Set rigid bone weights to original, #[1:] excluding dummy root bone I put in blender
+        
+    # Adjust helper bone indices
+    helper_idxs = np.array([i for i in range(1, len(blender_kintree)+1)])
+    if not MAKE_ALL_SPRING:
+        for rigid_bone in original_bones:
+                idx = np.argwhere(helper_idxs == rigid_bone)
+                helper_idxs = np.delete(helper_idxs, idx)
+            
+     
         
     # Create a skeleton instance
     skeleton_dyn = create_skeleton_from(B, blender_kintree)
@@ -361,16 +369,16 @@ for i in range(n_frames):
     start_time = time.time()
     
     ### DELETE --- This was just to check if we have the right data
-    dummy_t, dummy_theta = np.zeros((1,3)),  np.zeros((1,3))
-    theta = np.append(dummy_theta, handle_poses[i], axis=0)
-    trans = np.append(dummy_t, handle_trans[i], axis=0)
-    rigidly_posed_locations = skeleton_rigid.pose_bones(theta, trans, degrees=True)
-    abs_rot_quat, abs_trans = skeleton_rigid.get_absolute_transformations(theta, trans, degrees=True)
-    M_rigid = skinning.get_transform_mats_from_quat_rots(abs_trans, abs_rot_quat)[1:] # TODO...
+    # dummy_t, dummy_theta = np.zeros((1,3)),  np.zeros((1,3))
+    # theta = np.append(dummy_theta, handle_poses[i], axis=0)
+    # trans = np.append(dummy_t, handle_trans[i], axis=0)
+    # rigidly_posed_locations = skeleton_rigid.pose_bones(theta, trans, degrees=True)
+    # abs_rot_quat, abs_trans = skeleton_rigid.get_absolute_transformations(theta, trans, degrees=True)
+    # M_rigid = skinning.get_transform_mats_from_quat_rots(abs_trans, abs_rot_quat)[1:] # TODO...
    
-    V_lbs_dummy = skinning.LBS_from_mat(verts_rest, W_rigid, M_rigid, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
+    # V_lbs_dummy = skinning.LBS_from_mat(verts_rest, W_rigid, M_rigid, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
     
-    hand_diff_dummy = rigidly_posed_locations[range(2,18,2)] -  handle_locations_rigid[i]
+    # hand_diff_dummy = rigidly_posed_locations[range(2,18,2)] -  handle_locations_rigid[i]
     #print(np.sum(hand_diff_dummy)) # should print around 0
     ####   
     
