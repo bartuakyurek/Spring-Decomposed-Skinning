@@ -1,16 +1,9 @@
-
-pip uninstall -y numpy 
-
-(I've also manually deleted numpy folders in ~/Library/spyder-6/envs/spyder-runtime/lib/python3.11/site-packages/numpy/)
-
 libigl==2.5.1
 scipy==1.10.1
 pyvista==0.43.7
 imageio==2.31.2
 imageio-ffmpeg==0.4.8
 numpy==1.26.4
-
-
 h5py==3.7.0 
 torch==2.0.1 
 usd-core==24.11   
