@@ -26,7 +26,7 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 modelname = 'spot_high' # "spot" or "spot_high"
 
 idxs = [4,5,6,7] # Indices to translate the handles (there are 8) 
-fixed = [0, 1, 2, 3, 7] # Fixed handles
+fixed = [0, 1, 2, 3, 7] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
 pose_base = np.array([10.,  0., 0.]) # xyz rotation degrees
 
