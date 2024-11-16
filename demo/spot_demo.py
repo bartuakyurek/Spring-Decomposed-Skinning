@@ -105,7 +105,7 @@ SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 SPOT_DATA_PATH = os.path.join(DATA_PATH, MODEL_NAME) 
 OBJ_PATH =  os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}.obj")
 TGF_PATH =  os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}.tgf")
-#TEXTURE_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_texture.png")
+TEXTURE_PATH = None #os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_texture.png")
 HELPER_RIG_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_rig_data.npz")
 SPOT_EXTRACTED_DATA_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_extracted.npz")
 
@@ -245,6 +245,7 @@ def add_texture(polydata, actor, img_path=None):
     else:
         tex = pv.read_texture(img_path)
     
+
     polydata.texture_map_to_plane(inplace=True)
     actor.texture = tex
 
@@ -268,7 +269,7 @@ if RENDER_MESH:
                                             roughness=MATERIAL_ROUGHNESS,
                                             smooth_shading=SMOOTH_SHADING)
     if not COLOR_CODE and RENDER_TEXTURE:
-         add_texture(mesh_rigid, mesh_rigid_actor)#, TEXTURE_PATH)
+         add_texture(mesh_rigid, mesh_rigid_actor, TEXTURE_PATH)
   
 if RENDER_SKEL: 
     skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton_rigid, 
@@ -293,7 +294,7 @@ if RENDER_MESH:
                                             smooth_shading=SMOOTH_SHADING)
     
     if not COLOR_CODE and RENDER_TEXTURE:
-       add_texture(mesh_cpbd, mesh_cpbd_actor)
+       add_texture(mesh_cpbd, mesh_cpbd_actor, TEXTURE_PATH)
        
 if RENDER_SKEL: 
     skel_mesh_cpbd = add_skeleton_from_Skeleton(plotter, skeleton_rigid, 
@@ -317,7 +318,7 @@ if RENDER_MESH:
                                             roughness=MATERIAL_ROUGHNESS,
                                             smooth_shading=SMOOTH_SHADING)
     if not COLOR_CODE and RENDER_TEXTURE:
-       add_texture(mesh_dyn, mesh_dyn_actor)
+       add_texture(mesh_dyn, mesh_dyn_actor, TEXTURE_PATH)
 
 if RENDER_SKEL: 
     skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton_dyn, 
