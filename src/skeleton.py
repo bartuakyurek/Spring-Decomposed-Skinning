@@ -365,7 +365,8 @@ class Skeleton():
         
         parent_bone = self.rest_bones[parent_idx]
         new_bone = Bone(endpoint, idx=len(self.rest_bones), parent=parent_bone)
-        assert np.linalg.norm(new_bone.end_location - new_bone.start_location) > 0.0, "Expected inserted bone to have non-zero length. Please use a PointHandle interface for different types of handles."
+        if np.linalg.norm(new_bone.end_location - new_bone.start_location) < 1e-18:
+            print("WARNING: Expected inserted bone to have non-zero length. Please use a PointHandle interface for different types of handles.")
         
         self.rest_bones.append(new_bone)
         self.rest_bones[parent_idx].add_child(new_bone)
