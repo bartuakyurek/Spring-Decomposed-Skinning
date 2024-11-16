@@ -32,5 +32,5 @@ $ pip install -r requirements.txt
 
 To deactivate the virtual environment, run:
 ```
-$ venv deactivate
+$ deactivate
 ```
