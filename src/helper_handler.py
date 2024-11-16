@@ -138,8 +138,14 @@ class HelperBonesHandler:
         direction = bone_start - free_mass.center
         d_norm = np.linalg.norm(direction) 
         scale = d_norm - original_length
-        adjust_vec = (direction/d_norm) * scale # Normalize direction and scale it
-    
+        
+        
+        if d_norm > 1e-20:
+            adjust_vec = (direction/d_norm) * scale # Normalize direction and scale it
+        else:
+            print(">> WARNING: Found zero-length norm")
+            adjust_vec = direction * scale
+            
         # Change the free mass location aligned with the bone length.
         self.simulator.masses[free_mass_idx].center = free_mass.center + adjust_vec
     
