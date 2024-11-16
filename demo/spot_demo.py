@@ -51,11 +51,12 @@ EXTRACT_REST_OBJ = True
 
 MODEL_NAME = "spot_high" # "spot" or "spot_high"
 AVAILABLE_MODES = ["point springs", "helper rig"]
-MAKE_ALL_SPRING = True # Set true to turn all bones spring bones
+MAKE_ALL_SPRING = False # Set true to turn all bones spring bones
 SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
+USE_ORIGINAL_WEIGHTS = False # To keep/override the given weights of original handles in helper rig mode
 
 # RENDER PARAMETERS
-RENDER_MESH = True
+RENDER_MESH = False
 RENDER_SKEL = True
 WIREFRAME = False
 
@@ -65,13 +66,14 @@ LIGHT_POS = (10.5, 3.5, 3.5)
                        
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = False
-OPACITY = 0.2
+OPACITY = 1.0
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.3
 BASE_COLOR = [0.8,0.7,1.0] # RGB
 
 DEFAULT_BONE_COLOR = "white"
 CPBD_BONE_COLOR ="green" # CPBD stands for Controllable PBD (the paper we compare against)
+CPBD_FIXED_BONE_COLOR = "red"
 SPRING_BONE_COLOR = "blue"
 
 COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
@@ -90,9 +92,9 @@ POINT_SPRING = False # Currently it doesn't move at all if EDGE_CONSTRAINT=True
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 1.
-STIFFNESS = 150.
+STIFFNESS = 25.
 DAMPING = 10.  
-MASS_DSCALE = 0.3       # Mass velocity damping (Use [0.0, 1.0] range to slow down)
+MASS_DSCALE = 1.0       # Mass velocity damping (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -110,6 +112,7 @@ with np.load(SPOT_EXTRACTED_DATA_PATH) as data:
     
     verts_cpbd = data["verts_yoharol"]
     faces = data["faces"]
+    fixed_handles = data["fixed_yoharol"]
     
     handle_locations_cpbd = data["handles_yoharol"]
     handle_locations_rigid = data["handles_rigid"]
@@ -166,7 +169,8 @@ else: # Load helper rig as an addition to rigid rig
         
     # Adjust weights 
     original_bones = rigid_bones_blender + 1 # [ 1,  2,  3,  4,  5,  13, 14, 18] TODO: root...
-    W_dyn[:,original_bones] = W_rigid # Set rigid bone weights to original, #[1:] excluding dummy root bone I put in blender
+    if USE_ORIGINAL_WEIGHTS: # Override rigid bones' weights with original weights
+        W_dyn[:,original_bones] = W_rigid # Set rigid bone weights to original, #[1:] excluding dummy root bone I put in blender
         
     # Adjust helper bone indices
     helper_idxs = np.array([i for i in range(1, len(blender_kintree)+1)])
@@ -269,7 +273,10 @@ if RENDER_MESH:
                                             smooth_shading=SMOOTH_SHADING)
   
 if RENDER_SKEL: 
-    skel_mesh_cpbd = add_skeleton_from_Skeleton(plotter, skeleton_rigid, default_bone_color=CPBD_BONE_COLOR)
+    skel_mesh_cpbd = add_skeleton_from_Skeleton(plotter, skeleton_rigid, 
+                                                default_bone_color=CPBD_BONE_COLOR,
+                                                alt_idxs=fixed_handles,
+                                                alt_bone_color=CPBD_FIXED_BONE_COLOR)
 
 #set_lights(plotter)
 adjust_camera_spot(plotter)
@@ -289,10 +296,10 @@ if RENDER_MESH:
 
 if RENDER_SKEL: 
     skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton_dyn, 
-                                               helper_idxs=helper_idxs, 
+                                               alt_idxs=helper_idxs, 
                                                is_smpl=True, # TODO: This is ridiculous, but I have to update the data cause I want to omit the root bone...
                                                default_bone_color=DEFAULT_BONE_COLOR, 
-                                               spring_bone_color=SPRING_BONE_COLOR)
+                                               alt_bone_color=SPRING_BONE_COLOR)
 
 adjust_camera_spot(plotter)
 #set_lights(plotter)
@@ -327,7 +334,7 @@ for i in range(n_frames):
     
     start_time = time.time()
     
-    ###
+    ### DELETE --- This was just to check if we have the right data
     dummy_t, dummy_theta = np.zeros((1,3)),  np.zeros((1,3))
     theta = np.append(dummy_theta, handle_poses[i], axis=0)
     trans = np.append(dummy_t, handle_trans[i], axis=0)
@@ -338,7 +345,7 @@ for i in range(n_frames):
     V_lbs_dummy = skinning.LBS_from_mat(verts_rest, W_rigid, M_rigid, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
     
     hand_diff_dummy = rigidly_posed_locations[range(2,18,2)] -  handle_locations_rigid[i]
-    print(np.sum(hand_diff_dummy))
+    #print(np.sum(hand_diff_dummy)) # should print around 0
     ####   
     
     cur_handles = handle_locations_rigid[i]
@@ -408,17 +415,15 @@ while (plotter.render_window):
         mesh_rigid.points = V_anim_rigid[frame]
         mesh_cpbd.points = verts_cpbd[frame]
         mesh_dyn.points = V_anim_dyn[frame]
+        if COLOR_CODE: # For jigglings
+            set_mesh_color_scalars(mesh_cpbd, normalized_dists_cpbd[frame])  
+            set_mesh_color_scalars(mesh_dyn, normalized_dists_dyn[frame])  
         
     if RENDER_SKEL: 
         skel_mesh_rigid.points = J_anim_rigid[frame] 
         skel_mesh_cpbd.points = convert_points_to_bones(handle_locations_cpbd[frame])
         skel_mesh_dyn.points = J_anim_dyn[frame]
-    
-    # Color code jigglings 
-    if COLOR_CODE:
-        set_mesh_color_scalars(mesh_cpbd, normalized_dists_cpbd[frame])  
-        set_mesh_color_scalars(mesh_dyn, normalized_dists_dyn[frame])  
-        
+
     frame_text_actor.input = str(frame+1)
     
     if frame < n_frames-1: 
