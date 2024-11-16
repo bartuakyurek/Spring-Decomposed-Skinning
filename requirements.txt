@@ -8,3 +8,6 @@ h5py==3.7.0
 torch==2.0.1 
 usd-core==24.11   
 taichi==1.7.1
+meshio==5.3.5
+PyOpenGL==3.1.0
+glfw==2.7.0
