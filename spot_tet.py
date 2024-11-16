@@ -1,3 +1,9 @@
+
+import os
+import sys
+path_to_cpbd = "/Users/bartu/Desktop/Controllable_PBD_3D/" # !!!! EDIT !!!!
+sys.path.insert(0, path_to_cpbd)
+
 import taichi as ti
 import numpy as np
 
@@ -7,23 +13,44 @@ from cons import deform3d, framework
 import compdyn.base, compdyn.inverse, compdyn.IK, compdyn.point
 from utils import objs
 from interface import usd_objs, usd_render
+from scipy.spatial.transform import Rotation
 
+import math
 import time
 
 ti.init(arch=ti.x64, cpu_max_num_threads=1)
 
-# ========================== load data ==========================
-modelname = 'spot'
-tgf_path = f'assets/{modelname}/{modelname}.tgf'
-model_path = f'assets/{modelname}/{modelname}.mesh'
-weight_path = f'assets/{modelname}/{modelname}_w.txt'
+# =============================================================================
+# Editable parameters !!!!!!!!!!
+# =============================================================================
+modelname = 'spot_high' # "spot" or "spot_high"
+
+idxs = [4,5,6,7] # Indices to translate the handles (there are 8) 
+fixed = [0, 1, 2, 3, 7] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
+trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
+pose_base = np.array([10.,  0., 0.]) # xyz rotation degrees
+
+save_path = "/Users/bartu/Documents/Github/Spring-Decomp/data/" + \
+            f"{modelname}/{modelname}_extracted.npz" # !!!! EDIT !!!!
+            
+# =============================================================================
+# Load data
+# =============================================================================
+tgf_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}.tgf')
+model_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}.mesh')
+weight_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}_w.txt')
+
+
+start_frame = 0
+end_frame = 200
+save_npz = True
+
 scale = 1.0
 repose = (0.0, 0.7, 0.0)
 
 points = points_data.load_points_data(tgf_path, weight_path, scale, repose)
 mesh = tet_data.load_tets(model_path, scale, repose)
 wireframe = [False]
-fixed = [2, 3, 6]
 points.set_color(fixed=fixed)
 print(mesh.t_i.shape)
 # ========================== init simulation ==========================
@@ -50,17 +77,6 @@ points_ik = compdyn.IK.PointsIK(v_p=mesh.v_p,
                                 c_p_ref=points.c_p_ref,
                                 c_p_input=points.c_p_input,
                                 fix_trans=fixed)
-"""comp = compdyn.base.CompDynMomentum(v_p=mesh.v_p,
-                                    v_p_ref=mesh.v_p_ref,
-                                    v_p_rig=points_ik.v_p_rig,
-                                    v_invm=mesh.v_invm,
-                                    c_p=points.c_p,
-                                    c_p_ref=points.c_p_ref,
-                                    v_weights=points.v_weights,
-                                    dt=dt,
-                                    alpha=1e-5,
-                                    alpha_fixed=1e-5,
-                                    fixed=fixed)"""
 comp = compdyn.point.CompDynPoint(v_p=mesh.v_p,
                                   v_p_ref=mesh.v_p_ref,
                                   v_p_rig=points_ik.v_p_rig,
@@ -102,12 +118,14 @@ pbd.init_rest_status(0)
 pbd.init_rest_status(1)
 
 # ========================== usd rneder ==========================
-start_frame = 0
-end_frame = 500
-save_npz = True
-save_path = "/Users/bartu/Documents/Github/Spring-Decomp/data/" + f"{modelname}/{modelname}_extracted.npz"
+n_handles = len(points.c_p.to_numpy())
+rest_pose = np.zeros((n_handles, 3))
+rest_t = np.zeros((n_handles, 3))
+
 verts, handles = [], []
 handles_rigid = []
+handles_pose = []
+handles_t = []
 if save_npz:
   
   point_color = np.zeros((points.n_points, 3), dtype=np.float32)
@@ -118,51 +136,66 @@ if save_npz:
   verts.append(mesh.surface_v_p.to_numpy())
   faces_np = mesh.surface_f_i.to_numpy() 
   weights_np = points.weights_np[mesh.surface_v_i.to_numpy()] # To extract weights of surface
-  handles.append(points.c_p.to_numpy()) # _input
-  handles_rigid.append(points.c_p_input.to_numpy()) 
   
+  handles.append(points.c_p.to_numpy()) # Dynamically posed handles
+  handles_rigid.append(points.c_p_input.to_numpy()) # Rigidly posed handles
+  
+  handles_pose.append(np.array(rest_pose))
+  handles_t.append(np.array(rest_t))
   def update_usd(frame: int):
     if frame < start_frame or frame > end_frame:
         return
     
     print("update verts and handles at frame", frame)
-
     mesh.update_surface_verts()    
     
     verts.append(mesh.surface_v_p.to_numpy())
     handles.append(points.c_p.to_numpy()) #_input
     handles_rigid.append(points.c_p_input.to_numpy()) #  try also c_p_input, it might be the same
+    
+    handles_pose.append(np.array(rest_pose))
+    handles_t.append(np.array(rest_t))
 
-# ========================== use input ==========================
-import math
-
+# =============================================================================
+# Set movement here
+# =============================================================================
+# ========================== use input ========================================
 written = [False]
 
 def set_movement():
   t = window.get_time() - 1.0
-  p_input = points_ik.c_p_ref.to_numpy()
-  #c_p_rigid = points.c_p_ref.to_numpy()
-
-  idxs = [6]
+  p_input = points_ik.c_p_ref.to_numpy() # Handles at rest
+  #rest_pose = np.zeros((n_handles, 3))
+  #rest_t = np.zeros((n_handles, 3))
+  
   if t > 0.0:
-    translation_vec = np.array([0.0, 1.0, 1.0], dtype=np.float32) * math.sin(0.5 * t * (2.0 * math.pi)) * 0.25
+    translation_vec = trans_base * math.sin( t * math.pi) # Translation from rest -> posed
+    
+    rotation_degrees = pose_base * math.sin( t * math.pi) # Rotation from rest -> posed
+    rot = Rotation.from_euler('xyz', rotation_degrees , degrees=True)
+    rot_mat = rot.as_matrix()
+    
     for i in idxs:
-        p_input[i] += translation_vec
-        #c_p_rigid[i] += translation_vec
-
+        
+        translation_from_rotation = (rot_mat @ p_input[i]) - p_input[i]
+        
+        p_input[i] += translation_vec  
+        p_input[i] += translation_from_rotation # TODO: How can I directly set rotations? This is still translation...
+        
+        rest_pose[i] = rotation_degrees # Save rotation for skinning
+        rest_t[i] = translation_vec # Save translation for skinning
+    
   points.c_p_input.from_numpy(p_input)
-  #points.c_p_rigid.from_numpy(c_p_rigid)
 
   if abs(0.5 * t - (-0.5)) < 1e-2 and not written[0]:
     import meshio
     mesh.update_surface_verts()
     meshio.Mesh(mesh.surface_v_p.to_numpy(), [
         ("triangle", mesh.surface_f_i.to_numpy().reshape(-1, 3))
-    ]).write("out/spot_tet_ref.obj")
+    ]).write(os.path.join(path_to_cpbd, "out/spot_tet_ref.obj"))
     print("write to output obj file")
     print("control points:", points_ik.c_p)
     written[0] = True
-
 
 t_total = 0.0
 t_ik = 0.0
@@ -185,9 +218,9 @@ while window.running():
     pbd.update_vel()
 
   t_total += time.time() - t
-  if window.get_total_frames() == 480:
-    print(f'average time: {t_total / 480}')
-    print(f'average ik time: {t_ik / 480}')
+  if window.get_total_frames() == end_frame:
+    print(f'average time: {t_total / end_frame * 1000} ms')
+    print(f'average ik time: {t_ik / end_frame * 1000} ms')
 
   if save_npz:
     update_usd(window.get_total_frames())
@@ -196,18 +229,31 @@ while window.running():
   window.render()
   window.show()
 
-window.terminate()
+# =============================================================================
+# Save after window loop
+# =============================================================================
 if save_npz:
   verts_np = np.array(verts)
   handles_np = np.array(handles)
   faces_np = np.reshape(faces_np, (-1,3)) 
   handles_rigid_np = np.array(handles_rigid)
+  
+  handles_pose_np = np.array(handles_pose)
+  handles_t_np = np.array(handles_t)
+  
   print(">> WARNING: Assuming every face is triangular.")
   
   data  = {"verts_yoharol":verts_np, 
            "faces": faces_np, 
            "weights" : weights_np,
            "handles_yoharol":handles_np,
-           "handles_rigid": handles_rigid}
+           "fixed_yoharol" : fixed,
+           "user_input" : idxs,
+           "handles_rigid": handles_rigid_np,
+           "handles_t" : handles_t_np,
+           "handles_pose" : handles_pose_np}
+  
   np.savez(save_path, **data)
   print("Saved data at ", save_path)
+  
+window.terminate()

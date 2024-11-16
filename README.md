@@ -17,3 +17,20 @@ the files under ./tests/ or ./demo/ directories, e.g. ``python ./tests/spring_bo
 [ ] Color code evaluation
 
 [ ] Update instructions to use this repo
+
+
+It's recommended to first create a virtual environment. Assuming you're inside the source directory, run:
+```
+$ python -m venv venv
+$ source venv/bin/activate
+```
+
+Then, to install the dependencies, run:
+```
+$ pip install -r requirements.txt
+```
+
+To deactivate the virtual environment, run:
+```
+$ venv deactivate
+```

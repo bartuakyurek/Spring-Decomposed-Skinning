@@ -1,0 +1,13 @@
+libigl==2.5.1
+scipy==1.10.1
+pyvista==0.43.7
+imageio==2.31.2
+imageio-ffmpeg==0.4.8
+numpy==1.26.4
+h5py==3.7.0 
+torch==2.0.1 
+usd-core==24.11   
+taichi==1.7.1
+meshio==5.3.5
+PyOpenGL==3.1.0
+glfw==2.7.0

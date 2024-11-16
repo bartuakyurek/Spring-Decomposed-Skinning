@@ -8,7 +8,7 @@ Created on Thu Oct 10 14:34:34 2024
 @author: bartu
 """
 
-
+import os
 import igl
 import numpy as np
 import pyvista as pv
@@ -34,20 +34,25 @@ MODEL_NAME = "duck" # Available options: "duck", "blob", "cloth", "monstera"
 
 COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
 WIREFRAME = False
-RENDER_MESH = True
-RENDER_SKEL = False
+RENDER_MESH = False
+RENDER_SKEL = True
+SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = True
-EYEDOME_LIGHT = False
-OPACITY = 1.0
+OPACITY = 0.6
 MATERIAL_METALLIC = 0.0
 MATERIAL_ROUGHNESS = 0.2
 WINDOW_SIZE = (1500 * 2, 1200)
+
+ADD_LIGHT = True
+LIGHT_INTENSITY = 0.6 # Between [0, 1]
+LIGHT_POS = (10.5, 3.5, 3.5)
 
 INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
 
 FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
+EDGE_CONSTRAINT = False # Recommended to set either FIXED_SCALE or EDGE_CONSTRAINT True
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
@@ -96,6 +101,7 @@ helper_rig = HelperBonesHandler(skeleton,
                                 dt            = TIME_STEP,
                                 point_spring  = POINT_SPRING,
                                 fixed_scale   = FIXED_SCALE, 
+                                edge_constraint = EDGE_CONSTRAINT,
                                 simulation_mode = INTEGRATION) 
 
 # ---------------------------------------------------------------------------- 
@@ -105,10 +111,9 @@ RENDER = True
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER, window_size = WINDOW_SIZE, border=False, shape = (1,2))
 
 # Add light
-if EYEDOME_LIGHT: plotter.enable_eye_dome_lighting()
-#light = pv.Light(position=(-2.0, 3.5, 3.5), light_type='scene light')
-#plotter.add_light(light)
-
+if ADD_LIGHT:
+    light = pv.Light(position=LIGHT_POS, light_type='headlight', intensity=LIGHT_INTENSITY)
+    plotter.add_light(light)
 # ---------------------------------------------------------------------------- 
 # Add mesh actors
 # ----------------------------------------------------------------------------
@@ -122,7 +127,9 @@ frame_text_actor = plotter.add_text("0", (600,0), font_size=18) # Add frame numb
 
 
 if RENDER_MESH: 
-    mesh_rigid, mesh_rigid_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True, show_edges=WIREFRAME,
+    mesh_rigid, mesh_rigid_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True, 
+                                            show_edges=WIREFRAME,
+                                            smooth_shading=SMOOTH_SHADING,
                                             pbr=RENDER_PHYS_BASED, metallic=MATERIAL_METALLIC, roughness=MATERIAL_ROUGHNESS)
   
 if RENDER_SKEL: skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton)
@@ -136,12 +143,13 @@ plotter.add_text("Dynamic Deformation (Ours)", "lower_left", font_size=18)
 if RENDER_SKEL: skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs)
 
 if RENDER_MESH: 
-    mesh_dyn, mesh_dyn_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True, show_edges=WIREFRAME,
-                                            pbr=RENDER_PHYS_BASED, metallic=MATERIAL_METALLIC, roughness=MATERIAL_ROUGHNESS)
+    mesh_dyn, mesh_dyn_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True, 
+                                        show_edges=WIREFRAME, smooth_shading=SMOOTH_SHADING,
+                                        pbr=RENDER_PHYS_BASED, metallic=MATERIAL_METALLIC, roughness=MATERIAL_ROUGHNESS)
     
  
     
-plotter.open_movie(RESULT_PATH + f"/{MODEL_NAME}-{ALGO}.mp4")
+plotter.open_movie(os.path.join(RESULT_PATH, f"{MODEL_NAME}-{ALGO}.mp4"))
 n_poses = keyframe_poses.shape[0]
 n_bones = len(skeleton.rest_bones)
 trans = np.zeros((n_bones, 3)) # TODO: remove +1 when you remove root bone issue
@@ -208,15 +216,13 @@ for frame in range(n_frames):
     if RENDER_MESH: 
         mesh_rigid.points = V_anim_rigid[frame]
         mesh_dyn.points = V_anim_dyn[frame]
+        if COLOR_CODE:  # Color code jigglings 
+            set_mesh_color_scalars(mesh_dyn, normalized_dists[frame])  
         
     if RENDER_SKEL: 
         skel_mesh_rigid.points = J_anim_rigid[frame] 
         skel_mesh_dyn.points = J_anim_dyn[frame]
     
-    # Color code jigglings 
-    if COLOR_CODE:
-        set_mesh_color_scalars(mesh_dyn, normalized_dists[frame])  
-        
     frame_text_actor.input = str(frame+1)
     plotter.write_frame()   # Write a frame. This triggers a render.
     

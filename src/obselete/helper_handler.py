@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Oct 12 10:05:05 2024
 
+Deprecated Helper Handler. The FIXED_SCALE constraint was implemented here
+but that doesn't account for velocities, so in the next version it will be
+moved inside the MassSpringSystem.
+
+I just put it here, in /obselete, because I might want to show the effect of 
+PBD on constraint gradients, by comparing with applying hard constraint (like in here)
+without velocity updates. What happens is that the when projected back to the rest
+length, the mass velocities drop to almost zero and they barely jiggle.  
+
+Created on Sat Oct 12 10:05:05 2024
 @author: bartu
 """
 import numpy as np
@@ -26,9 +35,7 @@ class HelperBonesHandler:
                  mass_dscale=1.0, 
                  spring_dscale=1.0, dt=1./24,
                  simulation_mode="PBD",
-                 fixed_scale=False,
-                 edge_constraint=False,
-                 compliance=0.0, # Only works for PBD
+                 fixed_scale=True,
                  ):
         """
         Create a mass-spring system provided an array of Bone objects.
@@ -54,14 +61,11 @@ class HelperBonesHandler:
         self.prev_sim_locations = None
         
         self.POINT_SPRINGS = point_spring
-        self.compliance = compliance
-        if compliance and simulation_mode != "PBD" : print(f">> WARNING: Complience is set but simulation mode {simulation_mode} is not PBD, compliance will have no effect.")
+        self.FIXED_SCALE = fixed_scale
         
         self.helper_idxs = np.array(helper_idxs, dtype=int)
-        self.simulator = MassSpringSystem(dt, mode=simulation_mode, edge_constraint=edge_constraint)
-        self.FIXED_SCALE = fixed_scale
-
-
+        self.simulator = MassSpringSystem(dt, mode=simulation_mode)
+            
         self.helper_lengths = []
         helper_bones = np.array(skeleton.rest_bones)[helper_idxs]
         n_helper = len(helper_bones)
@@ -108,14 +112,16 @@ class HelperBonesHandler:
         assert len(self.free_idxs) == n_helper, f"Expected each jiggle bone to have a single \
                                                  free mass. Got {len(self.free_idxs)} masses \
                                                  for {n_helper} jiggle bones."
-    
+        
+        
     def _preserve_bone_length(self, bone_start : np.ndarray,  
-                                free_mass_idx  : int, 
-                                original_length : float ):
+                                    free_mass_idx  : int, 
+                                    original_length : float ):
         """
         Given the original length and start-end locations of the bone, rescale 
         the bone vector to its original length. The scaling is done at the bone 
         tip. 
+
         Parameters
         ----------
         bone_start : np.ndarray
@@ -124,38 +130,33 @@ class HelperBonesHandler:
             Index of the free mass that we'll consider as the new bone length.
         original_length : float
             Original bone length that is from the T-pose. 
+
         Returns
         -------
         adjust_vec : TYPE
             DESCRIPTION.
+
         """
-    
+        
         assert type(free_mass_idx) is int or np.int64, f"Expected free mass type int, got {type(free_mass_idx)}"
-    
+        
         free_mass = self.simulator.masses[free_mass_idx] 
         assert free_mass.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {free_mass.mass}."
-    
+        
         direction = bone_start - free_mass.center
         d_norm = np.linalg.norm(direction) 
         scale = d_norm - original_length
+        adjust_vec = (direction/d_norm) * scale # Normalize direction and scale it
         
-        
-        if d_norm > 1e-20:
-            adjust_vec = (direction/d_norm) * scale # Normalize direction and scale it
-        else:
-            print(">> WARNING: Found zero-length norm")
-            adjust_vec = direction * scale
-            
         # Change the free mass location aligned with the bone length.
         self.simulator.masses[free_mass_idx].center = free_mass.center + adjust_vec
-    
+        
         # Sanity check
         new_length = np.linalg.norm(bone_start - self.simulator.masses[free_mass_idx].center)
         assert np.abs(new_length - original_length) < 1e-4, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {original_length}." 
-    
+        
         return adjust_vec, self.simulator.masses[free_mass_idx].center
-
-
+    
     def update_bones(self, rigidly_posed_locations, dt=None):
         """
         Given the relative rotations, update the skeleton joints with mass-spring
@@ -174,7 +175,11 @@ class HelperBonesHandler:
             array has shape (2*(n_bones-1), 3) where every consecutive points 
             are defining two endpoints of a bone, where bone is a line segment.
         """
- 
+        # ---------------------------------------------------------------------
+        # Precomputation checks
+        # ---------------------------------------------------------------------
+
+
         # ---------------------------------------------------------------------
         # Compute the new mass positions and update helper bone locations
         # ---------------------------------------------------------------------
@@ -196,7 +201,7 @@ class HelperBonesHandler:
             self.simulator.translate_mass(self.fixed_idxs[i], translate_vec[i])
         
         # Step 2 - Simulate the mass spring system with the new mass locations
-        self.simulator.simulate(dt, alpha=self.compliance)
+        self.simulator.simulate(dt)
            
         # Step 3 - Get simulated mass positions
         cur_mass_locations = self.simulator.get_mass_locations()
@@ -216,7 +221,7 @@ class HelperBonesHandler:
                 bone_start = simulated_locations[start_idx]
                 _, new_endpoint = self._preserve_bone_length(bone_start, free_idx, orig_length)
                 simulated_locations[end_idx] = new_endpoint
-                
+              
             # Adjust the child bones' starting points
             for child in bone.children:
                 child_start_idx = child.idx * 2
@@ -228,6 +233,7 @@ class HelperBonesHandler:
                 translation_amount = child_bone_start - previous_start
                 #if np.sum(translation_amount) > 0: print("translation: ", translation_amount)
                 simulated_locations[child_start_idx + 1] += translation_amount
+            
                 
         # Step 5 - Save the simulated locations for the next iteration
         self.prev_sim_locations = simulated_locations

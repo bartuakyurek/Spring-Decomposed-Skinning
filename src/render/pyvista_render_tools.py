@@ -56,7 +56,8 @@ def add_mesh(plotter,
              texture=None,
              pbr=False, 
              metallic=1.0, 
-             roughness=0.5):
+             roughness=0.5,
+             smooth_shading=False):
     
     assert faces.shape[-1] == 3, f"Non-triangular meshes are not supported yet. Expected faces has shape (n_faces, 3), got {faces.shape}"
     assert verts.shape[-1] == 3, f"Expected vertices to have shape (n_verts, 3), got {verts.shape}."
@@ -79,7 +80,7 @@ def add_mesh(plotter,
                                     pbr=pbr, 
                                     metallic=metallic,
                                     roughness=roughness,
-                                    
+                                    smooth_shading=smooth_shading
                                 )
     
     if return_actor:
@@ -134,9 +135,46 @@ def add_skeleton(plotter, joint_locations, edges, bone_color=None, colors=None, 
     return skel_mesh
 
 
+def color_bones(skel_mesh, n_bones, default_color, alt_idxs=None, alt_color=None):
+    """
+    
 
-def add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs=None, is_smpl=False,
-                               default_bone_color="#FFFFFF", spring_bone_color="#BEACE6", 
+    Parameters
+    ----------
+    skel_mesh : pv.PolyData
+        The bone joints positions in the skeleton.
+    n_bones : int
+        Number of bones in the skeleton.
+    default_color : str or tuple
+        Sets the default bone colors.
+    alt_idxs : array of int, optional
+        If provided, the bones at the indices alt_idxs will be colored to
+        alt_color. The default is None.
+    alt_color : str or tuple, optional
+        If alt_idxs are provided, the indexed bones will be colored
+        to alt_color. The default is None.
+
+    Returns
+    -------
+    cmap : array
+        Array holding colors to pass into plotter.add_mesh(cmap=cmap) in PyVista.
+
+    """
+    # Define colors
+    colors = np.zeros((n_bones))
+    if alt_idxs is not None: colors[alt_idxs] = 1.0
+
+    cmap = [default_color, alt_color]
+    if np.sum(colors) == n_bones:
+        cmap = [alt_color] # If all are spring bones
+    if alt_idxs is None: 
+        cmap = [default_color]
+    
+    skel_mesh['colors'] = colors
+    return cmap
+
+def add_skeleton_from_Skeleton(plotter, skeleton, alt_idxs=None, is_smpl=False,
+                               default_bone_color="#FFFFFF", alt_bone_color="#BEACE6", 
                                joint_size=20,
                                return_actor=False,
                                exclude_root=True):
@@ -144,7 +182,7 @@ def add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs=None, is_smpl=Fals
     # creates a mesh and colors the bones respectively.
     #print("WARNING: It is assumed helper_idxs includes root bone so they are one index more than the usual. TODO: resolve it...")
     if is_smpl:
-        if helper_idxs is not None: helper_idxs = np.array(helper_idxs) - 1
+        if alt_idxs is not None: alt_idxs = np.array(alt_idxs) - 1
     
     # Define joint-edges
     joint_locations = skeleton.get_rest_bone_locations(exclude_root=exclude_root)
@@ -153,32 +191,42 @@ def add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs=None, is_smpl=Fals
     edges_w_padding = _get_padded_edges(edges, 2)
     skel_mesh = pv.PolyData(joint_locations, edges_w_padding)
     
-    # Define colors
-    colors = np.zeros((n_bones))
-    if helper_idxs is not None: colors[helper_idxs] = 1.0
-
-    cmap = [default_bone_color, spring_bone_color]
-    if np.sum(colors) == n_bones:
-        cmap = [spring_bone_color] # If all are spring bones
-    if helper_idxs is None: 
-        cmap = [default_bone_color]
-        
-    tube_actor = plotter.add_mesh(skel_mesh, 
+    
+    cmap = color_bones(skel_mesh, n_bones, default_bone_color, 
+                        alt_idxs=alt_idxs,
+                        alt_color=alt_bone_color)
+    
+    # Add tubes for bones
+    bones_actor = plotter.add_mesh(skel_mesh, 
                     render_lines_as_tubes=True,
                     style='wireframe',
                     line_width=10,
-                    scalars=colors,
+                    scalars='colors',
                     cmap = cmap,
                     show_scalar_bar=False)
     
-    # Add spheres to indicate joints
-    sphere_actor = plotter.add_mesh(skel_mesh, 
+    # Add spheres for joints
+    joints_actor = plotter.add_mesh(skel_mesh, 
                     point_size=joint_size,
                     render_points_as_spheres = True,
                     style='points',
-                    scalars=colors,
+                    scalars='colors',
                     cmap = cmap,
                     show_scalar_bar=False)
     
-    if return_actor: return skel_mesh, (tube_actor, sphere_actor)
+   
+    
+    if return_actor: return skel_mesh, (bones_actor, joints_actor)
     return skel_mesh
+
+
+"""
+def save_texture_coordinates_as_obj(mesh_polydata):
+    mesh_polydata.texture_map_to_plane(inplace=True)
+    tc = mesh_polydata.active_texture_coordinates
+    
+    x, y = np.meshgrid(tc[:,0], tc[:,1])
+    z = np.zeros_like(x)
+    
+    grid = pv.StructuredGrid(x, y, z)
+"""

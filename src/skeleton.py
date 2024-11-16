@@ -10,7 +10,9 @@ import numpy as np
 
 from .utils.linalg_utils import compose_rigid_transform_matrix
 from .global_vars import VERBOSE
-
+# =============================================================================
+# Bone Class
+# =============================================================================
 class Bone():
     def __init__(self, endpoint_location, idx, parent=None):
         assert type(idx) == int, f"Expected bone index to be type int, got {type(idx)}"
@@ -112,7 +114,9 @@ class Bone():
 
 
   
-        
+# =============================================================================
+#  Skeleton Class       
+# =============================================================================
 class Skeleton():
     def __init__(self, root_vec=[0., 0., 1.]):
         """
@@ -361,7 +365,8 @@ class Skeleton():
         
         parent_bone = self.rest_bones[parent_idx]
         new_bone = Bone(endpoint, idx=len(self.rest_bones), parent=parent_bone)
-        assert np.linalg.norm(new_bone.end_location - new_bone.start_location) > 0.0, "Expected inserted bone to have non-zero length. Please use a PointHandle interface for different types of handles."
+        if np.linalg.norm(new_bone.end_location - new_bone.start_location) < 1e-18:
+            print("WARNING: Expected inserted bone to have non-zero length. Please use a PointHandle interface for different types of handles.")
         
         self.rest_bones.append(new_bone)
         self.rest_bones[parent_idx].add_child(new_bone)
@@ -437,9 +442,9 @@ class Skeleton():
             
         return np.array(bone_endpoints)
     
-# ---------------------------------------------------------------------------- 
-# Declare helper functions
-# ---------------------------------------------------------------------------- 
+# =============================================================================
+# Helper Routines    
+# =============================================================================
 # TODO: Could we move these functions to skeleton class so that every other test
 # can utilize them?
 def create_skeleton(joint_locations, kintree):
