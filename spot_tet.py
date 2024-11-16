@@ -25,7 +25,8 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 # =============================================================================
 modelname = 'spot_high' # "spot" or "spot_high"
 
-idxs = [6,7] # Indices to translate the handles (there are 8) 
+idxs = [4,5,6,7] # Indices to translate the handles (there are 8) 
+fixed = [2, 3, 7] # Fixed handles
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
 pose_base = np.array([10.,  0., 0.]) # xyz rotation degrees
 
@@ -50,7 +51,6 @@ repose = (0.0, 0.7, 0.0)
 points = points_data.load_points_data(tgf_path, weight_path, scale, repose)
 mesh = tet_data.load_tets(model_path, scale, repose)
 wireframe = [False]
-fixed = [2, 3, 6]
 points.set_color(fixed=fixed)
 print(mesh.t_i.shape)
 # ========================== init simulation ==========================
@@ -77,17 +77,6 @@ points_ik = compdyn.IK.PointsIK(v_p=mesh.v_p,
                                 c_p_ref=points.c_p_ref,
                                 c_p_input=points.c_p_input,
                                 fix_trans=fixed)
-"""comp = compdyn.base.CompDynMomentum(v_p=mesh.v_p,
-                                    v_p_ref=mesh.v_p_ref,
-                                    v_p_rig=points_ik.v_p_rig,
-                                    v_invm=mesh.v_invm,
-                                    c_p=points.c_p,
-                                    c_p_ref=points.c_p_ref,
-                                    v_weights=points.v_weights,
-                                    dt=dt,
-                                    alpha=1e-5,
-                                    alpha_fixed=1e-5,
-                                    fixed=fixed)"""
 comp = compdyn.point.CompDynPoint(v_p=mesh.v_p,
                                   v_p_ref=mesh.v_p_ref,
                                   v_p_rig=points_ik.v_p_rig,
@@ -191,7 +180,7 @@ def set_movement():
         translation_from_rotation = (rot_mat @ p_input[i]) - p_input[i]
         
         p_input[i] += translation_vec  
-        p_input[i] += translation_from_rotation 
+        p_input[i] += translation_from_rotation # TODO: How can I directly set rotations? This is still translation...
         
         rest_pose[i] = rotation_degrees # Save rotation for skinning
         rest_t[i] = translation_vec # Save translation for skinning
@@ -258,6 +247,7 @@ if save_npz:
            "faces": faces_np, 
            "weights" : weights_np,
            "handles_yoharol":handles_np,
+           "fixed_yoharol" : fixed,
            "handles_rigid": handles_rigid_np,
            "handles_t" : handles_t_np,
            "handles_pose" : handles_pose_np}
