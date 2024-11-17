@@ -39,7 +39,10 @@ from src.render.pyvista_render_tools import (add_mesh,
 # # Config Parameters 
 # # --------------------------------------------------------------------------
 # =============================================================================
-FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
+COMPLIANCE = 0.001 # Set positive number for soft constraint, 0 for hard constraints
+EDGE_CONSTRAINT = True # Only available for PBD integration
+INTEGRATION = "PBD" # "PBD" or "Euler" 
+FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = False # Set true if pose is represented with degrees as Euler angles. 
@@ -47,14 +50,14 @@ DEGREES = False # Set true if pose is represented with degrees as Euler angles.
 
 FRAME_RATE = 24 #24
 TIME_STEP = 1./FRAME_RATE  
-MASS = 5.
-STIFFNESS = 150 #200.
+MASS = 1.
+STIFFNESS = 60 #200.
 DAMPING = 15. #50.            
-MASS_DSCALE = 0.6       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+MASS_DSCALE = 0.3       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 ERR_MODE = "DFAUST" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
-err_cmap = cm.winter
+err_cmap = cm.viridis #winter, jet, brg, gnuplot2, autumn, viridis or see https://matplotlib.org/stable/users/explain/colors/colormaps.html
 COLOR_CODE = True
 RENDER_MESH_RIGID, RENDER_MESH_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
 RENDER_SKEL_RIGID, RENDER_SKEL_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
@@ -67,7 +70,7 @@ ADD_GLOBAL_T = False    # Add the global translation given in the dataset
                         #  the jiggling of helper bones are intiated with rigid movement 
                         #  so it might be misleading, could be better to keep it False.)
      
-if JIGGLE_SCALE != 4.0: print(f"WARNING: Jiggle scaling is set to {JIGGLE_SCALE}, use 1.0 for normal settings.")
+if JIGGLE_SCALE != 1.0: print(f"WARNING: Jiggle scaling is set to {JIGGLE_SCALE}, use 1.0 for normal settings.")
 
 # =============================================================================
 # # --------------------------------------------------------------------------
@@ -140,7 +143,10 @@ helper_rig = HelperBonesHandler(skeleton,
                                 mass_dscale   = MASS_DSCALE,
                                 spring_dscale = SPRING_DSCALE,
                                 point_spring  = POINT_SPRING,
-                                fixed_scale   = FIXED_SCALE) 
+                                edge_constraint   = EDGE_CONSTRAINT,
+                                compliance    = COMPLIANCE,
+                                fixed_scale = FIXED_SCALE,
+                                simulation_mode = INTEGRATION) 
 
 # =============================================================================
 # # --------------------------------------------------------------------------
@@ -317,11 +323,14 @@ elif ERR_MODE == "DFAUST":
     print(">> Total error Ours: ", np.round(tot_err_dyn,4))
     print(">> Average error SMPL: ", np.round(avg_err_rigid, 4))
     print(">> Average error Ours: ", np.round(avg_err_dyn, 4))
+  
+    max_err_r = np.max(distance_err_rigid)
+    max_err_d = np.max(distance_err_dyn)
+    err_cap = max(max_err_r, max_err_d)
+    normalized_dists_rigid = distance_err_rigid / err_cap
+    normalized_dists_dyn = distance_err_dyn / err_cap
     
     scale_err = 1. # This works like threshold actually. 
-    normalized_dists_rigid = normalize_arr_np(distance_err_rigid) 
-    normalized_dists_dyn = normalize_arr_np(distance_err_dyn) 
-    
     err_codes_rigid = normalized_dists_rigid * scale_err
     err_codes_dyn = normalized_dists_dyn * scale_err
     
