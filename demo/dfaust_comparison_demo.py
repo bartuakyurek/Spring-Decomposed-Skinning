@@ -17,6 +17,7 @@ distance error isn't on the jiggling tissues.
 
 import numpy as np
 import pyvista as pv
+from matplotlib import cm
 
 import __init__
 from src import skinning
@@ -53,19 +54,20 @@ MASS_DSCALE = 0.6       # Scales mass velocity (Use [0.0, 1.0] range to slow dow
 SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 ERR_MODE = "DFAUST" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
+err_cmap = cm.winter
 COLOR_CODE = True
-RENDER_MESH_RIGID, RENDER_MESH_DYN = True, False # Turn on/off mesh for SMPL and/or SDDS
+RENDER_MESH_RIGID, RENDER_MESH_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
 RENDER_SKEL_RIGID, RENDER_SKEL_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
 OPACITY = 0.6
 JIGGLE_SCALE = 1.0      # Set it greater than 1 to exaggerate the jiggling impact
-NORMALIZE_WEIGHTS = False # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
+NORMALIZE_WEIGHTS = True # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
 ADD_GLOBAL_T = False    # Add the global translation given in the dataset 
                         # (Note that it'll naturally jiggle the helper bones but it doesn't mean 
                         #  the jiggling of helper bones are intiated with rigid movement 
                         #  so it might be misleading, could be better to keep it False.)
      
-if JIGGLE_SCALE != 1.0: print(f"WARNING: Jiggle scaling is set to {JIGGLE_SCALE}, use 1.0 for normal settings.")
+if JIGGLE_SCALE != 4.0: print(f"WARNING: Jiggle scaling is set to {JIGGLE_SCALE}, use 1.0 for normal settings.")
 
 # =============================================================================
 # # --------------------------------------------------------------------------
@@ -307,16 +309,29 @@ elif ERR_MODE == "DFAUST":
     
     tot_err_rigid =  np.sum(distance_err_rigid)
     tot_err_dyn =  np.sum(distance_err_dyn)
-    print(">> Total error SMPL: ", np.round(tot_err_rigid,4))
-    print(">> Total error Ours: ", np.round(tot_err_dyn,4))
     avg_err_rigid = tot_err_rigid / n_frames
     avg_err_dyn = tot_err_dyn / n_frames
+    
+    print(">> Euclidean distance error on all vertices:")
+    print(">> Total error SMPL: ", np.round(tot_err_rigid,4))
+    print(">> Total error Ours: ", np.round(tot_err_dyn,4))
     print(">> Average error SMPL: ", np.round(avg_err_rigid, 4))
     print(">> Average error Ours: ", np.round(avg_err_dyn, 4))
     
+    scale_err = 1. # This works like threshold actually. 
     normalized_dists_rigid = normalize_arr_np(distance_err_rigid) 
     normalized_dists_dyn = normalize_arr_np(distance_err_dyn) 
     
+    err_codes_rigid = normalized_dists_rigid * scale_err
+    err_codes_dyn = normalized_dists_dyn * scale_err
+    
+    tot_ec_rigid = np.sum(err_codes_rigid)
+    tot_ec_dyn = np.sum(err_codes_dyn)
+    print(">> Euclidean error for the selected vertices:")
+    print(">> Total error SMPL: ", np.round(tot_ec_rigid,4))
+    print(">> Total error Ours: ", np.round(tot_ec_dyn,4))
+    print(">> Average error SMPL: ", np.round(tot_ec_rigid / n_frames, 4))
+    print(">> Average error Ours: ", np.round(tot_ec_dyn / n_frames, 4))
 # =============================================================================
 # Visualize results    
 # =============================================================================
@@ -333,8 +348,8 @@ for frame in range(n_frames):
     # Colorize meshes with respect to error distances
     if COLOR_CODE:
         if ERR_MODE == "DFAUST":
-            set_mesh_color_scalars(rigid_smpl_mesh, normalized_dists_rigid[frame])  
-        set_mesh_color_scalars(dyn_smpl_mesh, normalized_dists_dyn[frame])  
+            set_mesh_color_scalars(rigid_smpl_mesh, err_codes_rigid[frame], err_cmap)  
+        set_mesh_color_scalars(dyn_smpl_mesh, err_codes_dyn[frame], err_cmap)  
     
     frame_text_actor.input = str(frame+1)
     plotter.write_frame()               # Write a frame. This triggers a render.
