@@ -188,7 +188,7 @@ class HelperBonesHandler:
         # if you had a chain of helper bones that are affecting each other? i.e.
         diff = rigidly_posed_locations - self.prev_sim_locations # rigidly_posed_locations is the target. 
         helper_end_idxs = (2 * self.helper_idxs) + 1 # bone locations have 2 joints per bone
-        translate_vec = diff[helper_end_idxs]  
+        translate_vec = diff[helper_end_idxs] 
         # TODO: how to handle an offset? For now, we assume there's no offset between parent and this bone.
  
         # Step 1 - Translate the fixed masses at the endpoint of each helper bone
@@ -203,7 +203,7 @@ class HelperBonesHandler:
         free_mass_locations = cur_mass_locations[self.free_idxs] 
         simulated_locations[helper_end_idxs] = free_mass_locations 
         
-        # Step 4 - Adjust the bone starting points to parent's simulated end point
+        # Step 4 - Adjust the bone starting points to parent's simulated end point + TODO: offset?
         for i, helper_idx in enumerate(self.helper_idxs):            
             bone = self.skeleton.rest_bones[helper_idx]
             end_idx = helper_idx * 2 + 1
@@ -221,6 +221,8 @@ class HelperBonesHandler:
             for child in bone.children:
                 child_start_idx = child.idx * 2
                 child_bone_start = simulated_locations[end_idx]         # Parent's endpoint is the new start point
+                #child_bone_start += child.t # add relative offset --> this doesn't work right now
+                
                 previous_start = simulated_locations[child_start_idx].copy() # without copying, translation gets zero.
                 simulated_locations[child_start_idx] = child_bone_start # Save the new start location
                 # TODO: how about if a child has an offset? we should add it to child_bone_start

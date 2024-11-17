@@ -33,9 +33,11 @@ from src.render.pyvista_render_tools import (add_mesh,
                                              set_mesh_color_scalars,
                                              set_mesh_color)
 
-# -----------------------------------------------------------------------------
-# Config Parameters 
-# -----------------------------------------------------------------------------
+# =============================================================================
+# # --------------------------------------------------------------------------
+# # Config Parameters 
+# # --------------------------------------------------------------------------
+# =============================================================================
 FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
@@ -52,10 +54,10 @@ SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 ERR_MODE = "DFAUST" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
 COLOR_CODE = True
-RENDER_MESH_RIGID, RENDER_MESH_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
-RENDER_SKEL_RIGID, RENDER_SKEL_DYN = True, False # Turn on/off mesh for SMPL and/or SDDS
-OPACITY = 0.8
-JIGGLE_SCALE = 5.0      # Set it greater than 1 to exaggerate the jiggling impact
+RENDER_MESH_RIGID, RENDER_MESH_DYN = True, False # Turn on/off mesh for SMPL and/or SDDS
+RENDER_SKEL_RIGID, RENDER_SKEL_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
+OPACITY = 0.6
+JIGGLE_SCALE = 1.0      # Set it greater than 1 to exaggerate the jiggling impact
 NORMALIZE_WEIGHTS = False # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
 ADD_GLOBAL_T = False    # Add the global translation given in the dataset 
@@ -64,9 +66,12 @@ ADD_GLOBAL_T = False    # Add the global translation given in the dataset
                         #  so it might be misleading, could be better to keep it False.)
      
 if JIGGLE_SCALE != 1.0: print(f"WARNING: Jiggle scaling is set to {JIGGLE_SCALE}, use 1.0 for normal settings.")
-# -----------------------------------------------------------------------------
-# Load animation sequence for the selected subject and pose
-# -----------------------------------------------------------------------------
+
+# =============================================================================
+# # --------------------------------------------------------------------------
+# # Load animation sequence for the selected subject and pose
+# # --------------------------------------------------------------------------
+# =============================================================================
 
 SELECTED_SUBJECT, SELECTED_POSE = subject_ids[0], pose_ids[10]
 
@@ -77,11 +82,11 @@ V_gt, V_smpl, J, bpt = get_anim_sequence(SELECTED_SUBJECT, SELECTED_POSE, smpl_m
 V_rest, J_rest = get_smpl_rest_data(smpl_model, bpt[0][0], bpt[-1][0], return_numpy=True)
 
 
-# -----------------------------------------------------------------------------
-# Setup a helper rig
-# -----------------------------------------------------------------------------
-
-# Setup helper bones data
+# =============================================================================
+# # --------------------------------------------------------------------------
+# # Setup a helper rig
+# # --------------------------------------------------------------------------
+# =============================================================================
 HELPER_RIG_PATH = "../data/helper_rig_data_50004.npz"
 HELPER_RIG_SUBJECT = HELPER_RIG_PATH.split("_")[-1].split(".")[0]
 if SELECTED_SUBJECT != HELPER_RIG_SUBJECT: print(">> WARNING: Selected subject does not match with imported rig target.")
@@ -111,19 +116,19 @@ helper_endpoints = helper_joints[:,-1,:]            # TODO: we should be able to
                                                     # We can do that by start_points but also we should be able to provide [n_bones,2,3] shape, that is treated as headtail automatically.
 
 initial_skel_J = J[0] #J_rest
-helper_rig_t = initial_skel_J[HELPER_ROOT_PARENT] - helper_endpoints[0] * 0.5
+#helper_rig_t = initial_skel_J[HELPER_ROOT_PARENT] - helper_endpoints[0] * 0.5
 #helper_endpoints += helper_rig_t # Translate the helper rig
 
 assert len(helper_parents) == n_helper_bones, f"Expected all helper bones to have parents. Got {len(helper_parents)} parents instead of {n_helper_bones}."
 
 # Initiate rigid rig and add helper bones on it
-
 skeleton = create_skeleton(initial_skel_J, smpl_kintree)
 helper_idxs = add_helper_bones(skeleton, 
                                helper_endpoints, 
                                helper_parents,
+                               startpoints=helper_joints[:,0,:]
                                )
-helper_idxs = np.array(helper_idxs)
+helper_idxs = np.array(helper_idxs, dtype=int)
 
 helper_rig = HelperBonesHandler(skeleton, 
                                 helper_idxs,
@@ -132,14 +137,14 @@ helper_rig = HelperBonesHandler(skeleton,
                                 damping       = DAMPING,
                                 mass_dscale   = MASS_DSCALE,
                                 spring_dscale = SPRING_DSCALE,
-                                dt            = TIME_STEP,
                                 point_spring  = POINT_SPRING,
                                 fixed_scale   = FIXED_SCALE) 
 
-# -----------------------------------------------------------------------------
-# Simulate data
-# -----------------------------------------------------------------------------
-
+# =============================================================================
+# # --------------------------------------------------------------------------
+# # Simulate data
+# # --------------------------------------------------------------------------
+# =============================================================================
 # Loop over frames:
 J_dyn = []
 V_dyn = V_smpl.copy() 
@@ -193,9 +198,11 @@ for frame in range(n_frames):
 J_dyn = np.array(J_dyn, dtype=float)[:,2:,:] # TODO: get rid of the root bone
 # TODO: Report simulation timing
 
-# -----------------------------------------------------------------------------
-# Create a plotter object and add meshes
-# -----------------------------------------------------------------------------
+# =============================================================================
+# # ---------------------------------------------------------------------------
+# # Create a plotter object and add meshes
+# # ---------------------------------------------------------------------------
+# =============================================================================
 RENDER = True
 plotter = pv.Plotter(notebook = False, 
                      off_screen = not RENDER, 
@@ -218,7 +225,9 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
 
 frame_text_actor = plotter.add_text("0", (600,0), font_size=18)
 
-# Add SMPL Mesh 
+# =============================================================================
+# Add SMPL 
+# =============================================================================
 plotter.subplot(0, 1)
 rigid_skel_mesh, rigid_skel_actor = add_skeleton(plotter, initial_J, smpl_kintree, bone_color="white", return_actor=True)
 
@@ -228,16 +237,16 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
 
-# Add SMPL mesh to be jiggled
+# =============================================================================
+# Add Ours
+# =============================================================================
 plotter.subplot(0, 2)
 
 assert J_dyn.shape[0] == J.shape[0], f"Expected first dimensions to share number of frames (n_frames, n_bones, 3). Got shapes {J_dyn.shape} and {J.shape}."
 J_dyn_initial = J_dyn[0]
 edges = len(skeleton.rest_bones)
 line_segments = np.reshape(np.arange(0, 2*(edges-1)), (edges-1, 2))
-#dyn_skel_mesh, dyn_skel_actor = add_skeleton(plotter, J_dyn_initial, line_segments, return_actor=True)
 dyn_skel_mesh, dyn_skel_actor = add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs, is_smpl=True, return_actor=True)
-
 
 dyn_smpl_mesh, dyn_smpl_actor = add_mesh(plotter, initial_smpl_V, F, opacity=OPACITY, return_actor=True)
 plotter.add_text("Ours", TEXT_POSITION, font_size=18)
@@ -245,7 +254,9 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
 
+# =============================================================================
 # Visibility settings
+# =============================================================================
 if not RENDER_MESH_DYN: dyn_smpl_actor.visibility = False
 if not RENDER_SKEL_DYN: 
     dyn_skel_actor[0].visibility = False
@@ -255,13 +266,11 @@ if not RENDER_MESH_RIGID: rigid_smpl_actor.visibility = False
 if not RENDER_SKEL_RIGID: 
     rigid_skel_actor[0].visibility = False
     rigid_skel_actor[1].visibility = False
-# -----------------------------------------------------------------------------
-# Render and save results
-# -----------------------------------------------------------------------------
-    
-result_fname = "dfaust_comparison" + "_" + str(SELECTED_SUBJECT) + "_" + str(SELECTED_POSE)
-plotter.open_movie(RESULT_PATH + f"{result_fname}.mp4")
 
+
+# =============================================================================
+# Compute difference errors
+# =============================================================================
 n_frames = len(V_smpl)
 if ERR_MODE == "SMPL":
     base_verts = V_smpl
@@ -286,14 +295,15 @@ elif ERR_MODE == "DFAUST":
     # distance_err_rigid[err_idxs] = 0.0 #err_cap
     # distance_err_dyn[err_idxs] = 0.0
     
-    # Select vertices based on Laplacian FFT Scores
+    # Select vertices based on Laplacian FFT Scores ---------------------------
     with np.load(DATA_PATH + "laplacian_scores.npz") as data:
         vertex_scores = data["arr_0"]
-    
     threshold = .2
     normalized_vs = normalize_arr_np(vertex_scores)
-    distance_err_rigid[:,normalized_vs > threshold] = 0.0
-    distance_err_dyn[:, normalized_vs > threshold] = 0.0
+    selected_verts = normalized_vs > threshold
+    distance_err_rigid[:, selected_verts] = 0.0 
+    distance_err_dyn[:, selected_verts] = 0.0
+    #--------------------------------------------------------------------------
     
     tot_err_rigid =  np.sum(distance_err_rigid)
     tot_err_dyn =  np.sum(distance_err_dyn)
@@ -307,8 +317,11 @@ elif ERR_MODE == "DFAUST":
     normalized_dists_rigid = normalize_arr_np(distance_err_rigid) 
     normalized_dists_dyn = normalize_arr_np(distance_err_dyn) 
     
-    
-
+# =============================================================================
+# Visualize results    
+# =============================================================================
+result_fname = "dfaust_comparison" + "_" + str(SELECTED_SUBJECT) + "_" + str(SELECTED_POSE)
+plotter.open_movie(RESULT_PATH + f"{result_fname}.mp4")
 for frame in range(n_frames):
     rigid_skel_mesh.points = J[frame]   # Update mesh points in the renderer.
     dyn_skel_mesh.points = J_dyn[frame] # TODO: update it!
