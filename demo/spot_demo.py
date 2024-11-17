@@ -88,10 +88,10 @@ ALGO = "T" # ["T", "RST", "SVD"] RST doesn't work good with this demo, SVD never
 INTEGRATION = "PBD" # PBD or Euler
 
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
-COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
+COMPLIANCE = 1.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
-FIXED_SCALE = False
-POINT_SPRING = False # Currently it doesn't move at all if EDGE_CONSTRAINT=True
+FIXED_SCALE = True
+POINT_SPRING = True # Currently it doesn't move at all if EDGE_CONSTRAINT=True
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 1.
@@ -361,8 +361,8 @@ def convert_points_to_bones(handles, flatten=True):
 n_frames = len(handle_locations_rigid)
 n_bones_rigid = len(skeleton_rigid.rest_bones)
 V_anim_dyn, J_anim_dyn = [], []
-n_bones_dyn = len(skeleton_dyn.rest_bones)
-n_additional_bones = n_bones_dyn - n_bones_rigid
+n_bones_ours = len(skeleton_dyn.rest_bones)
+n_additional_bones = n_bones_ours - n_bones_rigid
 V_anim_rigid = []
 J_anim_rigid = []
 rest_bone_locations = skeleton_dyn.get_rest_bone_locations(exclude_root=False)
@@ -398,9 +398,9 @@ for i in range(n_frames):
     # --------- Ours -----------------------------------------------------------
     start_time = time.time()
     # Prepare translation and rotations
-    t = np.zeros((n_bones_dyn,3))
+    t = np.zeros((n_bones_ours,3))
     t[original_bones,:] = diff
-    pose = np.zeros((n_bones_dyn, 3))
+    pose = np.zeros((n_bones_ours, 3))
      
     # Pose with FK 
     rigidly_posed_handles = skeleton_dyn.pose_bones(pose, t, degrees=True)    
