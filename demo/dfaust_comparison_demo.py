@@ -25,7 +25,7 @@ from src.helper_handler import HelperBonesHandler
 from src.utils.linalg_utils import normalize_arr_np
 from src.data.skeleton_data import get_smpl_skeleton
 from src.skeleton import create_skeleton, add_helper_bones, extract_headtail_locations
-from src.global_vars import subject_ids, pose_ids, RESULT_PATH
+from src.global_vars import subject_ids, pose_ids, RESULT_PATH, DATA_PATH
 from src.data.smpl_sequence import get_gendered_smpl_model, get_anim_sequence, get_smpl_rest_data
 from src.render.pyvista_render_tools import (add_mesh, 
                                              add_skeleton,
@@ -273,9 +273,27 @@ if ERR_MODE == "SMPL":
     normalized_dists_dyn = normalize_arr_np(distance_err_dyn) 
     
 elif ERR_MODE == "DFAUST":
+
     base_verts = V_gt
     distance_err_rigid = np.linalg.norm(base_verts - V_smpl, axis=-1)  # (n_frames, n_verts)
     distance_err_dyn = np.linalg.norm(base_verts - V_dyn, axis=-1)  # (n_frames, n_verts)
+    
+    # # Clamp errors
+    # clamp_ratio = 0.1
+    # max_err = np.max(distance_err_rigid) 
+    # err_cap = max_err * clamp_ratio
+    # err_idxs = distance_err_rigid > err_cap
+    # distance_err_rigid[err_idxs] = 0.0 #err_cap
+    # distance_err_dyn[err_idxs] = 0.0
+    
+    # Select vertices based on Laplacian FFT Scores
+    with np.load(DATA_PATH + "laplacian_scores.npz") as data:
+        vertex_scores = data["arr_0"]
+    
+    threshold = .2
+    normalized_vs = normalize_arr_np(vertex_scores)
+    distance_err_rigid[:,normalized_vs > threshold] = 0.0
+    distance_err_dyn[:, normalized_vs > threshold] = 0.0
     
     tot_err_rigid =  np.sum(distance_err_rigid)
     tot_err_dyn =  np.sum(distance_err_dyn)
@@ -285,8 +303,11 @@ elif ERR_MODE == "DFAUST":
     avg_err_dyn = tot_err_dyn / n_frames
     print(">> Average error SMPL: ", np.round(avg_err_rigid, 4))
     print(">> Average error Ours: ", np.round(avg_err_dyn, 4))
+    
     normalized_dists_rigid = normalize_arr_np(distance_err_rigid) 
     normalized_dists_dyn = normalize_arr_np(distance_err_dyn) 
+    
+    
 
 for frame in range(n_frames):
     rigid_skel_mesh.points = J[frame]   # Update mesh points in the renderer.
