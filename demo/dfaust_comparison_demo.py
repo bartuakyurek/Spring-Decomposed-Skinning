@@ -39,11 +39,11 @@ from src.render.pyvista_render_tools import (add_mesh,
 # # Config Parameters 
 # # --------------------------------------------------------------------------
 # =============================================================================
-COMPLIANCE = 0.001 # Set positive number for soft constraint, 0 for hard constraints
+COMPLIANCE = 0.01 # Set positive number for soft constraint, 0 for hard constraints
 EDGE_CONSTRAINT = True # Only available for PBD integration
 INTEGRATION = "PBD" # "PBD" or "Euler" 
 FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
-POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = False # Set true if pose is represented with degrees as Euler angles. 
                 # WARNING: For SMPL it is False, i.e. radians.
@@ -51,21 +51,21 @@ DEGREES = False # Set true if pose is represented with degrees as Euler angles.
 FRAME_RATE = 24 #24
 TIME_STEP = 1./FRAME_RATE  
 MASS = 1.
-STIFFNESS = 60 #200.
-DAMPING = 15. #50.            
-MASS_DSCALE = 0.3       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
-SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
+STIFFNESS = 100 #200.
+DAMPING = 10 #50.            
+MASS_DSCALE = 0.2       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+SPRING_DSCALE = 10.0     # Scales spring forces (increase for more jiggling)
 
 ERR_MODE = "DFAUST" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
 err_cmap = cm.viridis #winter, jet, brg, gnuplot2, autumn, viridis or see https://matplotlib.org/stable/users/explain/colors/colormaps.html
 COLOR_CODE = True
 RENDER_MESH_RIGID, RENDER_MESH_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
-RENDER_SKEL_RIGID, RENDER_SKEL_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
-OPACITY = 0.6
+RENDER_SKEL_RIGID, RENDER_SKEL_DYN = False, False # Turn on/off mesh for SMPL and/or SDDS
+OPACITY = 1.0
 JIGGLE_SCALE = 1.0      # Set it greater than 1 to exaggerate the jiggling impact
 NORMALIZE_WEIGHTS = True # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
-ADD_GLOBAL_T = False    # Add the global translation given in the dataset 
+#ADD_GLOBAL_T = True    # Add the global translation given in the dataset 
                         # (Note that it'll naturally jiggle the helper bones but it doesn't mean 
                         #  the jiggling of helper bones are intiated with rigid movement 
                         #  so it might be misleading, could be better to keep it False.)
@@ -106,21 +106,26 @@ with np.load(HELPER_RIG_PATH) as data:
 n_verts = V_smpl.shape[1]
 n_rigid_bones = J.shape[1]
 n_helper_bones = helper_joints.shape[0]
-HELPER_ROOT_PARENT = 6
+HELPER_ROOT_PARENT = 9 # See https://www.researchgate.net/figure/Layout-of-23-joints-in-the-SMPL-models_fig2_351179264
 
 assert HELPER_ROOT_PARENT < n_rigid_bones, f"Please select a valid parent index from: [0,..,{n_rigid_bones-1}]."
 assert helper_kintree[0,0] == -1, "Expected first entry to be the root bone."
 assert helper_kintree.shape[1] == 2, f"Expected helper kintree to have shape (n_helpers, 2), got {helper_kintree.shape}."
 assert helper_joints.shape == (n_helper_bones,2,3), f"Expected helper joints to have shape (n_helpers, 2, 3), got {helper_joints.shape}."
 assert helper_W.shape == (n_verts, n_helper_bones), f"Expected helper bone weights to have shape ({n_verts},{n_helper_bones}), got {helper_W.shape}."
+
 helper_kintree = helper_kintree + n_rigid_bones # Update helper indices to match with current skeleton
 helper_kintree[0,0] = HELPER_ROOT_PARENT            # Bind the helper tree to a bone in rigid skeleton
 
 helper_parents = helper_kintree[:,0]                  # Extract parents (TODO: could you require less steps to setup helpers please?)
 helper_endpoints = helper_joints[:,-1,:]            # TODO: we should be able to insert helper bones with head,tail data
                                                     # We can do that by start_points but also we should be able to provide [n_bones,2,3] shape, that is treated as headtail automatically.
+# helper_startpoints --> I assume the data is given as joint-edge structure like in SMPL so I didnt pass startpoints (assumes no offset)
 
 initial_skel_J = J[0] #J_rest
+#global_trans = bpt[-1][0].numpy()  # (3,)
+#if ADD_GLOBAL_T: initial_skel_J += global_trans
+
 #helper_rig_t = initial_skel_J[HELPER_ROOT_PARENT] - helper_endpoints[0] * 0.5
 #helper_endpoints += helper_rig_t # Translate the helper rig
 
@@ -131,7 +136,7 @@ skeleton = create_skeleton(initial_skel_J, smpl_kintree)
 helper_idxs = add_helper_bones(skeleton, 
                                helper_endpoints, 
                                helper_parents,
-                               startpoints=helper_joints[:,0,:]
+                               #startpoints=helper_startpoints
                                )
 helper_idxs = np.array(helper_idxs, dtype=int)
 
@@ -163,17 +168,30 @@ helper_poses = np.zeros((n_helper_bones, 3))                  # (10,3)
 rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False)
 prev_J = rest_bone_locations
 prev_V = V_smpl[0]
+
+n_bones = len(skeleton.rest_bones)
+n_bones_rigid = n_bones - len(helper_idxs)
 for frame in range(n_frames):
     # WARNING:I'm using pose parameters in the dataset to apply FK for helper bones
     # but when the bones are actually posed with these parameters, the skeleton 
     # is not the same as the provided joint locations from the SMPL model. That is
     # because SMPL use a regressor to estimate the bone locations.
-    theta = np.reshape(poses[frame].numpy(),newshape=(-1, 3)) # (24,3)
-    theta = np.vstack((theta, helper_poses))                  # (34,3)
-    rigidly_posed_locations = skeleton.pose_bones(theta, degrees=DEGREES) 
     
-    global_trans = translations[frame].numpy()            # (3,)
-    if ADD_GLOBAL_T: rigidly_posed_locations += global_trans
+    diff = J[frame] - J[0]
+    
+    # Set theta to zero, and just use translations because the given poses differ from regressed locations
+    theta = np.zeros((n_bones_rigid, 3)) #np.reshape(poses[frame].numpy(),newshape=(-1, 3)) # (24,3)
+    theta = np.vstack((theta, helper_poses))                  # (34,3)
+    t = np.zeros((n_bones,3))
+    for i in range(n_bones):
+        if i in helper_idxs:
+            continue
+        t[i] = diff[i]
+
+    rigidly_posed_locations = skeleton.pose_bones(theta, t, degrees=DEGREES) 
+    
+    #global_trans = translations[frame].numpy()            # (3,)
+    #if ADD_GLOBAL_T: rigidly_posed_locations += global_trans
     
     # Since the regressed joint locations of SMPL is different, keep them as given in the dataset
     # (Try to comment the couple lines right below this to see the effect.)
