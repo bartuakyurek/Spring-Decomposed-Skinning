@@ -88,13 +88,13 @@ def add_mesh(plotter,
     
     return mesh
 
-def set_mesh_color_scalars(mesh, scalars):
+def set_mesh_color_scalars(mesh, scalars, cmap=cm.jet):
     # See this example to update mesh scalars
     # https://docs.pyvista.org/examples/01-filter/collisions.html
     assert type(mesh) is pv.PolyData, f"Expected actor to be a PolyData, got {type(mesh)}"
     assert len(scalars.shape) == 1, f"Expected scalars to have shape (n_verts,). Got {scalars.shape}."
    
-    colors = cm.jet(scalars)[:, 0:3]
+    colors = cmap(scalars)[:, 0:3]
     mesh['vert_colors'] = colors
     return
 
