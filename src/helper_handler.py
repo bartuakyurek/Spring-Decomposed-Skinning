@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+WARNING: This handler assumes the helper bone chains cannot have offset
+(though rigid bones can have offsets). In feature releases this should be
+addressed.
+
+
 Created on Sat Oct 12 10:05:05 2024
 
 @author: bartu
