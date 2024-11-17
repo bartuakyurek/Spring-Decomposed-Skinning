@@ -223,7 +223,7 @@ plotter.subplot(0, 1)
 rigid_skel_mesh, rigid_skel_actor = add_skeleton(plotter, initial_J, smpl_kintree, bone_color="white", return_actor=True)
 
 rigid_smpl_mesh, rigid_smpl_actor = add_mesh(plotter, initial_smpl_V, F, opacity=OPACITY, return_actor=True)
-plotter.add_text("SMPL Rigid Deformation", TEXT_POSITION, font_size=18)
+plotter.add_text("SMPL", TEXT_POSITION, font_size=18)
 plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
@@ -240,7 +240,7 @@ dyn_skel_mesh, dyn_skel_actor = add_skeleton_from_Skeleton(plotter, skeleton, he
 
 
 dyn_smpl_mesh, dyn_smpl_actor = add_mesh(plotter, initial_smpl_V, F, opacity=OPACITY, return_actor=True)
-plotter.add_text("Spring Deformation", TEXT_POSITION, font_size=18)
+plotter.add_text("Ours", TEXT_POSITION, font_size=18)
 plotter.camera_position = [[-0.5,  1.5,  5.5],
                            [-0. ,  0.2,  0.3],
                            [ 0. ,  1. , -0.2]]
