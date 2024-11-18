@@ -18,6 +18,24 @@ def _get_padded_edges(edges, n_points_per_edge=2):
     return edges_w_padding
 
 
+def add_texture(polydata, actor, img_path=None):
+    if img_path is None:
+        arr = np.array([
+                        [255, 255, 255],
+                        [255, 0, 0],
+                        [0, 255, 0],
+                        [0, 0, 255]
+                        ],dtype=np.uint8)
+        
+        arr = arr.reshape((2, 2, 3))
+        tex = pv.Texture(arr)
+    else:
+        tex = pv.read_texture(img_path)
+    
+    polydata.texture_map_to_plane(inplace=True)
+    actor.texture = tex
+    return
+    
 def set_mesh_color(mesh, color):
     """
     Set the mesh vertex colors to a single provided color.
