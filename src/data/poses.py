@@ -7,6 +7,19 @@ Created on Sun Oct 20 10:02:36 2024
 """
 import numpy as np
 
+class pose:
+    
+    @staticmethod
+    def set_zero_pose(skeleton, n_keyframes):
+        n_bones = len(skeleton.rest_bones)
+        pose = np.zeros((1, n_bones, 3))
+        t = np.zeros((1, n_bones, 3))
+        
+        keyframe_poses = np.repeat(pose, n_keyframes, axis=0)
+        keyframe_t = np.repeat(t, n_keyframes, axis = 0)
+        return keyframe_poses, keyframe_t
+
+
 igl_arm_pose = np.array([
                 [  # Keyframe 0 
                  [0.,0.,0.],
