@@ -1,36 +1,40 @@
-# Spring Decomposed Dynamic Skinning
+# Spring Decomposed Skinning
  This repository demonstrates a dynamic deformation achieved by adding spring helper bones to an 
-existing geometric skinning pipeline. Note that it's a work in progress. Currently you can run either 
-the files under ./tests/ or ./demo/ directories, e.g. ``python ./tests/spring_bone_test.py``.
+existing geometric skinning pipeline. 
 
-![A chain of skeletal bones jiggles through a rigid motion.](./assets/jiggle-chain.gif)
-![Comparison of DFAUST vs. SMPL vs. Spring Decomposed Skinning.](./assets/dfaust_comparison_50004_jiggle_on_toes.gif)
+![TODO: Add video here](./assets/)
 
-
-
-### TO-DO
-
-[ ] Adjust plotter camera zoom
-
-[ ] Add demo gifs
-
-[ ] Color code evaluation
-
-[ ] Update instructions to use this repo
+![TODO: Add video here](./assets/)
 
 
-It's recommended to first create a virtual environment. Assuming you're inside the source directory, run:
+## Installation Steps
+
+**Step 1** It's recommended to first create a virtual environment. Assuming you're inside the source directory, run:
 ```
 $ python -m venv venv
 $ source venv/bin/activate
 ```
 
-Then, to install the dependencies, run:
+**Step 2** To install the dependencies, run:
 ```
 $ pip install -r requirements.txt
 ```
 
-To deactivate the virtual environment, run:
+**Step 3** To run a demo, change directory to ``/demo`` and run the relevant script:
 ```
-$ deactivate
+$ cd demo
+$ python spot_demo.py
 ```
+
+
+> [!TIP]
+> To deactivate the virtual environment, run:
+>
+> `` $ deactivate ``
+
+> [!WARNING]
+>  Note that this repo is a work in progress. Currently you can run either the files under ``./tests/`` or ``./demo/`` directories. (You may need to change directories to run them)
+
+
+## TODO
+[ ] Allow running from the directory ./test/test_file.py (change step 3)
