@@ -28,7 +28,7 @@ modelname = 'spot_high' # "spot" or "spot_high"
 idxs = [4,5,6,7] # Indices to translate the handles (there are 8) 
 fixed = [0, 1, 2, 3, 7] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
-pose_base = np.array([10.,  0., 0.]) # xyz rotation degrees
+pose_base = np.array([0.,  0., 20.]) # xyz rotation degrees
 
 save_path = "/Users/bartu/Documents/Github/Spring-Decomp/data/" + \
             f"{modelname}/{modelname}_extracted.npz" # !!!! EDIT !!!!

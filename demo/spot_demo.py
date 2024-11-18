@@ -52,12 +52,12 @@ EXTRACT_REST_OBJ = False # To save the rest pose as .obj for using it in Blender
 MODEL_NAME = "spot_high" # "spot" or "spot_high"
 AVAILABLE_MODES = ["point springs", "helper rig"]
 MAKE_ALL_SPRING = False # Set true to turn all bones spring bones
-SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
+SKELETON_MODE = AVAILABLE_MODES[0] # "point springs" or "helper rig" 
 USE_ORIGINAL_WEIGHTS = False # To keep/override the given weights of original handles in helper rig mode
 USE_POINT_HANDLES_IN_OURS = True # Render the handles as points instead of bones (to match with given point handle rig)
 
 # RENDER PARAMETERS
-RENDER_MESH = False
+RENDER_MESH = True
 RENDER_SKEL = True
 WIREFRAME = True
 RENDER_TEXTURE = False # Automatically treated as False if COLOR_CODE is True
@@ -69,7 +69,7 @@ LIGHT_POS = (10.5, 3.5, 3.5)
                        
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = False
-OPACITY = 1.
+OPACITY = 0.5
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.3
 BASE_COLOR = [0.8,0.7,1.0] # RGB
@@ -88,17 +88,17 @@ ALGO = "T" # ["T", "RST", "SVD"] RST doesn't work good with this demo, SVD never
 INTEGRATION = "PBD" # PBD or Euler
 
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
-COMPLIANCE = 1.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
+COMPLIANCE = 0.1 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
-FIXED_SCALE = True
-POINT_SPRING = True # Currently it doesn't move at all if EDGE_CONSTRAINT=True
+FIXED_SCALE = False
+POINT_SPRING = False # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
-MASS = 1.
-STIFFNESS = 125.
-DAMPING = 20.  
-MASS_DSCALE = 0.3       # Mass velocity damping (Use [0.0, 1.0] range to slow down)
-SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
+MASS = 5.
+STIFFNESS = 100.
+DAMPING = 10.  
+MASS_DSCALE = 0.5       # Mass velocity damping (Use [0.0, 1.0] range to slow down)
+SPRING_DSCALE = 3.0     # Scales spring forces (increase for more jiggling)
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # READ DATA
@@ -239,9 +239,10 @@ def set_lights(plotter):
         plotter.add_light(light)
 
 def adjust_camera_spot(plotter):
-    plotter.camera.tight(padding=0.5, view="zy", adjust_render_window=False)
+    plotter.camera.tight(padding=0.4, view="zy", adjust_render_window=False)
+    plotter.camera.clipping_range = (-1, 3) # -1 is to fix near clipping range
     plotter.camera.azimuth = 210
-
+    
 
 def add_texture(polydata, actor, img_path=None):
     if img_path is None:
@@ -257,7 +258,6 @@ def add_texture(polydata, actor, img_path=None):
     else:
         tex = pv.read_texture(img_path)
     
-
     polydata.texture_map_to_plane(inplace=True)
     actor.texture = tex
 
