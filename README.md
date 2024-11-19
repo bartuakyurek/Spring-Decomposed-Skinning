@@ -2,8 +2,9 @@
  This repository demonstrates a dynamic deformation achieved by adding spring helper bones to an 
 existing geometric skinning pipeline. 
 
-![Monstera plant in a pot is shaked](./assets/monstera_demo.gif)
+![Monstera plant in a pot is shaked](./assets/monstera.gif)
 
+![A rubber duck shaked from left to right](./assets/duck.gif)
 
 
 ## Installation Steps
@@ -13,7 +14,6 @@ existing geometric skinning pipeline.
 $ python -m venv venv
 $ source venv/bin/activate
 ```
-
 **Step 2** To install the dependencies, run:
 ```
 $ pip install -r requirements.txt

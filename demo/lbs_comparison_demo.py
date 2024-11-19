@@ -30,14 +30,14 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODEL_NAME = "monstera" # Available options: "duck", "blob", "cloth", "monstera"
+MODEL_NAME = "duck" # Available options: "duck", "blob", "cloth", "monstera"
 
 COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
 WIREFRAME = False
 RENDER_MESH = True
 RENDER_SKEL = False
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
-RENDER_PHYS_BASED = False
+RENDER_PHYS_BASED = True
 OPACITY = 1.0
 MATERIAL_METALLIC = 0.0
 MATERIAL_ROUGHNESS = 0.2
@@ -54,19 +54,19 @@ NORMALIZE_WEIGHTS = True
 
 FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
 EDGE_CONSTRAINT = False # Recommended to set either FIXED_SCALE or EDGE_CONSTRAINT True
-POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 N_REPEAT = 2
-N_REST = 2
+N_REST = 4
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
-MASS = 2.5
-STIFFNESS = 200.
-DAMPING = 25.            
+MASS = 1.5
+STIFFNESS = 100.
+DAMPING = 20.            
 MASS_DSCALE = 0.5       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
-SPRING_DSCALE = 1.5     # Scales spring forces (increase for more jiggling)
+SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 model_dict = model_data.model_dict[MODEL_NAME]
 OBJ_PATH = model_dict["OBJ_PATH"]
