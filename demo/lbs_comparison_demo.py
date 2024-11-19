@@ -31,16 +31,16 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODEL_NAME = "cloth" # Available options: "duck", "blob", "cloth", "monstera"
+MODEL_NAME = "monstera" # Available options: "duck", "blob", "cloth", "monstera"
 
-RENDER_TEXTURE = True
+RENDER_TEXTURE = False
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
 WIREFRAME = False
 RENDER_MESH = True
-RENDER_SKEL = True
+RENDER_SKEL = False
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = False
-OPACITY = 0.6
+OPACITY = 1.0
 MATERIAL_METALLIC = 0.0
 MATERIAL_ROUGHNESS = 0.2
 WINDOW_SIZE = (1920, 1080)
