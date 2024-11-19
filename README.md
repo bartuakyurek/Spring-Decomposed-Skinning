@@ -1,6 +1,5 @@
 # Spring Decomposed Skinning
- This repository demonstrates a dynamic deformation achieved by adding spring helper bones to an 
-existing geometric skinning pipeline. 
+ This repository demonstrates a dynamic skinning deformation achieved by spring bones. Note that it might take some time to load of the GIFs in this page.
 
 ![Monstera plant in a pot is shaked](./assets/monstera.gif)
 
@@ -27,11 +26,14 @@ $ cd demo
 $ python spot_demo.py
 ```
 
-
 > [!TIP]
 > To deactivate the virtual environment, run:
 >
 > `` $ deactivate ``
+
+**Download Data**
+ 
+For DFAUST demos, the relevant dataset should be downloaded from (link here). This step is not required for other demos as their relevant data is included in ``/data`` directory.
 
 > [!WARNING]
 >  Note that this repo is a work in progress. Currently you can run either the files under ``./tests/`` or ``./demo/`` directories. (You may need to change directories to run them)
@@ -39,3 +41,5 @@ $ python spot_demo.py
 
 ## TODO
 [ ] Allow running from the directory ./test/test_file.py (change step 3)
+
+[ ] Add instructions for setting up DFAUST data
