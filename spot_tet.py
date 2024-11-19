@@ -108,8 +108,7 @@ window.add_render_func(
                                       mesh.f_i,
                                       wireframe,
                                       color=(1.0, 1.0, 1.0)))
-# window.add_render_func(render_func=render_funcs.get_mesh_render_func(
-#     points_ik.v_p_rig, mesh.f_i, wireframe, color=(0.0, 0.0, 1.0)))
+
 window.add_render_func(
     render_funcs.get_points_render_func(points, point_radius=0.04))
 
@@ -165,8 +164,6 @@ written = [False]
 def set_movement():
   t = window.get_time() - 1.0
   p_input = points_ik.c_p_ref.to_numpy() # Handles at rest
-  #rest_pose = np.zeros((n_handles, 3))
-  #rest_t = np.zeros((n_handles, 3))
   
   if t > 0.0:
     translation_vec = trans_base * math.sin( t * math.pi) # Translation from rest -> posed
@@ -176,7 +173,6 @@ def set_movement():
     rot_mat = rot.as_matrix()
     
     for i in idxs:
-        
         translation_from_rotation = (rot_mat @ p_input[i]) - p_input[i]
         
         p_input[i] += translation_vec  
