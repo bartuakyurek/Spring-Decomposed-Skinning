@@ -4,7 +4,7 @@ HOW TO USE THIS SCRIPT?
 In Blender,
 - Import the object you want to rig (see the warning below)
 - Setup an armature with a single root bone. This armature will be used as helper rig in Spring
-  Decomposition pipeline, excluding the root.
+  Decomposition pipeline.
 - Bind the armature to the mesh via automatic weights.
 - Edit the weights via weight painting. Note that not all the bones have to have weights.
 - (Optional) Make all the weights of root bone 1.0 to check the influence of helper bones clearly.
