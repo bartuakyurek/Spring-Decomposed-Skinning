@@ -2,9 +2,8 @@
  This repository demonstrates a dynamic deformation achieved by adding spring helper bones to an 
 existing geometric skinning pipeline. 
 
-![TODO: Add video here](./assets/)
+![Monstera plant in a pot is shaked](./assets/monstera_demo.gif)
 
-![TODO: Add video here](./assets/)
 
 
 ## Installation Steps

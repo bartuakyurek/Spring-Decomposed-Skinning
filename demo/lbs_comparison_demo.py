@@ -30,22 +30,23 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODEL_NAME = "duck" # Available options: "duck", "blob", "cloth", "monstera"
+MODEL_NAME = "monstera" # Available options: "duck", "blob", "cloth", "monstera"
 
 COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
 WIREFRAME = False
-RENDER_MESH = False
-RENDER_SKEL = True
+RENDER_MESH = True
+RENDER_SKEL = False
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
-RENDER_PHYS_BASED = True
-OPACITY = 0.6
+RENDER_PHYS_BASED = False
+OPACITY = 1.0
 MATERIAL_METALLIC = 0.0
 MATERIAL_ROUGHNESS = 0.2
-WINDOW_SIZE = (1500 * 2, 1200)
+WINDOW_SIZE = (1920, 1080)
 
 ADD_LIGHT = True
-LIGHT_INTENSITY = 0.6 # Between [0, 1]
+LIGHT_INTENSITY = 0.3 # Between [0, 1]
 LIGHT_POS = (10.5, 3.5, 3.5)
+SPRING_BONE_COLOR =  "blue"
 
 INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
@@ -53,19 +54,19 @@ NORMALIZE_WEIGHTS = True
 
 FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
 EDGE_CONSTRAINT = False # Recommended to set either FIXED_SCALE or EDGE_CONSTRAINT True
-POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-N_REPEAT = 3
+N_REPEAT = 2
 N_REST = 2
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
-MASS = 3.5
-STIFFNESS = 120.
-DAMPING = 35.            
-MASS_DSCALE = 0.6       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
-SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
+MASS = 2.5
+STIFFNESS = 200.
+DAMPING = 25.            
+MASS_DSCALE = 0.5       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+SPRING_DSCALE = 1.5     # Scales spring forces (increase for more jiggling)
 
 model_dict = model_data.model_dict[MODEL_NAME]
 OBJ_PATH = model_dict["OBJ_PATH"]
@@ -122,7 +123,7 @@ if ADD_LIGHT:
 plotter.subplot(0, 0)
 model_data.adjust_camera(plotter, MODEL_NAME)
 
-plotter.add_text("Rigid Deformation (LBS)", "lower_left", font_size=18)
+plotter.add_text("Rigid Skinning (LBS)", "lower_left", font_size=18)
 frame_text_actor = plotter.add_text("0", (600,0), font_size=18) # Add frame number
 
 
@@ -138,9 +139,9 @@ if RENDER_SKEL: skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton)
 plotter.subplot(0, 1)
 model_data.adjust_camera(plotter, MODEL_NAME)
 
-plotter.add_text("Dynamic Deformation (Ours)", "lower_left", font_size=18)
+plotter.add_text("Dynamic Skinning (Ours)", "lower_left", font_size=18)
 
-if RENDER_SKEL: skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs)
+if RENDER_SKEL: skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs, alt_bone_color=SPRING_BONE_COLOR)
 
 if RENDER_MESH: 
     mesh_dyn, mesh_dyn_actor = add_mesh(plotter, V_rest, F, opacity=OPACITY, return_actor=True, 

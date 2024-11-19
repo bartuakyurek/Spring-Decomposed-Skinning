@@ -84,10 +84,10 @@ def adjust_rig(B, MODEL_NAME):
     
     return B
 
-def adjust_camera(plotter, MODEL_NAME):
+def adjust_camera(plotter, MODEL_NAME, resize_window=False):
     
     if MODEL_NAME == "duck":
-        plotter.camera.tight(padding=3, view="yz")
+        plotter.camera.tight(padding=3, view="yz", adjust_render_window=resize_window)
         plotter.camera.position = [0.0, 5.0, 4.0]
         plotter.camera.focal_point = (0.0, 0.5, 3.5)
         plotter.camera.roll = 180
