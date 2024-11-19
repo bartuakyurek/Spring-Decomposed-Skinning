@@ -23,6 +23,7 @@ from src.helper_handler import HelperBonesHandler
 from src.utils.linalg_utils import normalize_arr_np
 from src.skeleton import create_skeleton_from
 from src.render.pyvista_render_tools import (add_mesh, 
+                                             add_texture,
                                              add_skeleton_from_Skeleton, 
                                              set_mesh_color_scalars,
                                              set_mesh_color)
@@ -30,15 +31,16 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODEL_NAME = "duck" # Available options: "duck", "blob", "cloth", "monstera"
+MODEL_NAME = "cloth" # Available options: "duck", "blob", "cloth", "monstera"
 
-COLOR_CODE = True # True if you want to visualize the distances between rigid and dynamic
+RENDER_TEXTURE = True
+COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
 WIREFRAME = False
 RENDER_MESH = True
-RENDER_SKEL = False
+RENDER_SKEL = True
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
-RENDER_PHYS_BASED = True
-OPACITY = 1.0
+RENDER_PHYS_BASED = False
+OPACITY = 0.6
 MATERIAL_METALLIC = 0.0
 MATERIAL_ROUGHNESS = 0.2
 WINDOW_SIZE = (1920, 1080)
@@ -58,7 +60,7 @@ POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 N_REPEAT = 2
-N_REST = 4
+N_REST = 1
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
@@ -71,6 +73,7 @@ SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 model_dict = model_data.model_dict[MODEL_NAME]
 OBJ_PATH = model_dict["OBJ_PATH"]
 RIG_PATH = model_dict["RIG_PATH"]
+TEXTURE_PATH = model_dict["TEXTURE_PATH"]
 helper_idxs = model_dict["helper_idxs"]
 keyframe_poses = model_dict["keyframe_poses"]
 
@@ -133,6 +136,9 @@ if RENDER_MESH:
                                             smooth_shading=SMOOTH_SHADING,
                                             pbr=RENDER_PHYS_BASED, metallic=MATERIAL_METALLIC, roughness=MATERIAL_ROUGHNESS)
   
+    if RENDER_TEXTURE:
+        add_texture(mesh_rigid, mesh_rigid_actor, TEXTURE_PATH)
+        
 if RENDER_SKEL: skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton)
 
 # ---------- Second Plot ---------------
@@ -148,7 +154,9 @@ if RENDER_MESH:
                                         show_edges=WIREFRAME, smooth_shading=SMOOTH_SHADING,
                                         pbr=RENDER_PHYS_BASED, metallic=MATERIAL_METALLIC, roughness=MATERIAL_ROUGHNESS)
     
- 
+    if RENDER_TEXTURE:
+        add_texture(mesh_dyn, mesh_dyn_actor, TEXTURE_PATH)
+        
     
 plotter.open_movie(os.path.join(RESULT_PATH, f"{MODEL_NAME}-{ALGO}.mp4"))
 n_poses = keyframe_poses.shape[0]

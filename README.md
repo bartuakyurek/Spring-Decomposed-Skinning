@@ -6,6 +6,8 @@ existing geometric skinning pipeline.
 
 ![A rubber duck shaked from left to right](./assets/duck.gif)
 
+![A piece of paper is moved back and forth](./assets/cloth.gif)
+
 
 ## Installation Steps
 

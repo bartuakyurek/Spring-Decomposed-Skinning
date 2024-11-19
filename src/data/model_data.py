@@ -15,9 +15,10 @@ from . import poses
 from ..global_vars import DATA_PATH
 
 
-def get_obj_path(name): return os.path.join(DATA_PATH, name, name+".obj")
-def get_rig_path(name): return os.path.join(DATA_PATH, name, name+"_rig_data.npz")
-    
+def get_obj_path(name): return os.path.join(DATA_PATH, name, f"{name}.obj")
+def get_rig_path(name): return os.path.join(DATA_PATH, name, f"{name}_rig_data.npz")
+def get_texture_path(name): return os.path.join(DATA_PATH, name, f"{name}_texture.png") # If set to None, default texture will be used
+
 duck = "duck"
 blob = "blob"
 monstera = "monstera"
@@ -26,28 +27,33 @@ cloth = "cloth"
 model_dict = {
   duck: {"OBJ_PATH": get_obj_path(duck),
          "RIG_PATH":get_rig_path(duck),
+         "TEXTURE_PATH": get_texture_path(duck),
          "keyframe_poses": poses.duck_rig_pose,
          "helper_idxs": np.array([i for i in range(1, 6)])
          },
   
   blob : {"OBJ_PATH": get_obj_path(blob),
           "RIG_PATH": get_rig_path(blob),
+          "TEXTURE_PATH": get_texture_path(blob),
           "keyframe_poses": poses.blob_rig_pose,
           "helper_idxs": np.array([i for i in range(1, 35)]) #[5,6,21,22,25,26,27,33],
       },
   monstera : {"OBJ_PATH": get_obj_path(monstera),
           "RIG_PATH": get_rig_path(monstera),
+          "TEXTURE_PATH": get_texture_path(monstera),
           "keyframe_poses": poses.monstera_rig_pose,
           "helper_idxs":  np.array([i for i in range(1, 24)]),
       },
   cloth : {"OBJ_PATH": get_obj_path(cloth),
           "RIG_PATH": get_rig_path(cloth),
+          "TEXTURE_PATH": get_texture_path(cloth),
           "keyframe_poses": poses.cloth_rig_pose,
           "helper_idxs":  np.array([i for i in range(1, 23)]),
       },
   
   "sample" : {"OBJ_PATH": None,
           "RIG_PATH": None,
+          "TEXTURE_PATH":None,
           "keyframe_poses": None,
           "helper_idxs": None,
       },
