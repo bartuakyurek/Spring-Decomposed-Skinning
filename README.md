@@ -1,5 +1,8 @@
 # Spring Decomposed Skinning
- This repository demonstrates a dynamic skinning deformation achieved by spring bones. Note that it might take some time to load of the GIFs in this page.
+ This repository demonstrates a dynamic skinning deformation achieved by spring bones.
+ 
+ > [!WARNING]
+ > It might take some time to load of the GIFs in this page.
 
 ![Monstera plant in a pot is shaked](./assets/monstera.gif)
 
