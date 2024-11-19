@@ -34,11 +34,11 @@ INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
 
-OPACITY = 0.6
+OPACITY = 1.0
 SPRING_BONE_COLOR = "blue"
 WINDOW_SIZE = (1200, 1200)
 RENDER_MESH = True
-RENDER_SKEL = True
+RENDER_SKEL = False
 RENDER_PHYS_BASED = True
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.5
@@ -47,8 +47,8 @@ FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
 POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-N_REPEAT = 3
-N_REST = 2
+N_REPEAT = 2
+N_REST = 1
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
@@ -130,7 +130,7 @@ frame_text_actor = plotter.add_text("0", TEXT_POSITION, font_size=18)
 # ----------------------------------------------------------------------------
 
 if RENDER_SKEL:    
-    skel_mesh = add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs, spring_bone_color=SPRING_BONE_COLOR)
+    skel_mesh = add_skeleton_from_Skeleton(plotter, skeleton, helper_idxs, alt_bone_color=SPRING_BONE_COLOR)
 
 if RENDER_MESH: 
     
