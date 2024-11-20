@@ -1,28 +1,51 @@
 # Spring Decomposed Skinning
 ![Placeholder figure](./assets/placeholder_figure.png)
+**Figure 1:** Results of our simulated dynamics. We automatically introduce dynamic stretch and squash deformation with the help of spring forces.
 
- This repository demonstrates a dynamic skinning deformation achieved by spring bones. Traditional skinning methods lack secondary motion such as jiggling. Our aim is to introduce dynamic motion into existing skinning pipelines through physically simulating the bones. Our work unifies the accuracy benefits of physical simulation with the computational cost and intuitive deformation benefits of the traditional skinning framework.
+This repository demonstrates a novel approach to dynamic skinning deformation using spring bones. Traditional skinning methods often lack secondary motion (e.g., jiggling), which limits their realism. Our method introduces dynamic motion into existing skinning pipelines by physically simulating bones, combining the accuracy of physical simulation with the computational efficiency of traditional skinning.
+
+
+### Key Features
+
+- **Dynamic Motion with simple framework:** We implement simple Hookean spring forces directly on the rig bones with Position-Based Dynamics (PBD) to emulate secondary dynamics caused by the skeletal motion. 
+- **No Tetrahedralization Required:** Unlike most physical simulation methods, we avoid computationally expensive tetrahedralization while still achieving realistic dynamics.
+- **Scalability:** We avoid any simulation on the surface vertices which allows us to scale higher resolution meshes just like the traditional skinning pipelines.
+- **User-Controlled Dynamics:** Intuitive control over the global and local deformation dynamics is achieved by leveraging spring forces on primary bones and helper bones.
  
- We use Hookean spring forces simulated with Position Based Dynamics to achieve jiggling motion on the bones. Unlike the majority of physical simulation approaches, we do not require any tetrahedralization to achieve dynamics in skinning deformation.
  > [!WARNING]
- > It might take some time to load the GIFs on this page.
+ > It might take some time to load all the GIFs on this page.
+
+## Visual Demo
+Our method effectively captures secondary motion dynamics that would otherwise require manual bone positioning for each keyframe.
 
 ![Monstera plant in a pot is shaked](./assets/monstera_lq.gif)
-
-Our method can easily capture secondary motion dynamics in various subjects. Here we automatically compute the dynamic motion with spring forces, which would be cumbersome to replicate using traditional skinning method as the 3D artist would have to manually position the bones at each keyframe.  
+**Figure 2.1:** A plant pot is shaken right to left. Traditional skinning methods cannot automatically capture secondary dynamics.
 ![A rubber duck shaked from left to right](./assets/duck_lq.gif)
+**Figure 2.2:** A rubber duck is rotated back and forth. Our deformation introduces dynamic effects as if the duck is floating on the water without any complex simulations on the surfaces.
 
-Here we emulate dynamics for a piece of cloth using a limited set of spring bone chains. Traditional garment simulations often require a mass-spring system at every edge of the mesh, which makes the simulation dependent on the surface resolution. Our method can scale to various resolutions as we utilize skinning bones to decompose a dynamic motion.
-![A piece of paper is moved back and forth](./assets/cloth_lq.gif)
+In the figures above, blue bones are simulated within our framework. We automatically compute the dynamic motion, which would be cumbersome to replicate using traditional skinning method as the 3D artist would have to manually position the bones at each keyframe.  
 
-We compare our results with another method that unifies physical simulation with skinning framework by Wu and Umetani's study in 2023 [1]. 
+
+![A piece of cloth is moved back and forth](./assets/cloth_lq.gif)
+**Figure 2.3:** A piece of cloth is moved back and forth. 
+
+In Figure 2.3, we emulate dynamics for a piece of cloth using a limited set of spring bone chains. 
+Unlike traditional garment simulations, which rely on mass-spring systems for every mesh edge, our method remains resolution-independent.
+
+
+## Comparison Wu et al. (2023)
+
+We compare our results with another method that unifies physical simulation with skinning framework, Controllable PBD 
+by Wu and Umetani [1]. 
 ![Comparison with Wu et al.](./assets/spot_comparison.gif)
 
 Here the yellow dots represent the point handles that are transformed by the user. The same handles are transformed for both Wu et al. and our work. The red dots represent the point handles that are fixed in Wu et al.'s controllable PBD work and green ones are dynamic handles that are moved by controllable PBD framework. For the details of their implementation, please refer to [their webpage](https://yoharol.github.io/pages/control_pbd/). In our work, blue handles represent the spring bones that are simulated in our pipeline. We can achieve both global secondary dynamics that jiggles major body parts of the mesh, and local secondary dynamics for soft tissues.  The point handles on the above figure are bound to larger areas of the mesh, hence they can produce global dynamics.
 
+## Local Dynamics with Helper Bones
+
 ![Helper bone chains simulate local dynamics](./assets/spot_helpers.gif)
 
-To introduce local dynamics, we utilize helper bones that are additional bones often places perpendicular to the rigid bones. In the figure above, we place the helper chains that are bound to smaller local areas on a mesh to emulate jigglings of the soft tissues. 
+To introduce jigglings on local areas, we utilize helper bones that are additional bones often places perpendicular to the rigid bones. In the figure above, we place the helper chains that are bound to smaller local areas on a mesh to emulate jigglings of the soft tissues. 
 The yellow handles are moved by the user that creates the rigid motion, then the blue helper spring chains are simulated via PBD, that produces the jiggling of the soft tissues.
 
 
