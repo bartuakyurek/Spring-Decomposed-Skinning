@@ -33,7 +33,7 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 MODEL_NAME = "monstera" # Available options: "duck", "blob", "cloth", "monstera"
 
-RENDER_AS_GIF = True # If set to False, render as .mp4 (WARNING: GIF export is buggy, you might need to render several times, or turn off ADD_LIGHT)
+RENDER_AS_GIF = False # If set to False, render as .mp4 (WARNING: GIF export is buggy, you might need to render several times, or turn off ADD_LIGHT)
 RENDER_TEXTURE = False
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
 WIREFRAME = False

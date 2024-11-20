@@ -57,7 +57,7 @@ USE_ORIGINAL_WEIGHTS = True # To keep/override the given weights of original han
 USE_POINT_HANDLES_IN_OURS = True # Render the handles as points instead of bones (to match with given point handle rig)
 
 # RENDER PARAMETERS
-RENDER_AS_GIF = True # If set to False, render as .mp4
+RENDER_AS_GIF = False # If set to False, render as .mp4
 RENDER_MESH = True
 RENDER_SKEL = False
 WIREFRAME = False
