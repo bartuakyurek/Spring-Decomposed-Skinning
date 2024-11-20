@@ -1,4 +1,6 @@
 # Spring Decomposed Skinning
+![Placeholder figure](./assets/placeholder_figure.png)
+
  This repository demonstrates a dynamic skinning deformation achieved by spring bones. Traditional skinning methods lack secondary motion such as jiggling. Our aim is to introduce dynamic motion into existing skinning pipelines through physically simulating the bones. Our work unifies the accuracy benefits of physical simulation with the computational cost and intuitive deformation benefits of the traditional skinning framework.
  
  We use Hookean spring forces simulated with Position Based Dynamics to achieve jiggling motion on the bones. Unlike the majority of physical simulation approaches, we do not require any tetrahedralization to achieve dynamics in skinning deformation.
