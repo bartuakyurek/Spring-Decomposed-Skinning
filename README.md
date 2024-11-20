@@ -7,13 +7,13 @@
  > [!WARNING]
  > It might take some time to load the GIFs on this page.
 
-![Monstera plant in a pot is shaked](./assets/monstera.gif)
+![Monstera plant in a pot is shaked](./assets/monstera_lq.gif)
 
 Our method can easily capture secondary motion dynamics in various subjects. Here we automatically compute the dynamic motion with spring forces, which would be cumbersome to replicate using traditional skinning method as the 3D artist would have to manually position the bones at each keyframe.  
-![A rubber duck shaked from left to right](./assets/duck.gif)
+![A rubber duck shaked from left to right](./assets/duck_lq.gif)
 
 Here we emulate dynamics for a piece of cloth using a limited set of spring bone chains. Traditional garment simulations often require a mass-spring system at every edge of the mesh, which makes the simulation dependent on the surface resolution. Our method can scale to various resolutions as we utilize skinning bones to decompose a dynamic motion.
-![A piece of paper is moved back and forth](./assets/cloth.gif)
+![A piece of paper is moved back and forth](./assets/cloth_lq.gif)
 
 We compare our results with another method that unifies physical simulation with skinning framework by Wu and Umetani's study in 2023 [1]. 
 ![Comparison with Wu et al.](./assets/spot_comparison.gif)
