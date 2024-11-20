@@ -1,4 +1,4 @@
-# Spring Decomposed Skinning
+# Spring Decomposed Skinning (SDS)
 ![Placeholder figure](./assets/placeholder_figure.png)
 **Figure 1:** Results of our simulated dynamics. We automatically introduce dynamic stretch and squash deformation with the help of spring forces.
 
