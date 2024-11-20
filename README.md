@@ -46,9 +46,7 @@ For the details of their implementation, please refer to [their webpage](https:/
 
 In our work, blue handles represent the spring bones that are simulated in our pipeline. 
 We can achieve both global secondary dynamics that jiggles major body parts of the mesh, 
-and local secondary dynamics for soft tissues.  
-The point handles on the above figure are bound to larger areas of the mesh; hence,
- they can produce global dynamics.
+and local secondary dynamics for soft tissues (such as jiggling of a fat tissue). The blue point handles on the above figure are bound to larger areas of the mesh; hence, they can produce global dynamics.
 
 ## Local Dynamics with Helper Bones
 
