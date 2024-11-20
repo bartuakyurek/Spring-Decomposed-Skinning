@@ -18,19 +18,28 @@ import matplotlib.pyplot as plt
 # =============================================================================
 # 
 # =============================================================================
-# Declare figure data
-GIF_NAME = "spot_helpers_opaque"  # without .gif "spot_helpers_columns.gif"
-ROW_GIF_PATH_1 = "../../results/gifs/" + GIF_NAME + ".gif"
-CROP = [300, -300, None, None]
-
-# TODO: put the data in a dictionary for quick access
-
+SELECTED_MODEL = "spot_helper_transparent" # Available options:
+                               # "spot_helper_opaque"
+                               # "spot_helper_transparent"
+                               #
+# =============================================================================
+REL_GIF_PATH = "../../results/gifs/"
+datadict = { 
+    "spot_helper_opaque" : {
+                     'gif_path' : REL_GIF_PATH + "spot_helper_opaque.gif",
+                     'crop'     : [300, -300, None, None]
+    },
+    "spot_helper_transparent" : {
+                     'gif_path' : REL_GIF_PATH + "spot_helper_transparent.gif",
+                     'crop'     : [820, -770, None, None]
+    },
+    
+        
+    }
 # Same across all figures
 V_SPACE = 0.0
 H_SPACE = 0.0
-SAVE_PATH = "../../results/figures/"
-# =============================================================================
-# 
+SAVE_PATH = "../../results/figures/" 
 # =============================================================================
 def _assert_valid_frames(gif_im, requested_frames):
     """
@@ -188,12 +197,14 @@ def compose_plot(row_gif_paths, keyframes,
 # =============================================================================
 if __name__ == "__main__":
     
-    keyframes = [10 * (i+1) for i in range(6)]  # Select the keyframes you want to display
-    gif_paths = [ROW_GIF_PATH_1]
-
-    compose_plot(gif_paths, keyframes, CROP,
+    model_data = datadict[SELECTED_MODEL]
+    keyframes = [i*10 + 1 for i in range(6)]  # Select the keyframes you want to display
+    
+    gif_paths = [model_data["gif_path"]] 
+    crop = model_data["crop"]
+    compose_plot(gif_paths, keyframes, crop,
                  v_spacing=V_SPACE, h_spacing=H_SPACE,
-                 save_path=os.path.join(SAVE_PATH,  f"{GIF_NAME}_result_{len(keyframes)}.png")
+                 save_path=os.path.join(SAVE_PATH,  f"{SELECTED_MODEL}_result_{len(keyframes)}.png")
                  )
     
     
