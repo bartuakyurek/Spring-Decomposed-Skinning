@@ -27,11 +27,13 @@ REL_GIF_PATH = "../../results/gifs/"
 datadict = { 
     "spot_helper_opaque" : {
                      'gif_path' : REL_GIF_PATH + "spot_helper_opaque.gif",
-                     'crop'     : [300, -300, None, None]
+                     'crop'     : [300, -300, None, None],
+                     'keyframes':  [i*10 + 1 for i in range(6)],
     },
     "spot_helper_transparent" : {
                      'gif_path' : REL_GIF_PATH + "spot_helper_transparent.gif",
-                     'crop'     : [820, -770, None, None]
+                     'crop'     : [820, -770, None, None],
+                     'keyframes':  [i*10 + 1 for i in range(6)],
     },
     
         
@@ -198,10 +200,10 @@ def compose_plot(row_gif_paths, keyframes,
 if __name__ == "__main__":
     
     model_data = datadict[SELECTED_MODEL]
-    keyframes = [i*10 + 1 for i in range(6)]  # Select the keyframes you want to display
-    
+    keyframes = model_data['keyframes']  # Select the keyframes you want to display
     gif_paths = [model_data["gif_path"]] 
     crop = model_data["crop"]
+    
     compose_plot(gif_paths, keyframes, crop,
                  v_spacing=V_SPACE, h_spacing=H_SPACE,
                  save_path=os.path.join(SAVE_PATH,  f"{SELECTED_MODEL}_result_{len(keyframes)}.png")
