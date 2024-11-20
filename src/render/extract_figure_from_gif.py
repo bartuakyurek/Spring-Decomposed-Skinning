@@ -10,15 +10,28 @@ The script is intended to be directly run here.
 Created on Wed Nov 20 14:05:13 2024
 @author: bartu
 """
+import os
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
-
-GIF_NAME = "spot_high_PBD.gif" # "spot_helpers_columns.gif"
-ROW_GIF_PATH_1 = "../../assets/visualization_gifs/" + GIF_NAME
+# =============================================================================
+# 
+# =============================================================================
+# Declare figure data
+GIF_NAME = "spot_helpers_opaque"  # without .gif "spot_helpers_columns.gif"
+ROW_GIF_PATH_1 = "../../results/gifs/" + GIF_NAME + ".gif"
 CROP = [300, -300, None, None]
 
+# TODO: put the data in a dictionary for quick access
+
+# Same across all figures
+V_SPACE = 0.0
+H_SPACE = 0.0
+SAVE_PATH = "../../results/figures/"
+# =============================================================================
+# 
+# =============================================================================
 def _assert_valid_frames(gif_im, requested_frames):
     """
     Check if the given list exceeds the frames in a GIF or not.
@@ -30,46 +43,7 @@ def _assert_valid_frames(gif_im, requested_frames):
     n_frames = gif_im.n_frames
     assert np.max(requested_frames) < n_frames, f"Given keyframes exceed the number of available {n_frames} frames in the GIF."
     return
-    
-def extract_gif_frames(gif_path, keyframes, crop=None):
-    """
-    Extract the images from a gif given the list of frame indices.
 
-    Parameters
-    ----------
-    gif_path : str
-        Path to the GIF to extract images at certain frames.
-    keyframes : list or array of int
-        Indices of frames in the GIF to be extracted.
-    
-    crop: tuple
-        Tuple of crop coordinates (vertical_start, vertical_end, horizontal_start, horizontal_end)
-
-    Returns
-    -------
-    imgs : list of np.ndarray
-        List of images as numpy arrays to be displayed with matplotlib.
-    """
-    
-    if crop: 
-        assert len(crop) == 4, "Expected crop parameter to have 4 integers for (vertical_start, vertical_end, horizontal_start, horizontal_end) coordinates"
-        print(">> WARNING: Crop option is not tested yet.")
-        
-    imgs = [] 
-    with Image.open(gif_path) as im:
-        _assert_valid_frames(im, keyframes)
-        for i in keyframes:
-            im.seek(i) #n_frames // num_key_frames * i)
-            img_np = np.asarray(im)
-            
-            if crop:
-                v_start, v_end, h_start, h_end = crop
-                img_np = img_np[h_start:h_end, v_start:v_end] # Why is this unintuitive?
-                
-            imgs.append(img_np)
-            
-    return imgs
-            
 def _show_subplot_row(axs_row, row_imgs): #, spacing): #, ref_img=None):
     for i, img in enumerate(row_imgs):
         axs_row[i].imshow(img)
@@ -85,18 +59,113 @@ def _turn_off_ax_ticks(ax):
     ax.set_yticks([])
     return
 
-def compose_plot(row_gif_paths, keyframes, crop=None):
-                 #v_spacing=0.0, h_spacing=0.0):
-                 #ref_imgs=None):
+def _set_ax_boundary(ax, edges=['top', 'right', 'bottom', 'left'], visibility=True):
+    """
+    Add or remove border lines to a subplot axis. 
+    """
+    for edge in edges:
+        ax.spines[edge].set_visible(visibility)
+
+    return
+
+def extract_gif_frames(gif_path, keyframes, crop=None):
+    """
+    Extract the images from a gif given the list of frame indices.
+
+    Parameters
+    ----------
+    gif_path : str
+        Path to the GIF to extract images at certain frames.
+    keyframes : list or array of int
+        Indices of frames in the GIF to be extracted.
+    
+    crop: tuple
+        Tuple of crop coordinates (left_pix, right_pix, top_pix, bottom_pix)
+        indicates the indices of the left-right-top-bottom boundary pixels.
+        E.g. (100, -150, None, 200) will crop 100 pixels from left, 150 pixels
+        from right, and #vertical_pixels - 200 pixels from the bottom (i.e.
+        crops bottom until 200th pixel row, if it was -200 then it'd crop 
+        200 pixels from the bottom).
+
+    Returns
+    -------
+    imgs : list of np.ndarray
+        List of images as numpy arrays to be displayed with matplotlib.
+    """
+    
+    if crop: 
+        assert len(crop) == 4, "Expected crop parameter to have 4 integers for (vertical_start, vertical_end, horizontal_start, horizontal_end) coordinates"
+        
+    imgs = [] 
+    with Image.open(gif_path) as im:
+        _assert_valid_frames(im, keyframes)
+        for i in keyframes:
+            im.seek(i) #n_frames // num_key_frames * i)
+            img_np = np.asarray(im, dtype=np.int64)
+            
+            if crop:
+                left_pix, right_pix, top_pix, bottom_pix = crop
+                img_np = img_np[top_pix:bottom_pix, left_pix:right_pix] 
+                
+            imgs.append(img_np)
+            
+    return imgs
+
+# =============================================================================
+#         
+# =============================================================================
+def compose_plot(row_gif_paths, keyframes, 
+                 crop=None, dpi=1200, figsize=(25, 25),
+                 v_spacing=0.05, h_spacing=0.1,
+                 save_path=None):
+    """
+    Generate a figure that is composed by a selection of frames of GIFs. 
+    This function is intended to be used in figures in my thesis results.
+
+    Parameters
+    ----------
+    row_gif_paths : list of str
+        List of GIF paths to extract images at certain frames.
+    keyframes : list or array of int
+        Indices of frames in the GIF to be extracted.
+    crop : tuple of int, optional
+        Represents the boundaries of the gif images. If set to None,
+        the images will be taken as a None. To use it provide 
+        (left_pixel, right_pixel, top_pixel, bottom_pixel)
+        where vertical is for cropping from left and right, horizontal is for
+        cropping top and bottom pixels,e.g. (100, -100, None, -400) will
+        crop 100 pixels from left, 100 pixels from right, 400 pixels from bottom. 
+        The default is None.
+    dpi : int, optional
+        To specify the dpi resolution of the plot. The higher it is, the higher
+        quality the plot is. The default is 1200.
+    figsize : tuple of int, optional
+        To feed in subplot figsize property (otherwise the resolution drastically drops).
+    v_spacing : int, optional
+        Vertical spacing between the keyframes. The default is 0.05. 
+    h_spacing : int, optional
+        Horizontal spacing between the keyframes. The default is 0.1. 
+    save_path : str, optional
+        If provided, the resulting plot will be saved as a png
+        at the save_path. The default is None.
+
+    Returns
+    -------
+    None.
+
+    """
     
     n_rows = len(row_gif_paths)
     n_cols = len(keyframes)
     assert n_rows >= 1 and n_cols >= 1
-    #if ref_imgs is not None: n_cols += 1
-    #else: ref_imgs = [None for _ in range(n_rows)]
     
-    _, axs = plt.subplots(n_rows, n_cols) #, layout='constrained')
+    plt.figure(dpi=dpi) 
+    _, axs = plt.subplots(n_rows, n_cols, figsize=figsize) 
+    plt.subplots_adjust(wspace=v_spacing, 
+                        hspace=h_spacing)
+        
     [_turn_off_ax_ticks(ax) for ax in axs]
+    [_set_ax_boundary(ax, visibility=False) for ax in axs] # Remove border lines 
     
     for i, gif_path in enumerate(row_gif_paths):
         row_imgs = extract_gif_frames(gif_path, keyframes, crop)     
@@ -105,18 +174,26 @@ def compose_plot(row_gif_paths, keyframes, crop=None):
         else: axs_row = axs[i]
         _show_subplot_row(axs_row, row_imgs) #, v_spacing)
                 
+    if save_path: plt.savefig(save_path)
     plt.show()
     return
+
 
 # def get_image_np(img_path):
 #     img = np.asarray(Image.open(img_path))
 #     return img
 
+# =============================================================================
+# 
+# =============================================================================
 if __name__ == "__main__":
     
-    keyframes = [10 * (i+1) for i in range(7)]  # Select the keyframes you want to display
+    keyframes = [10 * (i+1) for i in range(6)]  # Select the keyframes you want to display
     gif_paths = [ROW_GIF_PATH_1]
 
-    compose_plot(gif_paths, keyframes, CROP)
+    compose_plot(gif_paths, keyframes, CROP,
+                 v_spacing=V_SPACE, h_spacing=H_SPACE,
+                 save_path=os.path.join(SAVE_PATH,  f"{GIF_NAME}_result_{len(keyframes)}.png")
+                 )
     
     
