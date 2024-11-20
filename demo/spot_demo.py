@@ -57,6 +57,7 @@ USE_ORIGINAL_WEIGHTS = True # To keep/override the given weights of original han
 USE_POINT_HANDLES_IN_OURS = True # Render the handles as points instead of bones (to match with given point handle rig)
 
 # RENDER PARAMETERS
+RENDER_AS_GIF = True # If set to False, render as .mp4
 RENDER_MESH = True
 RENDER_SKEL = False
 WIREFRAME = False
@@ -80,7 +81,7 @@ CPBD_FIXED_BONE_COLOR = "red"
 SPRING_BONE_COLOR = "blue"
 LBS_INPUT_BONE_COLOR = "yellow"
 
-CLOSE_AFTER_ITER = 2 # Set to False or an int, for number of repetitions before closing
+CLOSE_AFTER_ITER = 1 # Set to False or an int, for number of repetitions before closing
 WINDOW_SIZE = (1200, 1600)
 
 # SIMULATION PARAMETERS
@@ -235,6 +236,10 @@ helper_rig = HelperBonesHandler(skeleton_dyn,
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 def set_lights(plotter):
     if ADD_LIGHT:
+        if RENDER_AS_GIF:
+            print(">> WARNING: Found ADD_LIGHT=True together with RENDER_AS_GIF=True.\
+                      PyVista may return an empty GIF. Try setting ADD_LIGHT to False in that case.")
+        
         light = pv.Light(position=LIGHT_POS, light_type='headlight', intensity=LIGHT_INTENSITY)
         plotter.add_light(light)
 
@@ -443,8 +448,11 @@ normalized_dists_dyn = normalize_arr_np(distance_err_dyn)
 # =============================================================================
 # Display animation
 # =============================================================================
-plotter.open_movie(os.path.join(RESULT_PATH, f"{MODEL_NAME}_{INTEGRATION}_Complience_{COMPLIANCE}.mp4"))
-#for frame in range(n_frames):
+
+if RENDER_AS_GIF:
+    plotter.open_gif(os.path.join(RESULT_PATH, f"{MODEL_NAME}_{INTEGRATION}.gif"))
+else:
+    plotter.open_movie(os.path.join(RESULT_PATH, f"{MODEL_NAME}_{INTEGRATION}_Complience_{COMPLIANCE}.mp4"))
 
 frame, rep = 0, 0
 while (plotter.render_window):

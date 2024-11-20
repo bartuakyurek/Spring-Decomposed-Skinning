@@ -33,6 +33,7 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 MODEL_NAME = "monstera" # Available options: "duck", "blob", "cloth", "monstera"
 
+RENDER_AS_GIF = True # If set to False, render as .mp4 (WARNING: GIF export is buggy, you might need to render several times, or turn off ADD_LIGHT)
 RENDER_TEXTURE = False
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
 WIREFRAME = False
@@ -59,8 +60,8 @@ EDGE_CONSTRAINT = False # Recommended to set either FIXED_SCALE or EDGE_CONSTRAI
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-N_REPEAT = 2
-N_REST = 1
+N_REPEAT = 1
+N_REST = 0
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
@@ -157,8 +158,8 @@ if RENDER_MESH:
     if RENDER_TEXTURE:
         add_texture(mesh_dyn, mesh_dyn_actor, TEXTURE_PATH)
         
-    
-plotter.open_movie(os.path.join(RESULT_PATH, f"{MODEL_NAME}-{ALGO}.mp4"))
+
+
 n_poses = keyframe_poses.shape[0]
 n_bones = len(skeleton.rest_bones)
 trans = np.zeros((n_bones, 3)) # TODO: remove +1 when you remove root bone issue
@@ -219,7 +220,11 @@ print(">> Average per-vertex difference: ", np.round(avg_err_dyn, 4))
 # ---------------------------------------------------------------------------------
 # Show computed results
 # ---------------------------------------------------------------------------------
-
+if RENDER_AS_GIF:
+    plotter.open_gif(os.path.join(RESULT_PATH, f"{MODEL_NAME}_{INTEGRATION}.gif"))
+else:
+    plotter.open_movie(os.path.join(RESULT_PATH, f"{MODEL_NAME}-{ALGO}.mp4"))
+    
 for frame in range(n_frames):
     # Set data for renderer
     if RENDER_MESH: 
