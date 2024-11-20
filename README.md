@@ -2,7 +2,7 @@
 ![Placeholder figure](./assets/placeholder_figure.png)
 **Figure 1:** Results of our simulated dynamics. We automatically introduce dynamic stretch and squish deformation with the help of spring forces.
 
-This repository demonstrates a novel approach to dynamic skinning deformation using spring bones. Traditional skinning methods often lack secondary motion (e.g., jiggling), which limits their realism. Our method introduces dynamic motion into existing skinning pipelines by physically simulating bones, combining the accuracy of physical simulation with the computational efficiency of traditional skinning.
+This repository demonstrates a novel approach to **dynamic skinning deformation** using **spring bones**. Traditional skinning methods often lack secondary motion (e.g., jiggling), which limits their realism. Our method introduces dynamic motion into existing skinning pipelines by physically simulating bones, combining the accuracy of physical simulation with the computational efficiency of traditional skinning.
 
 
 ### Key Features
