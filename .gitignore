@@ -1,5 +1,4 @@
 *.h5
-*.npz
 *.pt
 .DS_Store
 /results
