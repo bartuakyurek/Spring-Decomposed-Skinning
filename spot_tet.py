@@ -1,7 +1,30 @@
+"""
+-------------------------------------------------------------------------------
+- DISCLAIMER
+-------------------------------------------------------------------------------
+This script is taken from 
+https://github.com/yoharol/Controllable_PBD_3D/
+by Wu and Umetani's paper (2023). Please refer to their
+webpage https://yoharol.github.io/pages/control_pbd/
+Also thank you for making the repository public.
+
+-------------------------------------------------------------------------------
+@bartu
+-------------------------------------------------------------------------------
+Edited to retrieve input mesh, handles, simulated handle locations and vertices
+data. I've also added custom input to handles to get different simulation results.
+
+Major I've followed to setup (see comments with !!!!):
+    - path_to_cpbd variable to link the source code path (downloaded from github)
+    assumes the Controllable PBD source code is at the outer directory.
+
+"""
+
+
 
 import os
 import sys
-path_to_cpbd = "/Users/bartu/Desktop/Controllable_PBD_3D/" # !!!! EDIT !!!!
+path_to_cpbd = "../Controllable_PBD_3D/" # !!!! EDIT !!!! 
 sys.path.insert(0, path_to_cpbd)
 
 import taichi as ti
@@ -26,12 +49,11 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 modelname = 'spot_high' # "spot" or "spot_high"
 
 idxs = [4,5,6,7] # Indices to translate the handles (there are 8) 
-fixed = [0, 1, 2, 3, 7] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
+fixed = [4,5,6,7] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
 pose_base = np.array([0.,  0., 20.]) # xyz rotation degrees
 
-save_path = "/Users/bartu/Documents/Github/Spring-Decomp/data/" + \
-            f"{modelname}/{modelname}_extracted.npz" # !!!! EDIT !!!!
+save_path =  f"./data/{modelname}/{modelname}_extracted.npz" 
             
 # =============================================================================
 # Load data
