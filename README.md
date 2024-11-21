@@ -52,7 +52,7 @@ and local secondary dynamics for soft tissues (such as jiggling of a fat tissue)
 
 ![Helper bone chains simulate local dynamics](./assets/spot_helpers.gif)
 
-To introduce jigglings on local areas, we utilize helper bones that are additional bones in the rig. Helper bones are often places perpendicular to the rigid bones to produce  dynamics that cannot be captured by the rigid bones. In the figure above, we place the helper chains that are bound to smaller local areas on a mesh. These helper chains emulate jigglings of the soft tissues. The yellow handles are moved by the user that creates the rigid motion, then the blue helper spring chains are simulated via PBD, that produces the jiggling of the soft tissues.
+To introduce jigglings on local areas, we utilize helper bones that are additional bones in the rig. Helper bones are often placed perpendicular to the rigid bones to produce  dynamics that cannot be captured by the rigid bones. In the figure above, we place the helper chains that are bound to smaller local areas on a mesh. These helper chains emulate jigglings of the soft tissues. The yellow handles are moved by the user that creates the rigid motion, then the blue helper spring chains are simulated via PBD, that produces the jiggling of the soft tissues.
 
 
 ## Installation Steps
