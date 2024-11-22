@@ -54,7 +54,7 @@ The parallel chains of spring bones allow us to achieve a wavy surface, similar 
 We effectively approximate garment simulation with a limited set of handles.
 
 
-## Comparison Wu et al. (2023)
+## Comparison with Wu et al. (2023)
 
 We compare our results with another method that unifies physical simulation with the skinning framework, Controllable PBD 
 by Wu and Umetani [1]. 
