@@ -8,7 +8,7 @@
 - **Dynamic Motion with a simple framework:** We implement simple Hookean spring forces directly on the rig bones with Position-Based Dynamics (PBD) to emulate secondary dynamics caused by the skeletal motion. 
 - **No Tetrahedralization Required:** Unlike most physical simulation methods, we avoid computationally expensive tetrahedralization while still achieving realistic dynamics.
 - **Scalability:** We avoid any simulation on the surface vertices which allows us to scale to higher resolution meshes just like the traditional skinning pipelines.
-- **User-Controlled Dynamics:** Intuitive control over the global and local deformation dynamics is achieved by leveraging spring forces on primary bones and helper bones.
+- **User-Controlled Dynamics:** We provide an intuitive control over the global and local deformation dynamics. This is achieved by introducing spring forces on both primary bones and helper bones.
  
 
 ![Placeholder figure](./assets/placeholder_figure.png)
