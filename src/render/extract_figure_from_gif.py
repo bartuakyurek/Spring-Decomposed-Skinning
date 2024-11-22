@@ -18,15 +18,18 @@ import matplotlib.pyplot as plt
 # =============================================================================
 # 
 # =============================================================================
-model_name = "spot_exaggerated"
+model_name = "smpl_50004_10"
 SELECTED_MODELS = [f"{model_name}_skel",
-                   f"{model_name}_opaque"]
+                   f"{model_name}_cc"]
+                   #f"{model_name}_opaque"]
                    #f"{model_name}_cc"] # See datadict for available options
 
-spot_frames = [i*10 + 1 for i in range(6)]
+spot_frames     = [i*10 + 1 for i in range(6)]
 monstera_frames = [1, 25, 50, 100, 124, 149, 189]
 duck_frames     = [1, 11, 63, 76, 110, 130, 149]
 cloth_frames    = [1, 17, 31, 42, 48, 56, 67]
+smpl_8_frames     = [1, 29, 47, 60, 65, 78, 87, 106] # pose_id[8]
+smpl_10_frames     = [1, 41, 91, 119, 124, 167, 172, 198] # pose_id[10]
 
 # =============================================================================
 REL_GIF_PATH = "../../results/gifs/"
@@ -114,6 +117,31 @@ datadict = {
                      'crop'     : [None, None, None, None],
                      'keyframes':  cloth_frames,
     },
+    
+    "smpl_50004_10_cc"     : {
+                    'gif_path' : REL_GIF_PATH + "smpl_50004_10_cc.gif",
+                    'crop'     : [250, -250, None, None],
+                    'keyframes':  smpl_10_frames,
+    },
+    
+    "smpl_50004_10_skel"     : {
+                    'gif_path' : REL_GIF_PATH + "smpl_50004_10_skel.gif",
+                    'crop'     : [250, -250, None, None],
+                    'keyframes':  smpl_10_frames,
+    },
+    
+    "smpl_50004_8_cc"     : {
+                    'gif_path' : REL_GIF_PATH + "smpl_50004_8_cc.gif",
+                    'crop'     : [250, -250, None, None],
+                    'keyframes':  smpl_8_frames,
+    },
+    
+    "smpl_50004_8_skel"     : {
+                    'gif_path' : REL_GIF_PATH + "smpl_50004_8_skel.gif",
+                    'crop'     : [250, -250, None, None],
+                    'keyframes':  smpl_8_frames,
+    },
+    
     }
 # Same across all figures
 V_SPACE = 0.0

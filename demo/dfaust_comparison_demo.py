@@ -39,7 +39,7 @@ from src.render.pyvista_render_tools import (add_mesh,
 # # Config Parameters 
 # # --------------------------------------------------------------------------
 # =============================================================================
-COMPLIANCE = 0.01 # Set positive number for soft constraint, 0 for hard constraints
+COMPLIANCE = 0.005 # Set positive number for soft constraint, 0 for hard constraints
 EDGE_CONSTRAINT = True # Only available for PBD integration
 INTEGRATION = "PBD" # "PBD" or "Euler" 
 FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
@@ -53,15 +53,15 @@ TIME_STEP = 1./FRAME_RATE
 MASS = 1.
 STIFFNESS = 100 #200.
 DAMPING = 10 #50.            
-MASS_DSCALE = 0.2       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
-SPRING_DSCALE = 10.0     # Scales spring forces (increase for more jiggling)
+MASS_DSCALE = 0.2        # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+SPRING_DSCALE = 3.0     # Scales spring forces (increase for more jiggling)
 
-ERR_MODE = "DFAUST" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
-err_cmap = cm.viridis #winter, jet, brg, gnuplot2, autumn, viridis or see https://matplotlib.org/stable/users/explain/colors/colormaps.html
+ERR_MODE = "SMPL" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
+err_cmap = cm.jet #winter, jet, brg, gnuplot2, autumn, viridis or see https://matplotlib.org/stable/users/explain/colors/colormaps.html
 COLOR_CODE = True
 RENDER_MESH_RIGID, RENDER_MESH_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
 RENDER_SKEL_RIGID, RENDER_SKEL_DYN = False, False # Turn on/off mesh for SMPL and/or SDDS
-OPACITY = 1.0
+OPACITY = 1
 JIGGLE_SCALE = 1.0      # Set it greater than 1 to exaggerate the jiggling impact
 NORMALIZE_WEIGHTS = True # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
@@ -306,6 +306,7 @@ if ERR_MODE == "SMPL":
     avg_err_dyn = tot_err_dyn / n_frames
     print(">> Average error: ", np.round(avg_err_dyn, 4))
     normalized_dists_dyn = normalize_arr_np(distance_err_dyn) 
+    err_codes_dyn = normalized_dists_dyn
     
 elif ERR_MODE == "DFAUST":
 

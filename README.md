@@ -1,6 +1,11 @@
 # Spring Decomposed Skinning (SDS)
 ![Placeholder figure](./assets/placeholder_figure.png)
-**Figure 1:** Results of our simulated dynamics. We automatically introduce dynamic stretch and squish deformation with the help of spring forces.
+**Figure 1.1:** Results of our simulated dynamics. We automatically introduce dynamic stretch and squish deformation with the help of spring forces.
+
+![SMPL Comparison](./assets/smpl_50004_8.png)
+**Figure 1.2:** Our method on an animated SMPL model [2]. **Left:** Initial rig. Our spring bones are colored purple. **Top:** SMPL-based deformation. 
+**Bottom:** Our deformation is added on top of  SMPL, creating dynamic jigglings around fatty tissues. Color code blue to red represents Euclidean distances
+from zero to maximum difference.
 
 This repository demonstrates a novel approach to **dynamic skinning deformation** using **spring bones**. Traditional skinning methods often lack secondary motion (e.g., jiggling), which limits their realism. Our method introduces dynamic motion into existing skinning pipelines by physically simulating bones, combining the accuracy of physical simulation with the computational efficiency of traditional skinning.
 
@@ -100,8 +105,12 @@ For DFAUST demos, the relevant dataset should be downloaded from (link here). Th
 >  Note that this repo is a work in progress. Currently you can run either the files under ``./tests/`` or ``./demo/`` directories. (You may need to change directories to run them)
 
 ## References
-[1] . Wu and N. Umetani, “Two-way coupling of skinning transformations and
+[1] Wu and N. Umetani, “Two-way coupling of skinning transformations and
 position based dynamics,” Proc. ACM Comput. Graph. Interact. Tech., vol. 6, Aug. 2023.
+
+[2] Bogo, J. Romero, G. Pons-Moll, and M. J. Black, “Dynamic FAUST: Regis-
+tering human bodies in motion,” in IEEE Conf. on Computer Vision and Pattern
+Recognition (CVPR), July 2017.
 
 ## Acknowledgements
 Thanks to
