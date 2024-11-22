@@ -32,6 +32,15 @@ In the figures above, blue bones are simulated within our framework. We automati
 In Figure 2.3, we emulate dynamics for a piece of cloth using a limited set of spring bone chains. 
 Unlike traditional garment simulations, which rely on mass-spring systems for every mesh edge, our method remains resolution-independent.
 
+![A piece of cloth is moved back and forth](./assets/cloth_cc.png)
+**Figure 2.4:** Color coded version of Figure 2.3, only the root bone is moved back and forth. 
+**Left:** Rest pose. **Top:** LBS, notice that cloth remains rigid without manual keyframing of individual bones. White bones represent rigid bones.
+**Middle:** SDS deformation. The blue bones are simulated as spring bones. **Bottom:** Color coded Euclidean distnces between LBS deformation and ours. 
+Blue color represents no difference, red represents the maximum difference. 
+
+The parallel chains of spring bones allow us to achieve a wavy surface, similar to a curtain or a skirt fabric.
+We effectively approximate garment simulation with a limited set of handles.
+
 
 ## Comparison Wu et al. (2023)
 
