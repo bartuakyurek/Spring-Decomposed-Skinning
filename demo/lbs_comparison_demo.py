@@ -55,12 +55,13 @@ INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
 
-FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
-EDGE_CONSTRAINT = False # Recommended to set either FIXED_SCALE or EDGE_CONSTRAINT True
+FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
+EDGE_CONSTRAINT = True # Recommended to set either FIXED_SCALE or EDGE_CONSTRAINT True
+COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-N_REPEAT = 1
+N_REPEAT = 1 
 N_REST = 0
 
 FRAME_RATE = 24 # 24, 30, 60
@@ -107,6 +108,7 @@ helper_rig = HelperBonesHandler(skeleton,
                                 point_spring  = POINT_SPRING,
                                 fixed_scale   = FIXED_SCALE, 
                                 edge_constraint = EDGE_CONSTRAINT,
+                                compliance    = COMPLIANCE,
                                 simulation_mode = INTEGRATION) 
 
 # ---------------------------------------------------------------------------- 
