@@ -6,6 +6,12 @@ Created on Sat Oct 26 11:18:55 2024
 Compute the transformation matrix, that Rotates, Scales, and Transforms (RST)
 the given source line segment to the target line segment.
 
+DISCLAIMER: The rotate-align part is based on 
+https://gist.github.com/kevinmoran/b45980723e53edeb8a5a43c49f134724
+and
+https://iquilezles.org/articles/noacos/
+
+
 @author: bartu
 """
 import numpy as np

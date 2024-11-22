@@ -94,6 +94,11 @@ For DFAUST demos, the relevant dataset should be downloaded from (link here). Th
 [1] . Wu and N. Umetani, “Two-way coupling of skinning transformations and
 position based dynamics,” Proc. ACM Comput. Graph. Interact. Tech., vol. 6, Aug. 2023.
 
+## Acknowledgements
+Thanks to
+* [@yoharol](https://github.com/yoharol/Controllable_PBD_3D) for making their Controllable PBD research open source.
+* [printable_models](https://free3d.com/3d-model/rubber-duck-v1--164824.html) for their rubber duck model.
+* [PyVista](https://docs.pyvista.org/) for their visualization tools.
 
 ## TODO
 [ ] Allow running from the directory ./test/test_file.py (change step 3)
