@@ -18,11 +18,12 @@ import matplotlib.pyplot as plt
 # =============================================================================
 # 
 # =============================================================================
-model_name = "cloth"
+model_name = "spot_exaggerated"
 SELECTED_MODELS = [f"{model_name}_skel",
-                   f"{model_name}_opaque",
-                   f"{model_name}_cc"] # See datadict for available options
+                   f"{model_name}_opaque"]
+                   #f"{model_name}_cc"] # See datadict for available options
 
+spot_frames = [i*10 + 1 for i in range(6)]
 monstera_frames = [1, 25, 50, 100, 124, 149, 189]
 duck_frames     = [1, 11, 63, 76, 110, 130, 149]
 cloth_frames    = [1, 17, 31, 42, 48, 56, 67]
@@ -31,15 +32,38 @@ cloth_frames    = [1, 17, 31, 42, 48, 56, 67]
 REL_GIF_PATH = "../../results/gifs/"
 
 datadict = { 
+    
+    "spot_opaque" : {
+                     'gif_path' : REL_GIF_PATH + "spot.gif",
+                     'crop'     : [630, -350, None, None],
+                     'keyframes':  spot_frames,
+    },
+    "spot_skel" : {
+                     'gif_path' : REL_GIF_PATH + "spot.gif",
+                     'crop'     : [330, -600, None, None],
+                     'keyframes':  spot_frames,
+    },
+    
+    "spot_exaggerated_opaque" : {
+                     'gif_path' : REL_GIF_PATH + "spot_exaggerated.gif",
+                     'crop'     : [930, -420, None, None],
+                     'keyframes':  spot_frames,
+    },
+    "spot_exaggerated_skel" : {
+                     'gif_path' : REL_GIF_PATH + "spot_exaggerated.gif",
+                     'crop'     : [420, -930, None, None],
+                     'keyframes':  spot_frames,
+    },
+    
     "spot_helper_opaque" : {
                      'gif_path' : REL_GIF_PATH + "spot_helper_opaque.gif",
                      'crop'     : [300, -300, None, None],
-                     'keyframes':  [i*10 + 1 for i in range(6)],
+                     'keyframes':  spot_frames,
     },
     "spot_helper_transparent" : {
                      'gif_path' : REL_GIF_PATH + "spot_helper_transparent.gif",
                      'crop'     : [820, -770, None, None],
-                     'keyframes':  [i*10 + 1 for i in range(6)],
+                     'keyframes':  spot_frames,
     },
     
     "monstera_shake_skel" : {

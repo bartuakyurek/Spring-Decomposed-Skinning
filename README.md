@@ -38,8 +38,9 @@ Unlike traditional garment simulations, which rely on mass-spring systems for ev
 We compare our results with another method that unifies physical simulation with the skinning framework, Controllable PBD 
 by Wu and Umetani [1]. 
 ![Comparison with Wu et al.](./assets/spot_comparison.gif)
+**Figure 3.1:** Comparing our results with a state-of-art paper. We introduce global dynamics that can act like stretch-squish deformation.   
 
-Here the yellow dots represent the point handles that are transformed by the user. 
+In Figure 3.1, the yellow dots represent the point handles that are transformed by the user. 
 The same handles are transformed for both Wu et al. and our work. 
 The red dots represent the point handles that are fixed in Wu et al.'s controllable PBD work and green ones are dynamic handles that are positioned by controllable PBD framework. 
 For the details of their implementation, please refer to [their webpage](https://yoharol.github.io/pages/control_pbd/). 
@@ -47,6 +48,10 @@ For the details of their implementation, please refer to [their webpage](https:/
 In our work, blue handles represent the spring bones that are simulated in our pipeline. 
 We can achieve both global secondary dynamics that jiggles major body parts of the mesh, 
 and local secondary dynamics for soft tissues (such as jiggling of a fat tissue). The blue point handles on the above figure are bound to larger areas of the mesh; hence, they can produce global dynamics.
+
+![Comparison with Wu et al.](./assets/spot_exaggerated.gif)
+**Figure 3.2:** Exaggerated version of Figure 3.1. Notice that global dynamics add directly on the LBS deformation, without deforming other tissues which highlights controllability of our method.  
+
 
 ## Local Dynamics with Helper Bones
 
