@@ -18,12 +18,18 @@ import matplotlib.pyplot as plt
 # =============================================================================
 # 
 # =============================================================================
-SELECTED_MODEL = "spot_helper_transparent" # Available options:
-                               # "spot_helper_opaque"
-                               # "spot_helper_transparent"
-                               #
+model_name = "cloth"
+SELECTED_MODELS = [f"{model_name}_skel",
+                   f"{model_name}_opaque",
+                   f"{model_name}_cc"] # See datadict for available options
+
+monstera_frames = [1, 25, 50, 100, 124, 149, 189]
+duck_frames     = [1, 11, 63, 76, 110, 130, 149]
+cloth_frames    = [1, 17, 31, 42, 48, 56, 67]
+
 # =============================================================================
 REL_GIF_PATH = "../../results/gifs/"
+
 datadict = { 
     "spot_helper_opaque" : {
                      'gif_path' : REL_GIF_PATH + "spot_helper_opaque.gif",
@@ -36,7 +42,54 @@ datadict = {
                      'keyframes':  [i*10 + 1 for i in range(6)],
     },
     
-        
+    "monstera_shake_skel" : {
+                     'gif_path' : REL_GIF_PATH + "monstera_shake_skel.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  monstera_frames,
+    },
+    "monstera_shake_opaque" : {
+                     'gif_path' : REL_GIF_PATH + "monstera_shake_opaque.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes': monstera_frames,
+    },
+    "monstera_shake_cc" : {
+                     'gif_path' : REL_GIF_PATH + "monstera_shake_cc.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  monstera_frames,
+    },
+    
+    "duck_skel" : {
+                     'gif_path' : REL_GIF_PATH + "duck_skel.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  duck_frames,
+    },
+    "duck_opaque" : {
+                     'gif_path' : REL_GIF_PATH + "duck_opaque.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes': duck_frames,
+    },
+    "duck_cc" : {
+                     'gif_path' : REL_GIF_PATH + "duck_cc.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  duck_frames,
+    },
+    
+    
+    "cloth_skel" : {
+                     'gif_path' : REL_GIF_PATH + "cloth_skel.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  cloth_frames,
+    },
+    "cloth_opaque" : {
+                     'gif_path' : REL_GIF_PATH + "cloth_opaque.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes': cloth_frames,
+    },
+    "cloth_cc" : {
+                     'gif_path' : REL_GIF_PATH + "cloth_cc.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  cloth_frames,
+    },
     }
 # Same across all figures
 V_SPACE = 0.0
@@ -52,6 +105,7 @@ def _assert_valid_frames(gif_im, requested_frames):
     """
     # Check if the requested keyframes exceed the GIF frames
     n_frames = gif_im.n_frames
+    print(">> INFO: Found",n_frames,"frames.")
     assert np.max(requested_frames) < n_frames, f"Given keyframes exceed the number of available {n_frames} frames in the GIF."
     return
 
@@ -199,14 +253,15 @@ def compose_plot(row_gif_paths, keyframes,
 # =============================================================================
 if __name__ == "__main__":
     
-    model_data = datadict[SELECTED_MODEL]
-    keyframes = model_data['keyframes']  # Select the keyframes you want to display
-    gif_paths = [model_data["gif_path"]] 
-    crop = model_data["crop"]
-    
-    compose_plot(gif_paths, keyframes, crop,
-                 v_spacing=V_SPACE, h_spacing=H_SPACE,
-                 save_path=os.path.join(SAVE_PATH,  f"{SELECTED_MODEL}_result_{len(keyframes)}.png")
-                 )
+    for SELECTED_MODEL in SELECTED_MODELS:
+        model_data = datadict[SELECTED_MODEL]
+        keyframes = model_data['keyframes']  # Select the keyframes you want to display
+        gif_paths = [model_data["gif_path"]] 
+        crop = model_data["crop"]
+        
+        compose_plot(gif_paths, keyframes, crop,
+                     v_spacing=V_SPACE, h_spacing=H_SPACE,
+                     save_path=os.path.join(SAVE_PATH,  f"{SELECTED_MODEL}_result_{len(keyframes)}.png")
+                     )
     
     
