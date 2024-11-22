@@ -3,6 +3,13 @@
 > 
 > This repository demonstrates a novel approach to **dynamic skinning deformation** using **spring bones**. Traditional skinning methods often lack secondary motion (e.g., jiggling), which limits their realism. Our method introduces dynamic motion into existing skinning pipelines by physically simulating bones, combining the accuracy of physical simulation with the computational efficiency of traditional skinning.
 
+### Key Features
+
+- **Dynamic Motion with a simple framework:** We implement simple Hookean spring forces directly on the rig bones with Position-Based Dynamics (PBD) to emulate secondary dynamics caused by the skeletal motion. 
+- **No Tetrahedralization Required:** Unlike most physical simulation methods, we avoid computationally expensive tetrahedralization while still achieving realistic dynamics.
+- **Scalability:** We avoid any simulation on the surface vertices which allows us to scale to higher resolution meshes just like the traditional skinning pipelines.
+- **User-Controlled Dynamics:** Intuitive control over the global and local deformation dynamics is achieved by leveraging spring forces on primary bones and helper bones.
+ 
 
 ![Placeholder figure](./assets/placeholder_figure.png)
 **Figure 1.1:** Results of our simulated dynamics. We automatically introduce dynamic stretch and squish deformation with the help of spring forces.
@@ -13,13 +20,6 @@
 from zero to maximum difference.
 
 
-### Key Features
-
-- **Dynamic Motion with a simple framework:** We implement simple Hookean spring forces directly on the rig bones with Position-Based Dynamics (PBD) to emulate secondary dynamics caused by the skeletal motion. 
-- **No Tetrahedralization Required:** Unlike most physical simulation methods, we avoid computationally expensive tetrahedralization while still achieving realistic dynamics.
-- **Scalability:** We avoid any simulation on the surface vertices which allows us to scale to higher resolution meshes just like the traditional skinning pipelines.
-- **User-Controlled Dynamics:** Intuitive control over the global and local deformation dynamics is achieved by leveraging spring forces on primary bones and helper bones.
- 
  > [!WARNING]
  > It might take some time to load all the GIFs on this page.
 
