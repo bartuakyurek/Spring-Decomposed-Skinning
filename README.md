@@ -1,8 +1,12 @@
 # Spring Decomposed Skinning (SDS)
 
 > 
-> This repository demonstrates a novel approach to **dynamic skinning deformation** using **spring bones**. Traditional skinning methods often lack secondary motion (e.g., jiggling), which limits their realism. Our method introduces dynamic motion into existing skinning pipelines by physically simulating bones, combining the accuracy of physical simulation with the computational efficiency of traditional skinning.
-
+> This repository demonstrates a novel approach to **dynamic skinning deformation** using **spring bones**. 
+> Traditional skinning methods often lack secondary motion (e.g., jiggling), which limits their realism.
+> Our method introduces dynamic motion into existing skinning pipelines by physically simulating bones, 
+> combining the accuracy of physical simulation with the computational efficiency of traditional skinning.
+>
+> We achieve dynamic deformation for variety of 3D models, including soft tissues, elastic bodies, and garment animation. 
 ### Key Features
 
 - **Dynamic Motion with a simple framework:** We implement simple Hookean spring forces directly on the rig bones with Position-Based Dynamics (PBD) to emulate secondary dynamics caused by the skeletal motion. 
