@@ -1,4 +1,9 @@
 # Spring Decomposed Skinning (SDS)
+
+> [!NOTE]
+> This repository demonstrates a novel approach to **dynamic skinning deformation** using **spring bones**. Traditional skinning methods often lack secondary motion (e.g., jiggling), which limits their realism. Our method introduces dynamic motion into existing skinning pipelines by physically simulating bones, combining the accuracy of physical simulation with the computational efficiency of traditional skinning.
+
+
 ![Placeholder figure](./assets/placeholder_figure.png)
 **Figure 1.1:** Results of our simulated dynamics. We automatically introduce dynamic stretch and squish deformation with the help of spring forces.
 
@@ -6,8 +11,6 @@
 **Figure 1.2:** Our method on an animated SMPL model [2]. **Left:** Initial rig. Our spring bones are colored purple. **Top:** SMPL-based deformation. 
 **Bottom:** Our deformation is added on top of  SMPL, creating dynamic jigglings around fatty tissues. Color code blue to red represents Euclidean distances
 from zero to maximum difference.
-
-This repository demonstrates a novel approach to **dynamic skinning deformation** using **spring bones**. Traditional skinning methods often lack secondary motion (e.g., jiggling), which limits their realism. Our method introduces dynamic motion into existing skinning pipelines by physically simulating bones, combining the accuracy of physical simulation with the computational efficiency of traditional skinning.
 
 
 ### Key Features
