@@ -49,14 +49,14 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 modelname = 'spot_high' # "spot" or "spot_high"
 
 idxs = [4,5,6,7] # Indices to translate the handles (there are 8) 
-fixed = [0, 1, 2, 3, 4,5,6, 7] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
+fixed = [0, 1, 2, 3, 7] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
 pose_base = np.array([0.,  0., 30.]) # xyz rotation degrees
-decay = 0.2 # Dampen the user transforms over time, range [0.0, inf) 
+decay = 0.0 # Dampen the user transforms over time, range [0.0, inf) 
             # will be used in pose_base / e^(decay * t)
 
 start_frame = 0
-end_frame = 500
+end_frame = 200
 save_npz = True
 
 save_path =  f"./data/{modelname}/{modelname}_extracted.npz" 

@@ -59,8 +59,8 @@ USE_POINT_HANDLES_IN_OURS = True # Render the handles as points instead of bones
 # RENDER PARAMETERS
 RENDER_AS_GIF = False # If set to False, render as .mp4
 RENDER_MESH = True
-RENDER_SKEL = False
-WIREFRAME = False
+RENDER_SKEL = True
+WIREFRAME = True
 RENDER_TEXTURE = False # Automatically treated as False if COLOR_CODE is True
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
 
@@ -70,7 +70,7 @@ LIGHT_POS = (10.5, 3.5, 3.5)
                        
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = False
-OPACITY = 1.0
+OPACITY = 0.6
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.3
 BASE_COLOR = [0.8,0.7,1.0] # RGB
@@ -89,14 +89,14 @@ ALGO = "T" # ["T", "RST", "SVD"] RST doesn't work good with this demo, SVD never
 INTEGRATION = "PBD" # PBD or Euler
 
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
-COMPLIANCE = 0.1 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
+COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
 FIXED_SCALE = False
 POINT_SPRING = True # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 3. # 5
-STIFFNESS = 70. # 100
+STIFFNESS = 100. # 100
 DAMPING = 2.5 # 10
 MASS_DSCALE = 0.3   #0.5    # Mass velocity damping (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0  #3.0   # Scales spring forces (increase for more jiggling)
@@ -439,8 +439,11 @@ report_timing(tot_time_ours, n_frames, "ours")
 # =============================================================================
 V_anim_rigid = np.array(V_anim_rigid)
 V_anim_dyn = np.array(V_anim_dyn)
+
+
 distance_err_cpbd = np.linalg.norm(V_anim_rigid - verts_cpbd, axis=-1)  # (n_frames, n_verts)
 distance_err_dyn = np.linalg.norm(V_anim_rigid - V_anim_dyn, axis=-1)  # (n_frames, n_verts)
+
 
 normalized_dists_cpbd = normalize_arr_np(distance_err_cpbd)
 normalized_dists_dyn = normalize_arr_np(distance_err_dyn)
