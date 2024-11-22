@@ -52,7 +52,7 @@ EXTRACT_REST_OBJ = False # To save the rest pose as .obj for using it in Blender
 MODEL_NAME = "spot_high" # "spot" or "spot_high"
 AVAILABLE_MODES = ["point springs", "helper rig"]
 MAKE_ALL_SPRING = False # Set true to turn all bones spring bones
-SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
+SKELETON_MODE = AVAILABLE_MODES[0] # "point springs" or "helper rig" 
 USE_ORIGINAL_WEIGHTS = True # To keep/override the given weights of original handles in helper rig mode
 USE_POINT_HANDLES_IN_OURS = True # Render the handles as points instead of bones (to match with given point handle rig)
 
@@ -89,17 +89,17 @@ ALGO = "T" # ["T", "RST", "SVD"] RST doesn't work good with this demo, SVD never
 INTEGRATION = "PBD" # PBD or Euler
 
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
-COMPLIANCE = 0. # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
+COMPLIANCE = 0.1 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
 FIXED_SCALE = False
-POINT_SPRING = False # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
+POINT_SPRING = True # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
-MASS = 5. # 5
-STIFFNESS = 100. # 100
-DAMPING = 10. # 10
-MASS_DSCALE = 0.6   #0.5    # Mass velocity damping (Use [0.0, 1.0] range to slow down)
-SPRING_DSCALE = 6.0  #3.0   # Scales spring forces (increase for more jiggling)
+MASS = 3. # 5
+STIFFNESS = 70. # 100
+DAMPING = 2.5 # 10
+MASS_DSCALE = 0.3   #0.5    # Mass velocity damping (Use [0.0, 1.0] range to slow down)
+SPRING_DSCALE = 1.0  #3.0   # Scales spring forces (increase for more jiggling)
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # READ DATA
@@ -245,8 +245,8 @@ def set_lights(plotter):
 
 def adjust_camera_spot(plotter):
     plotter.camera.tight(padding=0.4, view="zy", adjust_render_window=False)
-    plotter.camera.clipping_range = (-1, 3) # -1 is to fix near clipping range
-    plotter.camera.azimuth = 210
+    plotter.camera.clipping_range = (-3, 3) # -1 is to fix near clipping range
+    plotter.camera.azimuth = 230
     
 
 def add_texture(polydata, actor, img_path=None):

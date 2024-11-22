@@ -24,7 +24,7 @@ Major I've followed to setup (see comments with !!!!):
 
 import os
 import sys
-path_to_cpbd = "../Controllable_PBD_3D/" # !!!! EDIT !!!! 
+path_to_cpbd = "../Controllable_PBD_3D/" # EDIT !!!! 
 sys.path.insert(0, path_to_cpbd)
 
 import taichi as ti
@@ -44,14 +44,20 @@ import time
 ti.init(arch=ti.x64, cpu_max_num_threads=1)
 
 # =============================================================================
-# Editable parameters !!!!!!!!!!
+# Editable parameters !!!!
 # =============================================================================
 modelname = 'spot_high' # "spot" or "spot_high"
 
 idxs = [4,5,6,7] # Indices to translate the handles (there are 8) 
-fixed = [4,5,6,7] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
+fixed = [0, 1, 2, 3, 4,5,6, 7] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
-pose_base = np.array([0.,  0., 20.]) # xyz rotation degrees
+pose_base = np.array([0.,  0., 30.]) # xyz rotation degrees
+decay = 0.2 # Dampen the user transforms over time, range [0.0, inf) 
+            # will be used in pose_base / e^(decay * t)
+
+start_frame = 0
+end_frame = 500
+save_npz = True
 
 save_path =  f"./data/{modelname}/{modelname}_extracted.npz" 
             
@@ -63,12 +69,8 @@ model_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}.mesh')
 weight_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}_w.txt')
 
 
-start_frame = 0
-end_frame = 200
-save_npz = True
-
 scale = 1.0
-repose = (0.0, 0.7, 0.0)
+repose = (0.0, 0.7, 0.0) # I guess it acts as global translation of the model
 
 points = points_data.load_points_data(tgf_path, weight_path, scale, repose)
 mesh = tet_data.load_tets(model_path, scale, repose)
@@ -188,9 +190,10 @@ def set_movement():
   p_input = points_ik.c_p_ref.to_numpy() # Handles at rest
   
   if t > 0.0:
-    translation_vec = trans_base * math.sin( t * math.pi) # Translation from rest -> posed
+    damp = 1 / np.exp(decay * t)
+    translation_vec = trans_base * math.sin(t * math.pi) * damp # Translation from rest -> posed
     
-    rotation_degrees = pose_base * math.sin( t * math.pi) # Rotation from rest -> posed
+    rotation_degrees = pose_base * math.sin( t * math.pi) * damp # Rotation from rest -> posed
     rot = Rotation.from_euler('xyz', rotation_degrees , degrees=True)
     rot_mat = rot.as_matrix()
     
