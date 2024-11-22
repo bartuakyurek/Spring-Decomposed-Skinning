@@ -9,7 +9,7 @@ This repository demonstrates a novel approach to **dynamic skinning deformation*
 
 - **Dynamic Motion with a simple framework:** We implement simple Hookean spring forces directly on the rig bones with Position-Based Dynamics (PBD) to emulate secondary dynamics caused by the skeletal motion. 
 - **No Tetrahedralization Required:** Unlike most physical simulation methods, we avoid computationally expensive tetrahedralization while still achieving realistic dynamics.
-- **Scalability:** We avoid any simulation on the surface vertices which allows us to scale higher resolution meshes just like the traditional skinning pipelines.
+- **Scalability:** We avoid any simulation on the surface vertices which allows us to scale to higher resolution meshes just like the traditional skinning pipelines.
 - **User-Controlled Dynamics:** Intuitive control over the global and local deformation dynamics is achieved by leveraging spring forces on primary bones and helper bones.
  
  > [!WARNING]
@@ -38,7 +38,7 @@ Unlike traditional garment simulations, which rely on mass-spring systems for ev
 We compare our results with another method that unifies physical simulation with the skinning framework, Controllable PBD 
 by Wu and Umetani [1]. 
 ![Comparison with Wu et al.](./assets/spot_comparison.gif)
-**Figure 3.1:** Comparing our results with a state-of-art paper. We introduce global dynamics that can act like stretch-squish deformation.   
+**Figure 3.1:** Comparing our results with a state-of-the-art paper. We introduce global dynamics that can act like stretch-squish deformation.   
 
 In Figure 3.1, the yellow dots represent the point handles that are transformed by the user. 
 The same handles are transformed for both Wu et al. and our work. 
@@ -49,7 +49,7 @@ In our work, blue handles represent the spring bones that are simulated in our p
 We can achieve both global secondary dynamics that jiggles major body parts of the mesh, 
 and local secondary dynamics for soft tissues (such as jiggling of a fat tissue). The blue point handles on the above figure are bound to larger areas of the mesh; hence, they can produce global dynamics.
 
-![Comparison with Wu et al.](./assets/spot_exaggerated.gif)
+![Comparison with Wu et al.](./assets/spot_exaggerated_short.gif)
 **Figure 3.2:** Exaggerated version of Figure 3.1. Notice that global dynamics add directly on the LBS deformation, without deforming other tissues which highlights controllability of our method.  
 
 
