@@ -21,19 +21,19 @@ try:
     from ..utils.linalg_utils import(get_aligning_rotation, 
                                         translation_vector_to_matrix,
                                         angle_between_vectors_np,
-                                        get_3d_scale)
+                                        get_3d_scale, normalize_vec3)
     
 except: # TODO: Can we do imports better, with less repetition?
     import __init__
     from src.utils.linalg_utils import(get_aligning_rotation, 
                                         translation_vector_to_matrix,
                                         angle_between_vectors_np,
-                                        get_3d_scale)
+                                        get_3d_scale, normalize_vec3)
 
 # =============================================================================
 # Core function
 # =============================================================================
-def get_RST(src_segment, target_segment):
+def get_RST(src_segment, target_segment, normalize_before_rotation=True):
     # Step 0 - Declare source and target points
     assert src_segment.shape == (2,3) and target_segment.shape ==  (2,3)
     
@@ -53,7 +53,12 @@ def get_RST(src_segment, target_segment):
     assert LA.norm(tgt_bone_space[0]) < 1e-20, "Expected bone space translations to land on origin."
 
     # Step 3 - Compute the rotation between source and target vectors 
-    R = get_aligning_rotation(src_bone_space[1], tgt_bone_space[1], homogeneous=True)
+    u, v = src_bone_space[1], tgt_bone_space[1]
+    if normalize_before_rotation:
+        u = normalize_vec3(u) # This step is not necessary as even if the rotation changes scale,
+        v = normalize_vec3(v) # we scale back to the target length. I'm adding this to see if warnings are silenced.
+    
+    R = get_aligning_rotation(u, v, homogeneous=True)
     src_bs_rotated = R[:3,:3] @ src_bone_space[1]
     # Check if the angle between is practically zero (note that lower than 1e-6 can fail)
     angle = angle_between_vectors_np(src_bs_rotated, tgt_bone_space[1])
@@ -91,7 +96,7 @@ def _test_RST(src_segment, target_segment):
     return src_transformed
     
 if __name__ == "__main__":
-    print("Testing RST...")
+    print(">> Testing RST...")
     
     # Test a toy case ------------------------------------------
     src_segment = np.array([
@@ -124,5 +129,5 @@ if __name__ == "__main__":
     
     # End of tests ----------------------------------------------
     
-    
+    print(">> Tests ran successfully.")
     

@@ -38,7 +38,7 @@ RENDER_TEXTURE = False
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
 WIREFRAME = False
 RENDER_MESH = True
-RENDER_SKEL = False
+RENDER_SKEL = True
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = False
 OPACITY = 1.0
@@ -55,14 +55,14 @@ INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
 
-FIXED_SCALE = False # Set true if you want the jiggle bone to preserve its length
+FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
 EDGE_CONSTRAINT = True # Recommended to set either FIXED_SCALE or EDGE_CONSTRAINT True
 COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
-N_REPEAT = 1 
-N_REST = 0
+N_REPEAT = 2
+N_REST = 1
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  

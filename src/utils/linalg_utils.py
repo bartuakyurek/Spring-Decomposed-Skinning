@@ -13,6 +13,17 @@ from scipy.spatial.transform import Rotation
 
 from .sanity_check import _assert_normalized_weights
 
+def normalize_vec3(vec3): # vec3 is a 3D vector, np.ndarray
+
+    n = LA.norm(vec3)
+    if n < 1e-18:
+        print(">> WARNING: Found zero-length vector, normalization isn't conducted")
+        return vec3
+    
+    return vec3 / n
+    
+    
+    
 
 def normalize_arr_np(arr, tol=1e-14):
     """
@@ -293,9 +304,13 @@ def get_aligning_rotation(src_vec, target_vec, homogeneous=False):
         if homogeneous: return np.eye(4)
         else: return np.eye(3)
         
-    if LA.norm(src_vec) > 1. + 1e-18 or LA.norm(target_vec) > 1. + 1e-18:
+    # Check if the given vectors have norm 1
+    if math.isclose(LA.norm(src_vec), 1) and math.isclose(LA.norm(target_vec), 1):
+        normalized = True
+    else:
+        normalized = False
         print(">> WARNING: Given vectors aren't normalized. The rotation may cause scaling in the transformed vector. Please normalize the vectors first.")
-              
+    
     cosA = np.dot(src_vec, target_vec)
     assert not cosA == -1, "Cannot evaluate vectors whose cosine is -1."
     
@@ -308,6 +323,10 @@ def get_aligning_rotation(src_vec, target_vec, homogeneous=False):
     
     result = np.vstack((row1, row2, row3), dtype=float)
     assert result.shape == (3,3)
+    
+    if normalized:
+        new_norm = LA.norm(result @ src_vec)
+        assert math.isclose(new_norm, 1.0), f"Expected the norm to be preserved as 1.0, got {new_norm} norm."
     
     if homogeneous:
         result_homo = np.eye(4)
