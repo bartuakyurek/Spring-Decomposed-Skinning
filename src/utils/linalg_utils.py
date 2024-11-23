@@ -5,6 +5,7 @@ Created on Fri Sep 27 13:15:07 2024
 
 @author: bartu
 """
+import math
 import torch
 import numpy as np
 from numpy import linalg as LA
@@ -287,17 +288,20 @@ def get_aligning_rotation(src_vec, target_vec, homogeneous=False):
     """
     assert src_vec.shape == (3,) and target_vec.shape == (3,)
     
+    if LA.norm(src_vec - target_vec) < 1e-20:
+        #print(">> INFO: Returning identity rotation...")
+        if homogeneous: return np.eye(4)
+        else: return np.eye(3)
+        
     if LA.norm(src_vec) > 1. + 1e-18 or LA.norm(target_vec) > 1. + 1e-18:
-        print(">> WARNING: Given vectors aren't normalized. The rotation \
-               may cause scaling in the transformed vector. Please normalize \
-               the vectors first.")
+        print(">> WARNING: Given vectors aren't normalized. The rotation may cause scaling in the transformed vector. Please normalize the vectors first.")
               
     cosA = np.dot(src_vec, target_vec)
     assert not cosA == -1, "Cannot evaluate vectors whose cosine is -1."
     
     k = 1. / (1. + cosA)
     axis = np.cross(src_vec, target_vec)
-
+    
     row1 = (axis[0] * axis[0] * k) + cosA, (axis[1] * axis[0] * k) - axis[2], (axis[2] * axis[0] * k) + axis[1],
     row2 = (axis[0] * axis[1] * k) + axis[2], (axis[1] * axis[1] * k) + cosA, (axis[2] * axis[1] * k) - axis[0]
     row3 = (axis[0] * axis[2] * k) - axis[1], (axis[1] * axis[2] * k) + axis[0], (axis[2] * axis[2] * k) + cosA
