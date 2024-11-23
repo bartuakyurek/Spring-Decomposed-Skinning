@@ -56,6 +56,7 @@ DAMPING = 10 #50.
 MASS_DSCALE = 0.2        # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 3.0     # Scales spring forces (increase for more jiggling)
 
+ALGO = "RST" # T or RST, if T is selected, only translations will be concerned.
 ERR_MODE = "SMPL" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
 err_cmap = cm.jet #winter, jet, brg, gnuplot2, autumn, viridis or see https://matplotlib.org/stable/users/explain/colors/colormaps.html
 COLOR_CODE = True
@@ -202,20 +203,23 @@ for frame in range(n_frames):
     dyn_posed_locations = helper_rig.update_bones(rigidly_posed_locations) # Update the rigidly posed locations
     J_dyn.append(dyn_posed_locations)
     
-    # 1.2 - Get the transformations through IK (cancelled for SMPL)
-    #M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, dyn_posed_locations, return_mat=True, algorithm="RST")
-    #M = inverse_kinematics.get_absolute_transformations(prev_J, dyn_posed_locations, return_mat=True, algorithm="RST")
-    #M = M[helper_idxs] # TODO: you may need to change it after excluding root bone? make sure you're retrieving correct transformations
+    if ALGO == "RST":
+        # 1.2 - Get the transformations through IK (cancelled for SMPL)
+        #M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, dyn_posed_locations, return_mat=True, algorithm="RST")
+        M = inverse_kinematics.get_absolute_transformations(prev_J, dyn_posed_locations, return_mat=True, algorithm="RST")
+        M = M[helper_idxs] # TODO: you may need to change it after excluding root bone? make sure you're retrieving correct transformations
+        
+        # 1.3 - Feed them to skinning and obtain dynamically deformed vertices. (cancelled for SMPL)
+        delta_jiggle = skinning.LBS_from_mat(prev_V, helper_W, M, use_normalized_weights=NORMALIZE_WEIGHTS) 
+        
+    else:
+        # Compute the translations and add them on SMPL mesh
+        prev_helper_tips = prev_J[2 * helper_idxs + 1]
+        cur_helper_tips = dyn_posed_locations[2 * helper_idxs + 1]
+        
+        delta = cur_helper_tips - prev_helper_tips
+        delta_jiggle = helper_W @ delta 
     
-    # 1.3 - Feed them to skinning and obtain dynamically deformed vertices. (cancelled for SMPL)
-    #mesh_points = skinning.LBS_from_mat(prev_V, helper_W, M, use_normalized_weights=NORMALIZE_WEIGHTS) 
-    
-    # Compute the translations and add them on SMPL mesh
-    prev_helper_tips = prev_J[2 * helper_idxs + 1]
-    cur_helper_tips = dyn_posed_locations[2 * helper_idxs + 1]
-    
-    delta = cur_helper_tips - prev_helper_tips
-    delta_jiggle = helper_W @ delta 
     V_dyn[frame] += delta_jiggle * JIGGLE_SCALE
     
     prev_J = dyn_posed_locations
