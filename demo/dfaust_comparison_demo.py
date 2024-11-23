@@ -56,7 +56,7 @@ DAMPING = 10 #50.
 MASS_DSCALE = 0.2        # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 3.0     # Scales spring forces (increase for more jiggling)
 
-ALGO = "RST" # T or RST, if T is selected, only translations will be concerned.
+ALGO = "T" # T or RST, if T is selected, only translations will be concerned. Note that RST fails at current stage. TODO: investigate it.
 ERR_MODE = "SMPL" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
 err_cmap = cm.jet #winter, jet, brg, gnuplot2, autumn, viridis or see https://matplotlib.org/stable/users/explain/colors/colormaps.html
 COLOR_CODE = True
