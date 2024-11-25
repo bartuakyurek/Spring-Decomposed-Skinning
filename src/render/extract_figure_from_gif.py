@@ -18,14 +18,17 @@ import matplotlib.pyplot as plt
 # =============================================================================
 # 
 # =============================================================================
-model_name = "cloth"  #"smpl_50004_10"
-SELECTED_MODELS = ["cloth_rig1", "cloth_rig3"]
+model_name = "spot_exaggerated" #"cloth"  #"smpl_50004_10"
+SELECTED_MODELS = [ f"{model_name}_opaque",
+                    f"{model_name}_skel",
+                   ]
+                   #"cloth_rig1", "cloth_rig3"]
                    #f"{model_name}_skel",
                    #f"{model_name}_cc"]
                    #f"{model_name}_opaque"]
                    #f"{model_name}_cc"] # See datadict for available options
 
-spot_frames     = [i*10 + 1 for i in range(6)]
+spot_frames     = [1, 21, 31, 41, 51]
 monstera_frames = [1, 25, 50, 100, 124, 149, 189]
 duck_frames     = [1, 11, 63, 76, 110, 130, 149]
 cloth_frames    = [1, 17, 31, 42, 48, 56, 67]
@@ -50,12 +53,12 @@ datadict = {
     
     "spot_exaggerated_opaque" : {
                      'gif_path' : REL_GIF_PATH + "spot_exaggerated.gif",
-                     'crop'     : [930, -420, None, None],
+                     'crop'     : [940, -420, None, None],
                      'keyframes':  spot_frames,
     },
     "spot_exaggerated_skel" : {
                      'gif_path' : REL_GIF_PATH + "spot_exaggerated.gif",
-                     'crop'     : [420, -930, None, None],
+                     'crop'     : [420, -940, None, None],
                      'keyframes':  spot_frames,
     },
     
@@ -245,7 +248,7 @@ def extract_gif_frames(gif_path, keyframes, crop=None):
 #         
 # =============================================================================
 def compose_plot(row_gif_paths, keyframes, 
-                 crop=None, dpi=1200, figsize=(25, 25),
+                 crop=None, dpi=600, figsize=(25, 15),
                  v_spacing=0.05, h_spacing=0.1,
                  save_path=None):
     """
@@ -304,7 +307,7 @@ def compose_plot(row_gif_paths, keyframes,
         else: axs_row = axs[i]
         _show_subplot_row(axs_row, row_imgs) #, v_spacing)
                 
-    if save_path: plt.savefig(save_path)
+    if save_path: plt.savefig(save_path, dpi=dpi)
     plt.show()
     return
 
