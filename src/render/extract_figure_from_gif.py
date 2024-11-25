@@ -18,9 +18,10 @@ import matplotlib.pyplot as plt
 # =============================================================================
 # 
 # =============================================================================
-model_name = "smpl_50004_10"
-SELECTED_MODELS = [f"{model_name}_skel",
-                   f"{model_name}_cc"]
+model_name = "cloth"  #"smpl_50004_10"
+SELECTED_MODELS = ["cloth_rig1", "cloth_rig3"]
+                   #f"{model_name}_skel",
+                   #f"{model_name}_cc"]
                    #f"{model_name}_opaque"]
                    #f"{model_name}_cc"] # See datadict for available options
 
@@ -117,6 +118,18 @@ datadict = {
                      'crop'     : [None, None, None, None],
                      'keyframes':  cloth_frames,
     },
+    
+    "cloth_rig1" : {
+                     'gif_path' : REL_GIF_PATH + "cloth_rig1.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  cloth_frames,
+    },
+    "cloth_rig3" : {
+                     'gif_path' : REL_GIF_PATH + "cloth_rig3.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  cloth_frames,
+    },
+
     
     "smpl_50004_10_cc"     : {
                     'gif_path' : REL_GIF_PATH + "smpl_50004_10_cc.gif",

@@ -34,12 +34,12 @@ MODE = "Dynamic" #"Rigid" or "Dynamic"
 INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
-RIG_OPTION = 3 # 1-2-3, if set to anything else the default will be used
+RIG_OPTION = 1 # 1-2-3, if set to anything else the default will be used
 
 OPACITY = 1.0
 WINDOW_SIZE = (1200, 1200)
 RENDER_MESH = True
-RENDER_SKEL = True
+RENDER_SKEL = False
 RENDER_TEXTURE = True
 RENDER_PHYS_BASED = False
 EYEDOME_LIGHT = True
