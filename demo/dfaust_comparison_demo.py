@@ -59,10 +59,10 @@ SPRING_DSCALE = 3.0     # Scales spring forces (increase for more jiggling)
 ALGO = "T" # T or RST, if T is selected, only translations will be concerned. Note that RST fails at current stage. TODO: investigate it.
 ERR_MODE = "SMPL" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
 err_cmap = cm.jet #winter, jet, brg, gnuplot2, autumn, viridis or see https://matplotlib.org/stable/users/explain/colors/colormaps.html
-COLOR_CODE = True
+COLOR_CODE = False
 RENDER_MESH_RIGID, RENDER_MESH_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
-RENDER_SKEL_RIGID, RENDER_SKEL_DYN = False, False # Turn on/off mesh for SMPL and/or SDDS
-OPACITY = 1
+RENDER_SKEL_RIGID, RENDER_SKEL_DYN = True, True # Turn on/off mesh for SMPL and/or SDDS
+OPACITY = 0.3
 JIGGLE_SCALE = 1.0      # Set it greater than 1 to exaggerate the jiggling impact
 NORMALIZE_WEIGHTS = True # Set true to automatically normalize the weights. Unnormalized weights might cause artifacts.
 WINDOW_SIZE = (16*50*3, 16*80) # Divisible by 16 for ffmeg writer
@@ -79,7 +79,7 @@ if JIGGLE_SCALE != 1.0: print(f"WARNING: Jiggle scaling is set to {JIGGLE_SCALE}
 # # --------------------------------------------------------------------------
 # =============================================================================
 
-SELECTED_SUBJECT, SELECTED_POSE = subject_ids[0], pose_ids[10]
+SELECTED_SUBJECT, SELECTED_POSE = subject_ids[0], pose_ids[8]
 
 smpl_model = get_gendered_smpl_model(subject_id=SELECTED_SUBJECT, device="cpu")
 F = np.array(smpl_model.faces, dtype=int)
