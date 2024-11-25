@@ -41,7 +41,7 @@ RENDER_MESH = True
 RENDER_SKEL = True
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = False
-OPACITY = 1.0
+OPACITY = 0.8
 MATERIAL_METALLIC = 0.0
 MATERIAL_ROUGHNESS = 0.2
 WINDOW_SIZE = (1920, 1080)
@@ -56,9 +56,9 @@ ALGO = "RST" # RST, SVD, T
 NORMALIZE_WEIGHTS = True
 
 FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
-EDGE_CONSTRAINT = True # Recommended to set either FIXED_SCALE or EDGE_CONSTRAINT True
+EDGE_CONSTRAINT = False # Recommended to set either FIXED_SCALE or EDGE_CONSTRAINT True
 COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
-POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 N_REPEAT = 2
@@ -66,11 +66,11 @@ N_REST = 1
 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
-MASS = 1.5
-STIFFNESS = 100.
-DAMPING = 20.            
+MASS = 2.5
+STIFFNESS = 200.
+DAMPING = 25.            
 MASS_DSCALE = 0.5       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
-SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
+SPRING_DSCALE = 1.5     # Scales spring forces (increase for more jiggling)
 
 model_dict = model_data.model_dict[MODEL_NAME]
 OBJ_PATH = model_dict["OBJ_PATH"]
