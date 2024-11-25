@@ -34,6 +34,7 @@ from src.render.pyvista_render_tools import (add_mesh,
                                              add_skeleton_from_Skeleton, 
                                              set_mesh_color_scalars)
 
+
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Main variables
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -59,8 +60,8 @@ USE_POINT_HANDLES_IN_OURS = True # Render the handles as points instead of bones
 # RENDER PARAMETERS
 RENDER_AS_GIF = False # If set to False, render as .mp4
 RENDER_MESH = True
-RENDER_SKEL = True
-WIREFRAME = True
+RENDER_SKEL = False
+WIREFRAME = False
 RENDER_TEXTURE = False # Automatically treated as False if COLOR_CODE is True
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
 
@@ -70,11 +71,12 @@ LIGHT_POS = (10.5, 3.5, 3.5)
                        
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = False
-OPACITY = 0.6
+OPACITY = 1.0
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.3
 BASE_COLOR = [0.8,0.7,1.0] # RGB
 
+BACKGROUND_COLOR = "black"
 DEFAULT_BONE_COLOR = "white"
 CPBD_BONE_COLOR ="green" # CPBD stands for Controllable PBD (the paper we compare against)
 CPBD_FIXED_BONE_COLOR = "red"
@@ -89,7 +91,7 @@ ALGO = "T" # ["T", "RST", "SVD"] RST doesn't work good with this demo, SVD never
 INTEGRATION = "PBD" # PBD or Euler
 
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
-COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
+COMPLIANCE = 0.05 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
 FIXED_SCALE = False
 POINT_SPRING = True # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
@@ -271,6 +273,7 @@ def add_texture(polydata, actor, img_path=None):
 plotter = pv.Plotter(notebook=False, off_screen=False,
                      window_size = WINDOW_SIZE, border=False, shape = (3,1))
 
+plotter.set_background(BACKGROUND_COLOR)
 set_lights(plotter)
 # ---------- First Plot (LBS) ----------------
 plotter.subplot(0, 0)
