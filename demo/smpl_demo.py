@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+
+This file is created to visualize a comparison between plain SMPL,
+our helper bones with SMPL, and Wu et al.'s method on SMPL (with the
+same helper handles but simulated with their method).
+
 Created on Tue Nov 26 10:34:45 2024
 
 @author: bartu
 """
 
+import os
 import numpy as np
 import pyvista as pv
 from matplotlib import cm
 
-from src.global_vars import subject_ids, pose_ids, RESULT_PATH
+from src.global_vars import subject_ids, pose_ids, RESULT_PATH, DATA_PATH
 from src.render.pyvista_render_tools import (add_mesh, 
                                              add_skeleton,
                                              add_skeleton_from_Skeleton, 
@@ -28,20 +34,81 @@ RENDER_SKEL_RIGID, RENDER_SKEL_DYN = True, True # Turn on/off mesh for SMPL and/
 OPACITY = 0.3
 WINDOW_SIZE = (16*50*2, 16*80) # Divisible by 16 for ffmeg writer
 
-SIMULATE_HELPERS = False
+
 SELECTED_SUBJECT, SELECTED_POSE = subject_ids[0], pose_ids[8]
 
 # =============================================================================
 # # --------------------------------------------------------------------------
-# # Load related data
+# # Load related data (Ours)
 # # --------------------------------------------------------------------------
 # =============================================================================
-from simulate_smpl import get_simulated_smpl, get_smpl_distance_error
+import simulate_smpl_ours
 
-F, J, J_dyn, smpl_kintree, skeleton, helper_idxs, V_gt, V_smpl, V_dyn = get_simulated_smpl(SIMULATE_HELPERS, 
-                                                                                    SELECTED_SUBJECT, 
-                                                                                    SELECTED_POSE)
-err_codes_dyn = get_smpl_distance_error(V_smpl, V_dyn)
+# Get our data
+smpl_bundle, ours_bundle = simulate_smpl_ours.get_simulated_smpl(True, 
+                                                                 SELECTED_SUBJECT, 
+                                                                 SELECTED_POSE)
+
+F, J, smpl_kintree, _, V_smpl, W_smpl = smpl_bundle
+J_dyn, skeleton, helper_idxs, V_dyn, helper_W = ours_bundle
+
+if COLOR_CODE: err_codes_dyn = simulate_smpl_ours.get_smpl_distance_error(V_smpl, V_dyn)
+
+
+# create model path if not existing
+# base_pose = ... save it as .obj A-pose or T-pose (V[0])
+# .tgf for skeleton data at base_pose (J[0])
+# weights
+
+# Prepare data for Wu et al. simulation
+# -------------------------------------------
+_, rigidly_simulated_bundle = simulate_smpl_ours.get_simulated_smpl(False, 
+                                                                 SELECTED_SUBJECT, 
+                                                                 SELECTED_POSE)
+J_helpers_rigid, _, _, _, _ = rigidly_simulated_bundle
+
+n_frames = len(V_smpl)
+point_handles_anim = np.reshape(J_helpers_rigid,(n_frames,-1,2,3))[:,:,1,:] # (n_frames, n_handles, 3)
+assert point_handles_anim.shape[0] == n_frames
+
+# Check if the data directory exists, else create it
+modelname = "smpl_" + str(SELECTED_SUBJECT) + "_" + str(SELECTED_POSE)
+asset_path = os.path.join(DATA_PATH, modelname)
+if not os.path.exists(asset_path):
+    os.makedirs(asset_path)
+
+# Write weights to a file
+# WARNING: Assumes helper indices are all at the end
+W_wu = np.append(W_smpl, helper_W, axis=-1)
+np.savetxt(os.path.join(asset_path, f'{modelname}_w.txt'), W_wu)
+
+# Write .tgf in its most simplistic form
+J_rest = point_handles_anim[0]
+
+with open(os.path.join(asset_path,f"{modelname}.tgf"), "w") as f:
+    for i,point_coord in enumerate(J_rest):
+        x,y,z = point_coord
+        f.write(str(i) + " " + str(x) + " " + str(y) + " " + str(z) + "\n")
+        
+    f.write('#')
+    
+# Write obj
+import igl
+V_rest = V_smpl[0]
+igl.write_obj(os.path.join(asset_path,f"{modelname}.obj"), V_rest, F)
+
+# =============================================================================
+# # --------------------------------------------------------------------------
+# # Load related data (Wu et al.)
+# # --------------------------------------------------------------------------
+# =============================================================================
+import simulate_smpl_wu
+
+V_wu, J_wu, fixed_handles = simulate_smpl_wu.get_simulated_smpl(modelname, 
+                                                                asset_path,
+                                                                point_handles_anim,
+                                                                start_frame=0,
+                                                                tetmesh=False, save_path= None)
 
 # =============================================================================
 # # ---------------------------------------------------------------------------
@@ -56,8 +123,7 @@ plotter = pv.Plotter(notebook = False,
                      window_size = WINDOW_SIZE)
 
 # Data to initialize mesh objects
-initial_J, initial_smpl_V, initial_gt_V = J[0], V_smpl[0], V_gt[0]
-
+initial_J, initial_smpl_V = J[0], V_smpl[0]
 
 # =============================================================================
 # Add SMPL 
@@ -106,7 +172,6 @@ if not RENDER_SKEL_RIGID:
 result_fname = "dfaust_comparison" + "_" + str(SELECTED_SUBJECT) + "_" + str(SELECTED_POSE)
 plotter.open_movie(RESULT_PATH + f"{result_fname}.mp4")
 
-n_frames = len(V_smpl)
 for frame in range(n_frames):
     rigid_skel_mesh.points = J[frame]   # Update mesh points in the renderer.
     dyn_skel_mesh.points = J_dyn[frame] # TODO: update it!
