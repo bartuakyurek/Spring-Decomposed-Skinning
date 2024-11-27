@@ -11,11 +11,14 @@ Created on Tue Nov 26 10:34:45 2024
 @author: bartu
 """
 
+
 import os
+import igl
 import numpy as np
 import pyvista as pv
 from matplotlib import cm
 
+import __init__
 from src.global_vars import subject_ids, pose_ids, RESULT_PATH, DATA_PATH
 from src.render.pyvista_render_tools import (add_mesh, 
                                              add_skeleton,
@@ -50,52 +53,86 @@ smpl_bundle, ours_bundle = simulate_smpl_ours.get_simulated_smpl(True,
                                                                  SELECTED_POSE)
 
 F, J, smpl_kintree, _, V_smpl, W_smpl = smpl_bundle
-J_dyn, skeleton, helper_idxs, V_dyn, helper_W = ours_bundle
+J_dyn, skeleton, helper_idxs, V_dyn, helper_W, _ = ours_bundle
+helper_idxs = helper_idxs - 1 # TODO: remove -1 when you remove root bone
 
 if COLOR_CODE: err_codes_dyn = simulate_smpl_ours.get_smpl_distance_error(V_smpl, V_dyn)
 
 
-# create model path if not existing
-# base_pose = ... save it as .obj A-pose or T-pose (V[0])
-# .tgf for skeleton data at base_pose (J[0])
-# weights
-
-# Prepare data for Wu et al. simulation
-# -------------------------------------------
+# =============================================================================
+# # Prepare data for Wu et al. simulation
+# =============================================================================
 _, rigidly_simulated_bundle = simulate_smpl_ours.get_simulated_smpl(False, 
                                                                  SELECTED_SUBJECT, 
                                                                  SELECTED_POSE)
-J_helpers_rigid, _, _, _, _ = rigidly_simulated_bundle
+J_helpers_rigid, _, _, _, _, helper_kintree_blender = rigidly_simulated_bundle
+
+# Remove the first entry if it's -1 (that's the convention I use for skeleton but it's not used in tgf)
+if helper_kintree_blender[0,0] == -1: helper_kintree_blender = helper_kintree_blender[1:]
 
 n_frames = len(V_smpl)
 point_handles_anim = np.reshape(J_helpers_rigid,(n_frames,-1,2,3))[:,:,1,:] # (n_frames, n_handles, 3)
 assert point_handles_anim.shape[0] == n_frames
 
-# Check if the data directory exists, else create it
+# Check if the data directory exists, else create it and fill the data 
+# WARNING: To update the Skeleton, Weights or Rest obj data, you need to delete the directory.
 modelname = "smpl_" + str(SELECTED_SUBJECT) + "_" + str(SELECTED_POSE)
 asset_path = os.path.join(DATA_PATH, modelname)
 if not os.path.exists(asset_path):
     os.makedirs(asset_path)
+   
+# =============================================================================
+# # Weights
+# =============================================================================
+w_txt_path = os.path.join(asset_path, f'{modelname}_w.txt')
+w_dmat_path = os.path.join(asset_path, f'{modelname}.dmat')
+if not os.path.exists(w_txt_path):
+    # Write weights to a file
+    #W_wu = helper_W #np.append(W_smpl, helper_W, axis=-1) 
+    W_wu = igl.read_dmat(w_dmat_path)
+    np.savetxt(w_txt_path, W_wu)
+    print(">> Weights file created.")
 
-# Write weights to a file
-# WARNING: Assumes helper indices are all at the end
-W_wu = np.append(W_smpl, helper_W, axis=-1)
-np.savetxt(os.path.join(asset_path, f'{modelname}_w.txt'), W_wu)
-
-# Write .tgf in its most simplistic form
-J_rest = point_handles_anim[0]
-
-with open(os.path.join(asset_path,f"{modelname}.tgf"), "w") as f:
-    for i,point_coord in enumerate(J_rest):
-        x,y,z = point_coord
-        f.write(str(i) + " " + str(x) + " " + str(y) + " " + str(z) + "\n")
-        
-    f.write('#')
+# =============================================================================
+# # Write .tgf in its most simplistic form
+# =============================================================================
+tgf_path = os.path.join(asset_path,f"{modelname}.tgf")
+tgf_edges_path =  os.path.join(asset_path,f"{modelname}_w_edges.tgf")
+  
+J_rest = point_handles_anim[0][helper_idxs]
+  
+# without bone edges  
+with open(tgf_path, "w") as f:
+        for i,point_coord in enumerate(J_rest):
+            x , y, z = np.round(point_coord, 5)
+            f.write(str(i) + " " + str(x) + " " + str(y) + " " + str(z) + "\n")
+            
+        f.write('#')
     
-# Write obj
-import igl
-V_rest = V_smpl[0]
-igl.write_obj(os.path.join(asset_path,f"{modelname}.obj"), V_rest, F)
+        print(">> Rest pose .tgf file created.")
+ 
+  
+# with bone edges
+with open(tgf_edges_path, "w") as f:
+    for i,point_coord in enumerate(J_rest):
+        x , y, z = np.round(point_coord, 5)
+        f.write(str(i+1) + " " + str(x) + " " + str(y) + " " + str(z) + "\n")
+        
+    f.write('#\n')
+    for edge in helper_kintree_blender:
+        f.write(str(edge[0]+1) + " " + str(edge[1]+1) + "\n")
+        
+    print(">> Rest pose with skeleton edges .tgf file created.")
+
+# =============================================================================
+# # Rest pose obj
+# =============================================================================
+obj_path = os.path.join(asset_path,f"{modelname}.obj")
+if not os.path.exists(obj_path):
+    # Write obj (I used this obj to write .mesh with libigl, see libigl/tutorial/605_Tetgen in libigl's repo)
+    V_rest = V_smpl[0]
+    igl.write_obj(obj_path, V_rest, F)
+    print(">> Rest pose .obj file created.")
 
 # =============================================================================
 # # --------------------------------------------------------------------------
@@ -108,7 +145,7 @@ V_wu, J_wu, fixed_handles = simulate_smpl_wu.get_simulated_smpl(modelname,
                                                                 asset_path,
                                                                 point_handles_anim,
                                                                 start_frame=0,
-                                                                tetmesh=False, save_path= None)
+                                                                tetmesh=True, save_path= None)
 
 # =============================================================================
 # # ---------------------------------------------------------------------------

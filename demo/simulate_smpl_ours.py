@@ -105,7 +105,7 @@ def get_simulated_smpl(SIMULATE_HELPERS, SELECTED_SUBJECT, SELECTED_POSE):
     with np.load(HELPER_RIG_PATH) as data:
          helper_W = data["weights"]
          helper_joints = data["joints"]
-         helper_kintree = data["kintree"]
+         helper_kintree_bl = data["kintree"]
     
     # Configure helper rig kintree
     n_verts = V_smpl.shape[1]
@@ -114,12 +114,12 @@ def get_simulated_smpl(SIMULATE_HELPERS, SELECTED_SUBJECT, SELECTED_POSE):
     HELPER_ROOT_PARENT = 9 # See https://www.researchgate.net/figure/Layout-of-23-joints-in-the-SMPL-models_fig2_351179264
     
     assert HELPER_ROOT_PARENT < n_rigid_bones, f"Please select a valid parent index from: [0,..,{n_rigid_bones-1}]."
-    assert helper_kintree[0,0] == -1, "Expected first entry to be the root bone."
-    assert helper_kintree.shape[1] == 2, f"Expected helper kintree to have shape (n_helpers, 2), got {helper_kintree.shape}."
+    assert helper_kintree_bl[0,0] == -1, "Expected first entry to be the root bone."
+    assert helper_kintree_bl.shape[1] == 2, f"Expected helper kintree to have shape (n_helpers, 2), got {helper_kintree_bl.shape}."
     assert helper_joints.shape == (n_helper_bones,2,3), f"Expected helper joints to have shape (n_helpers, 2, 3), got {helper_joints.shape}."
     assert helper_W.shape == (n_verts, n_helper_bones), f"Expected helper bone weights to have shape ({n_verts},{n_helper_bones}), got {helper_W.shape}."
     
-    helper_kintree = helper_kintree + n_rigid_bones # Update helper indices to match with current skeleton
+    helper_kintree = helper_kintree_bl + n_rigid_bones # Update helper indices to match with current skeleton
     helper_kintree[0,0] = HELPER_ROOT_PARENT            # Bind the helper tree to a bone in rigid skeleton
     
     helper_parents = helper_kintree[:,0]                  # Extract parents (TODO: could you require less steps to setup helpers please?)
@@ -213,7 +213,7 @@ def get_simulated_smpl(SIMULATE_HELPERS, SELECTED_SUBJECT, SELECTED_POSE):
     J_dyn = np.array(J_dyn, dtype=float)[:,2:,:] # TODO: get rid of the root bone
     
     smpl_bundle = (F, J, smpl_kintree, V_gt, V_smpl, W_smpl)
-    ours_bundle = (J_dyn, skeleton, helper_idxs, V_dyn, helper_W)
+    ours_bundle = (J_dyn, skeleton, helper_idxs, V_dyn, helper_W, helper_kintree_bl)
     return smpl_bundle, ours_bundle
    
         

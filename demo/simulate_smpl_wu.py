@@ -50,8 +50,8 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 #start_frame = 0
 #end_frame = 200
 
-idxs = [4,5,6,7] # Indices to translate the handles -> all helper handles
-fixed = [0, 1, 2, 3, 7] # Fixed handles 
+idxs = [0] # Indices to translate the handles -> all helper handles
+fixed = [0] # Fixed handles 
 
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
 pose_base = np.array([0.,  0., 30.]) # xyz rotation degrees
@@ -62,7 +62,8 @@ def get_simulated_smpl(modelname,
                        assets_path,
                        point_handles_anim,
                        start_frame=0,
-                       tetmesh=False, save_path= None):          
+                       tetmesh=True, 
+                       save_path=None):          
     
     n_frames, n_handles, _ = point_handles_anim.shape
     end_frame = start_frame + n_frames
