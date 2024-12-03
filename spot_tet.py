@@ -46,7 +46,7 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 # =============================================================================
 # Editable parameters !!!!
 # =============================================================================
-modelname = 'spot_high' # "spot" or "spot_high"
+modelname = 'spot' # "spot" or "spot_high"
 
 idxs = [4,5,6,7] # Indices to translate the handles (there are 8) 
 fixed = [0, 1, 2, 3, 7] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
@@ -56,7 +56,7 @@ decay = 0.0 # Dampen the user transforms over time, range [0.0, inf)
             # will be used in pose_base / e^(decay * t)
 
 start_frame = 0
-end_frame = 200
+end_frame = 500
 save_npz = True
 
 save_path =  f"./data/{modelname}/{modelname}_extracted.npz" 
@@ -220,13 +220,14 @@ def set_movement():
 
 t_total = 0.0
 t_ik = 0.0
-
+t_pbd = 0.0
 while window.running():
 
   t = time.time()
   set_movement()
 
   for i in range(substeps):
+    t_pbd_current = time.time()
     pbd.make_prediction()
     pbd.preupdate_cons(0)
     pbd.preupdate_cons(1)
@@ -235,6 +236,7 @@ while window.running():
     tik = time.time()
     points_ik.ik()
     t_ik += time.time() - tik
+    t_pbd += time.time() - t_pbd_current
     pbd.update_cons(1)
     pbd.update_vel()
 
@@ -242,6 +244,7 @@ while window.running():
   if window.get_total_frames() == end_frame:
     print(f'average time: {t_total / end_frame * 1000} ms')
     print(f'average ik time: {t_ik / end_frame * 1000} ms')
+    print(f'average pbd+ik time: {t_pbd / end_frame * 1000} ms')
 
   if save_npz:
     update_usd(window.get_total_frames())
