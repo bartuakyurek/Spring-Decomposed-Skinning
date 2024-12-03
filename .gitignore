@@ -21,3 +21,8 @@ data/.DS_Store
 imgui.ini
 /demo/.conda
 /assets/visualization_gifs
+data/smpl_50004_punching/50004_punching.blend
+data/smpl_50004_punching/50004_punching.blend1
+data/smpl_50004_punching/sample_working.obj
+/data/elephant
+/data/smpl_50004_punching

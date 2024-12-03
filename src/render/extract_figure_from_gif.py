@@ -18,13 +18,17 @@ import matplotlib.pyplot as plt
 # =============================================================================
 # 
 # =============================================================================
-model_name = "smpl_50004_10"
-SELECTED_MODELS = [f"{model_name}_skel",
-                   f"{model_name}_cc"]
+model_name = "smpl_50004_8" #"spot_cc" #"cloth"  
+SELECTED_MODELS = [ #f"{model_name}_opaque",
+                    f"{model_name}_skel",
+                   ]
+                   #"cloth_rig1", "cloth_rig3"]
+                   #f"{model_name}_skel",
+                   #f"{model_name}_cc"]
                    #f"{model_name}_opaque"]
                    #f"{model_name}_cc"] # See datadict for available options
 
-spot_frames     = [i*10 + 1 for i in range(6)]
+spot_frames     = [1, 21, 31, 41, 51]
 monstera_frames = [1, 25, 50, 100, 124, 149, 189]
 duck_frames     = [1, 11, 63, 76, 110, 130, 149]
 cloth_frames    = [1, 17, 31, 42, 48, 56, 67]
@@ -47,14 +51,25 @@ datadict = {
                      'keyframes':  spot_frames,
     },
     
+    "spot_cc_opaque" : {
+                     'gif_path' : REL_GIF_PATH + "spot_cc.gif",
+                     'crop'     : [1050, -450, None, None],
+                     'keyframes':  spot_frames,
+    },
+    "spot_cc_skel" : {
+                     'gif_path' : REL_GIF_PATH + "spot_cc.gif",
+                     'crop'     : [450, -1050, None, None],
+                     'keyframes':  spot_frames,
+    },
+    
     "spot_exaggerated_opaque" : {
                      'gif_path' : REL_GIF_PATH + "spot_exaggerated.gif",
-                     'crop'     : [930, -420, None, None],
+                     'crop'     : [960, -440, None, None],
                      'keyframes':  spot_frames,
     },
     "spot_exaggerated_skel" : {
                      'gif_path' : REL_GIF_PATH + "spot_exaggerated.gif",
-                     'crop'     : [420, -930, None, None],
+                     'crop'     : [440, -960, None, None],
                      'keyframes':  spot_frames,
     },
     
@@ -117,6 +132,18 @@ datadict = {
                      'crop'     : [None, None, None, None],
                      'keyframes':  cloth_frames,
     },
+    
+    "cloth_rig1" : {
+                     'gif_path' : REL_GIF_PATH + "cloth_rig1.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  cloth_frames,
+    },
+    "cloth_rig3" : {
+                     'gif_path' : REL_GIF_PATH + "cloth_rig3.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  cloth_frames,
+    },
+
     
     "smpl_50004_10_cc"     : {
                     'gif_path' : REL_GIF_PATH + "smpl_50004_10_cc.gif",
@@ -232,7 +259,7 @@ def extract_gif_frames(gif_path, keyframes, crop=None):
 #         
 # =============================================================================
 def compose_plot(row_gif_paths, keyframes, 
-                 crop=None, dpi=1200, figsize=(25, 25),
+                 crop=None, dpi=600, figsize=(12.5, 7.5),
                  v_spacing=0.05, h_spacing=0.1,
                  save_path=None):
     """
@@ -291,7 +318,7 @@ def compose_plot(row_gif_paths, keyframes,
         else: axs_row = axs[i]
         _show_subplot_row(axs_row, row_imgs) #, v_spacing)
                 
-    if save_path: plt.savefig(save_path)
+    if save_path: plt.savefig(save_path, dpi=dpi)
     plt.show()
     return
 

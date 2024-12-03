@@ -192,7 +192,7 @@ def color_bones(skel_mesh, n_bones, default_color, alt_idxs=None, alt_color=None
     return cmap
 
 def add_skeleton_from_Skeleton(plotter, skeleton, alt_idxs=None, is_smpl=False,
-                               default_bone_color="#FFFFFF", alt_bone_color="#BEACE6", 
+                               default_bone_color="#FFFFFF", alt_bone_color="blue", #"#BEACE6", 
                                joint_size=20,
                                return_actor=False,
                                exclude_root=True):

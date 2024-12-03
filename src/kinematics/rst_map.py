@@ -17,13 +17,23 @@ https://iquilezles.org/articles/noacos/
 import numpy as np
 from numpy import linalg as LA
 
+try:
+    from ..utils.linalg_utils import(get_aligning_rotation, 
+                                        translation_vector_to_matrix,
+                                        angle_between_vectors_np,
+                                        get_3d_scale, normalize_vec3)
+    
+except: # TODO: Can we do imports better, with less repetition?
+    import __init__
+    from src.utils.linalg_utils import(get_aligning_rotation, 
+                                        translation_vector_to_matrix,
+                                        angle_between_vectors_np,
+                                        get_3d_scale, normalize_vec3)
 
-from ..utils.linalg_utils import(get_aligning_rotation, 
-                                    translation_vector_to_matrix,
-                                    angle_between_vectors_np,
-                                    get_3d_scale)
-
-def get_RST(src_segment, target_segment):
+# =============================================================================
+# Core function
+# =============================================================================
+def get_RST(src_segment, target_segment, normalize_before_rotation=True):
     # Step 0 - Declare source and target points
     assert src_segment.shape == (2,3) and target_segment.shape ==  (2,3)
     
@@ -43,7 +53,12 @@ def get_RST(src_segment, target_segment):
     assert LA.norm(tgt_bone_space[0]) < 1e-20, "Expected bone space translations to land on origin."
 
     # Step 3 - Compute the rotation between source and target vectors 
-    R = get_aligning_rotation(src_bone_space[1], tgt_bone_space[1], homogeneous=True)
+    u, v = src_bone_space[1], tgt_bone_space[1]
+    if normalize_before_rotation:
+        u = normalize_vec3(u) # This step is not necessary as even if the rotation changes scale,
+        v = normalize_vec3(v) # we scale back to the target length. I'm adding this to see if warnings are silenced.
+    
+    R = get_aligning_rotation(u, v, homogeneous=True)
     src_bs_rotated = R[:3,:3] @ src_bone_space[1]
     # Check if the angle between is practically zero (note that lower than 1e-6 can fail)
     angle = angle_between_vectors_np(src_bs_rotated, tgt_bone_space[1])
@@ -60,9 +75,30 @@ def get_RST(src_segment, target_segment):
     offs = translation_vector_to_matrix(offset)
     inv_offs = translation_vector_to_matrix(-offset)
     return offs @ M @ inv_offs
+  
+# =============================================================================
+# Test
+# =============================================================================
+def _test_RST(src_segment, target_segment):
+    # Obtain transformations 
+    M = get_RST(src_segment, target_segment)
+    
+    # Convert homogeneous coordinates
+    src_homo = np.append(src_segment, np.ones((2,1)),axis=-1) # (2,3) append (2,1) -> (2,4)
+    
+    # Get result
+    src_transformed = M @ src_homo.T        # (4,4) @ (2,4).T -> (4,2)
+    src_transformed = src_transformed.T[:,:3]  # (4,2).T -> (2,3)
+    
+    # Check if the obtained matrix can result:  M @ src = target
+    diff = LA.norm(target_segment - src_transformed)
+    assert diff < 1e-10, f"Expected transformed source to match with target; got {diff} difference."
+    return src_transformed
     
 if __name__ == "__main__":
-    print("Testing RST...")
+    print(">> Testing RST...")
+    
+    # Test a toy case ------------------------------------------
     src_segment = np.array([
                             [1., 1., 0],
                             [2., 2., 0.1]
@@ -73,28 +109,25 @@ if __name__ == "__main__":
                             [5., 10.4, 0.02]
                             ])
     
-    # Obtain transformations ----------------------------------------------------------------
-    M = get_RST(src_segment, target_segment)
+    src_transformed = _test_RST(src_segment, target_segment)
+    begin, end = src_transformed
     
-    # Convert homogeneous coordinates
-    src_homo = np.append(src_segment, np.ones((2,1)),axis=-1) # (2,3) append (2,1) -> (2,4)
-    
-    # Get result
-    src_transformed = M @ src_homo.T        # (4,4) @ (2,4).T -> (4,2)
-    src_transformed = src_transformed.T[:,:3]  # (4,2).T -> (2,3)
-    
-    # Print Results -------------------------------------------------------------------------
-    # Check if the obtained matrix can result:  M @ src = target
     print("Source: ", src_segment[0], src_segment[1])
     print("Target: ", target_segment[0], target_segment[1])
-    
-    begin = src_transformed[0]
-    end = src_transformed[1]
     print("Result: ", np.round(begin, 4), 
-                     np.round(end, 4))
-    print("The result must match with the target.")
-
+                      np.round(end, 4))
     
+    # Test random cases -----------------------------------------
+    n_samples = 30
+    src_scope, tgt_scope = 34, 60
     
+    src_segments = np.random.rand(n_samples, 2, 3) * src_scope
+    target_segments = np.random.rand(n_samples, 2, 3) * tgt_scope
     
+    for src, tgt in zip(src_segments, target_segments):
+        _ = _test_RST(src, tgt)
+    
+    # End of tests ----------------------------------------------
+    
+    print(">> Tests ran successfully.")
     

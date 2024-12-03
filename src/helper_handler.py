@@ -236,6 +236,19 @@ class HelperBonesHandler:
                 #if np.sum(translation_amount) > 0: print("translation: ", translation_amount)
                 simulated_locations[child_start_idx + 1] += translation_amount
                 
+        # This part didn't work, I'll keep our kinematic constraints outside of PBD, without velocity updates.      
+        # # Update final mass locations and velocities --> PBD updating velocities after constraints
+        # # TODO: Can Step 4 above moved inside mass_spring? because it is a constraint. 
+        # # If so, the lines below is already in mass_spring, we can remove this repetition.
+        # for i, helper_idx in enumerate(self.helper_idxs):
+
+        #     free_i = int(2*i)
+        #     velocity = (simulated_locations[free_i] - self.simulator.masses[free_i].center) / self.simulator.dt
+            
+        #     assert self.simulator.masses[free_i].mass != 0.0, "Expected free mass to have nonzero mass."
+        #     self.simulator.masses[free_i].velocity = velocity
+        #     self.simulator.masses[free_i].center = simulated_locations[free_i]
+            
         # Step 5 - Save the simulated locations for the next iteration
         self.prev_sim_locations = simulated_locations
         # ---------------------------------------------------------------------
