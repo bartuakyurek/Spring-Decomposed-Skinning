@@ -50,7 +50,7 @@ from src.render.pyvista_render_tools import (add_mesh,
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 EXTRACT_REST_OBJ = False # To save the rest pose as .obj for using it in Blender
 
-MODEL_NAME = "spot_high" # "spot" or "spot_high"
+MODEL_NAME = "spot" # "spot" or "spot_high"
 AVAILABLE_MODES = ["point springs", "helper rig"]
 MAKE_ALL_SPRING = False # Set true to turn all bones spring bones
 SKELETON_MODE = AVAILABLE_MODES[0] # "point springs" or "helper rig" 
@@ -391,23 +391,24 @@ for i in range(n_frames):
     # V_lbs_dummy = skinning.LBS_from_mat(verts_rest, W_rigid, M_rigid, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
     
     # hand_diff_dummy = rigidly_posed_locations[range(2,18,2)] -  handle_locations_rigid[i]
-    #print(np.sum(hand_diff_dummy)) # should print around 0
+    # print(np.sum(hand_diff_dummy)) # should print around 0
     ####   
     
-    cur_handles = handle_locations_rigid[i]
-    diff = cur_handles - rest_handles
+    #cur_handles = handle_locations_rigid[i]
+    #diff = cur_handles - rest_handles
     
     # --------- LBS -----------------------------------------------------------    
-    V_lbs = get_LBS_spot(cur_handles, rest_handles)
+    V_lbs = get_LBS_spot(handle_locations_rigid[i], rest_handles)
     V_anim_rigid.append(V_lbs)
-    J_anim_rigid.append(convert_points_to_bones(cur_handles))
+    J_anim_rigid.append(convert_points_to_bones(handle_locations_rigid[i]))
     
     tot_time_lbs += time.time() - start_time 
     # --------- Ours -----------------------------------------------------------
     start_time = time.time()
+
     # Prepare translation and rotations
     t = np.zeros((n_bones_ours,3))
-    t[original_bones,:] = diff
+    t[original_bones,:] = handle_locations_rigid[i] - rest_handles
     pose = np.zeros((n_bones_ours, 3))
      
     # Pose with FK 
