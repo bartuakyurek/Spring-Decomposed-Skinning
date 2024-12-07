@@ -10,6 +10,7 @@ Created on Thu Oct 10 14:34:34 2024
 
 import os
 import igl
+import time
 import numpy as np
 import pyvista as pv
 
@@ -171,6 +172,7 @@ trans = np.zeros((n_bones, 3)) # TODO: remove +1 when you remove root bone issue
 # ---------------------------------------------------------------------------------
 V_anim_rigid, V_anim_dyn = [], []
 J_anim_rigid, J_anim_dyn = [], []
+tot_time_ours, tot_time_lbs = 0.0, 0.0
 rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False) 
 assert n_poses > 1, f"Expected keyframe poses to be at least 2. Got {n_poses} poses."
 for rep in range(N_REPEAT + N_REST):         # This can be refactored too as it's not related to render
@@ -180,15 +182,16 @@ for rep in range(N_REPEAT + N_REST):         # This can be refactored too as it'
             if rep < N_REPEAT:
                 # Lerp with next frame
                 theta = lerp(keyframe_poses[pose_idx], keyframe_poses[pose_idx+1], frame_idx/FRAME_RATE)
-              
+             
+            start_time = time.time()
             rigidly_posed_locations = skeleton.pose_bones(theta, trans, degrees=DEGREES)
             abs_rot_quat, abs_trans = skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
             M_rigid = skinning.get_transform_mats_from_quat_rots(abs_trans, abs_rot_quat)[1:] # TODO...
                 
-          
             skel_mesh_points_rigid = rigidly_posed_locations[2:] # TODO: get rid of root bone convention
             if RENDER_MESH: mesh_points_rigid = skinning.LBS_from_quat(V_rest, W, abs_rot_quat[1:], abs_trans[1:], use_normalized_weights=NORMALIZE_WEIGHTS) # TODO: get rid of root
-           
+            tot_time_lbs += time.time() - start_time 
+            
             dyn_posed_locations = helper_rig.update_bones(rigidly_posed_locations) # Update the rigidly posed locations
             skel_mesh_points_dyn = dyn_posed_locations[2:] # TODO: get rid of root bone convention
                    
@@ -198,7 +201,7 @@ for rep in range(N_REPEAT + N_REST):         # This can be refactored too as it'
             M_hybrid[helper_idxs] = M[helper_idxs]
             if RENDER_MESH: mesh_points_dyn = skinning.LBS_from_mat(V_rest, W, M_hybrid, use_normalized_weights=NORMALIZE_WEIGHTS)
                        
-            
+            tot_time_ours += time.time() - start_time 
             if RENDER_MESH: 
                 V_anim_rigid.append(mesh_points_rigid)
                 V_anim_dyn.append(mesh_points_dyn)
@@ -215,9 +218,22 @@ distance_err_dyn = np.linalg.norm(V_rigid - V_dyn, axis=-1)  # (n_frames, n_vert
 tot_err_dyn =  np.sum(distance_err_dyn)
 avg_err_dyn = tot_err_dyn / n_frames
 normalized_dists = normalize_arr_np(distance_err_dyn) 
+
+print("\n===========================================================")
+print(">> INFO: Vertex count: ", len(V_rest))
+print(">> INFO: Bone count: ", len(skeleton.rest_bones))
+print("\n===========================================================")
 print(">> Total vertex distance difference: ", np.round(tot_err_dyn,4))
 print(">> Average per-vertex difference: ", np.round(avg_err_dyn, 4))
 
+def report_timing(tot_time, n_frames, note):
+    print("\n===========================================================")
+    print(f">> INFO: Total time ({note}): ", tot_time * 1000, " ms")
+    print(f">> INFO: Average time ({note}): ", tot_time/n_frames * 1000 , " ms")
+    print("===========================================================\n")
+    
+report_timing(tot_time_lbs, n_frames, "LBS")
+report_timing(tot_time_ours, n_frames, "ours")
 
 # ---------------------------------------------------------------------------------
 # Show computed results
