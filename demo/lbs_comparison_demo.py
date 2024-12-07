@@ -32,7 +32,7 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODEL_NAME = "monstera" # Available options: "duck", "blob", "cloth", "monstera"
+MODEL_NAME = "duck" # Available options: "duck", "blob", "cloth", "monstera"
 
 RENDER_AS_GIF = False # If set to False, render as .mp4 (WARNING: GIF export is buggy, you might need to render several times, or turn off ADD_LIGHT)
 RENDER_TEXTURE = False
@@ -219,10 +219,11 @@ tot_err_dyn =  np.sum(distance_err_dyn)
 avg_err_dyn = tot_err_dyn / n_frames
 normalized_dists = normalize_arr_np(distance_err_dyn) 
 
-print("\n===========================================================")
+print("===========================================================")
+print(f">> {MODEL_NAME}")
 print(">> INFO: Vertex count: ", len(V_rest))
 print(">> INFO: Bone count: ", len(skeleton.rest_bones))
-print("\n===========================================================")
+print("===========================================================")
 print(">> Total vertex distance difference: ", np.round(tot_err_dyn,4))
 print(">> Average per-vertex difference: ", np.round(avg_err_dyn, 4))
 
