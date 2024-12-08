@@ -1,12 +1,19 @@
 """
+
+This file is used to obtain dynamic animation via Controllable PBD method.
+Given a tetmesh, .tgf of point handles, and associated weights as .txt 
+(tip: extract weights via numpy's save as txt) this script runs Controllable PBD
+and saves the computed mesh vertices (and additional info I've used for visualization)
+in a .npz file.
+
 -------------------------------------------------------------------------------
 - DISCLAIMER
 -------------------------------------------------------------------------------
-This script is taken from 
+This script is taken/adapted from 
 https://github.com/yoharol/Controllable_PBD_3D/
 by Wu and Umetani's paper (2023). Please refer to their
 webpage https://yoharol.github.io/pages/control_pbd/
-Also thank you for making the repository public.
+Also thank you Wu et al. for making the repository publicly available.
 
 -------------------------------------------------------------------------------
 @bartu
@@ -14,7 +21,7 @@ Also thank you for making the repository public.
 Edited to retrieve input mesh, handles, simulated handle locations and vertices
 data. I've also added custom input to handles to get different simulation results.
 
-Major I've followed to setup (see comments with !!!!):
+Major I've followed to setup (see comments with ----):
     - path_to_cpbd variable to link the source code path (downloaded from github)
     assumes the Controllable PBD source code is at the outer directory.
 
@@ -24,7 +31,7 @@ Major I've followed to setup (see comments with !!!!):
 
 import os
 import sys
-path_to_cpbd = "../Controllable_PBD_3D/" # EDIT !!!! 
+path_to_cpbd = "../Controllable_PBD_3D/" # ----
 sys.path.insert(0, path_to_cpbd)
 
 import taichi as ti
@@ -35,7 +42,6 @@ from data import tet_data, points_data
 from cons import deform3d, framework
 import compdyn.base, compdyn.inverse, compdyn.IK, compdyn.point
 from utils import objs
-from interface import usd_objs, usd_render
 from scipy.spatial.transform import Rotation
 
 import math
@@ -44,7 +50,7 @@ import time
 ti.init(arch=ti.x64, cpu_max_num_threads=1)
 
 # =============================================================================
-# Editable parameters !!!!
+# Editable parameters ----
 # =============================================================================
 modelname = 'spot' # "spot" or "spot_high"
 
@@ -56,7 +62,7 @@ decay = 0.0 # Dampen the user transforms over time, range [0.0, inf)
             # will be used in pose_base / e^(decay * t)
 
 start_frame = 0
-end_frame = 500
+end_frame = 200
 save_npz = True
 
 save_path =  f"./data/{modelname}/{modelname}_extracted.npz" 
@@ -67,7 +73,6 @@ save_path =  f"./data/{modelname}/{modelname}_extracted.npz"
 tgf_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}.tgf')
 model_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}.mesh')
 weight_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}_w.txt')
-
 
 scale = 1.0
 repose = (0.0, 0.7, 0.0) # I guess it acts as global translation of the model
