@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is created to demonstrate dynamic animation of a plant pot.
+This file is created to compare our method SDS with LBS.
 
 Created on Thu Oct 10 14:34:34 2024
 @author: bartu

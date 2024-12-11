@@ -53,14 +53,14 @@ EXTRACT_REST_OBJ = False # To save the rest pose as .obj for using it in Blender
 MODEL_NAME = "spot" # "spot" or "spot_high"
 AVAILABLE_MODES = ["point springs", "helper rig"]
 MAKE_ALL_SPRING = False # Set true to turn all bones spring bones
-SKELETON_MODE = AVAILABLE_MODES[0] # "point springs" or "helper rig" 
-USE_ORIGINAL_WEIGHTS = True # To keep/override the given weights of original handles in helper rig mode
+SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
+USE_ORIGINAL_WEIGHTS = False # To keep/override the given weights of original handles in helper rig mode
 USE_POINT_HANDLES_IN_OURS = True # Render the handles as points instead of bones (to match with given point handle rig)
 
 # RENDER PARAMETERS
 RENDER_AS_GIF = False # If set to False, render as .mp4
 RENDER_MESH = True
-RENDER_SKEL = False
+RENDER_SKEL = True
 WIREFRAME = False
 RENDER_TEXTURE = False # Automatically treated as False if COLOR_CODE is True
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
@@ -71,7 +71,7 @@ LIGHT_POS = (10.5, 3.5, 3.5)
                        
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = False
-OPACITY = 1.0
+OPACITY = 0.6
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.3
 BASE_COLOR = [0.8,0.7,1.0] # RGB
@@ -92,9 +92,9 @@ INTEGRATION = "PBD" # PBD or Euler
 
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
 COMPLIANCE = 0.05 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
-EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
-FIXED_SCALE = False
-POINT_SPRING = True # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
+EDGE_CONSTRAINT = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
+FIXED_SCALE = True
+POINT_SPRING = False # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 3. # 5
@@ -379,23 +379,6 @@ rest_handles = handle_locations_rigid[0]
 for i in range(n_frames):
     
     start_time = time.time()
-    
-    ### DELETE --- This was just to check if we have the right data
-    # dummy_t, dummy_theta = np.zeros((1,3)),  np.zeros((1,3))
-    # theta = np.append(dummy_theta, handle_poses[i], axis=0)
-    # trans = np.append(dummy_t, handle_trans[i], axis=0)
-    # rigidly_posed_locations = skeleton_rigid.pose_bones(theta, trans, degrees=True)
-    # abs_rot_quat, abs_trans = skeleton_rigid.get_absolute_transformations(theta, trans, degrees=True)
-    # M_rigid = skinning.get_transform_mats_from_quat_rots(abs_trans, abs_rot_quat)[1:] # TODO...
-   
-    # V_lbs_dummy = skinning.LBS_from_mat(verts_rest, W_rigid, M_rigid, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
-    
-    # hand_diff_dummy = rigidly_posed_locations[range(2,18,2)] -  handle_locations_rigid[i]
-    # print(np.sum(hand_diff_dummy)) # should print around 0
-    ####   
-    
-    #cur_handles = handle_locations_rigid[i]
-    #diff = cur_handles - rest_handles
     
     # --------- LBS -----------------------------------------------------------    
     V_lbs = get_LBS_spot(handle_locations_rigid[i], rest_handles)
