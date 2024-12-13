@@ -15,6 +15,23 @@ Created on Thu Nov 12, 2024
 @author: bartu
 """
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
 import os
 import igl
 import time
@@ -109,13 +126,20 @@ SPRING_DSCALE = 1.0  #3.0   # Scales spring forces (increase for more jiggling)
 SPOT_DATA_PATH = os.path.join(DATA_PATH, MODEL_NAME) 
 OBJ_PATH =  os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}.obj")
 TGF_PATH =  os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}.tgf")
+SKEL_TGF_PATH =  os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_skel.tgf")
+ANIM_DMAT_PATH =  os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_anim.dmat")
+
 TEXTURE_PATH = None #os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_texture.png")
 HELPER_RIG_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_rig_data.npz")
 SPOT_EXTRACTED_DATA_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_extracted.npz")
 
-# Read animation data
+# Read original animation data
+bone_T_anim = igl.read_dmat(ANIM_DMAT_PATH)
+orig_joints,orig_bone_edges,orig_kintree,_,_,_ = igl.read_tgf(SKEL_TGF_PATH)
+
+
+# Read Wu et al. output
 with np.load(SPOT_EXTRACTED_DATA_PATH) as data:
-    
     verts_cpbd = data["verts_yoharol"]
     faces = data["faces"]
     fixed_handles = data["fixed_yoharol"]
@@ -376,12 +400,42 @@ J_anim_rigid = []
 rest_bone_locations = skeleton_dyn.get_rest_bone_locations(exclude_root=False)
 tot_time_lbs, tot_time_ours = 0.0, 0.0
 rest_handles = handle_locations_rigid[0]
+n_handles = len(rest_handles)
 for i in range(n_frames):
     
     start_time = time.time()
     
     # --------- LBS -----------------------------------------------------------    
-    V_lbs = get_LBS_spot(handle_locations_rigid[i], rest_handles)
+    T_3by4 = bone_T_anim[:,i] # WARNING: number of bones is one less than number of point handles.
+    skel_T = np.repeat([np.eye(4)], n_handles, axis=0)
+    #skel_T[1:,:-1,:] = np.reshape(T_3by4, (-1,4,3)).swapaxes(1,2)
+    
+    # This loop should be the same as the comment above...
+    rig_scale = 0.01
+    tmp = np.reshape(T_3by4, (n_handles-1, -1)) * rig_scale
+    for j in range(1, n_handles-1):
+        # skel_T[j,:3,0] = tmp[j][0:3]
+        # skel_T[j,:3,1] = tmp[j][3:6]
+        # skel_T[j,:3,2] = tmp[j][6:9]
+        # skel_T[j,:3,3] = tmp[j][9:12]
+        skel_T[j,0, :3] = tmp[j][0:3]
+        skel_T[j,1, :3] = tmp[j][3:6]
+        skel_T[j,2,:3] = tmp[j][6:9]
+        skel_T[j,3, :3] = tmp[j][9:12]
+        #skel_T[j,:3,:3] = np.reshape(tmp[j, :9], (3,3)).T # should it be translated?
+        #skel_T[j,:3,-1] = tmp[j, -3:]
+    
+    V_lbs = skinning.LBS_from_mat(verts_rest, W_rigid, skel_T)
+    #V_lbs = np.zeros_like(V_lbs)# !!!!!!!!!!
+    
+    handle_locations_rigid[i] = skinning.LBS_joints(orig_joints, skel_T)
+    # convert original joints to homogeneous
+    # matmul homo joints with transformation
+    # set the result as handle_locations
+    
+    # !!!!!!!!!!!!!!!!!!!!
+    #V_lbs = get_LBS_spot(handle_locations_rigid[i], rest_handles)
+    
     V_anim_rigid.append(V_lbs)
     J_anim_rigid.append(convert_points_to_bones(handle_locations_rigid[i]))
     
@@ -474,3 +528,4 @@ while (plotter.render_window):
 
 plotter.close()
 plotter.deep_clean()
+"""

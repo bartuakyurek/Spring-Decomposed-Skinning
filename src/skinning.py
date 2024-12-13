@@ -135,6 +135,20 @@ def LBS_from_mat(V, W, M, use_normalized_weights=True):
     assert V_posed.shape == V.shape
     return V_posed
 
+def LBS_joints(J, M):
+    assert J.shape[1] == 3
+    assert len(J.shape) == 2
+    n_verts = len(J)
+    V_homo = np.append(J, np.ones((n_verts,1)), axis=-1)
+
+    # Pose vertices via matrix multiplications 
+    V_homo = np.expand_dims(V_homo, axis=-1) # shape (n_verts, 4, 1) for broadcasting 
+    V_posed_homo = np.matmul(M, V_homo)  # shape (n_verts, 4, 1)
+    V_posed = V_posed_homo[:, :3, 0]
+   
+    assert V_posed.shape == J.shape
+    return V_posed
+
 if __name__ == "__main__":
     print(">> Testing skinning.py...")
     
