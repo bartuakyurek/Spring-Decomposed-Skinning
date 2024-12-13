@@ -18,15 +18,6 @@ from .utils.linalg_utils import get_transform_mats_from_quat_rots, min_distance,
 # Helper routine to obtain posed mesh vertices
 # ---------------------------------------------------------------------------------
 
-def _get_mesh_points(mode):
-    
-    if mode == "Rigid":
-        posed_mesh_points = None
-    else:
-        posed_mesh_points = None
-        print("Warning: skinning not implemented yet...")
-    return posed_mesh_points
-
 def bind_weights(mesh_verts, skel_verts, method="Envelope", envelope=10.0): 
     """
     Find the set of weights that will be the
