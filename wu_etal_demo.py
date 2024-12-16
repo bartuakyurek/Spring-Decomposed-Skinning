@@ -54,12 +54,13 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 # =============================================================================
 modelname = 'elephant' # "spot" or "spot_high"
 
-idxs = [4,5,6,7] # Indices to translate the handles (there are 8) 
-fixed = [0, 1, 2, 3, 7] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
+idxs =  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] #[i for i in range(15)] # Indices to translate the handles (there are 8) 
+fixed = [0, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]  #[i for i in range(15,25)] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
-pose_base = np.array([0.,  0., 20.]) # xyz rotation degrees
+pose_base = np.array([10.,  0., 15.]) # xyz rotation degrees
 decay = 0.0 # Dampen the user transforms over time, range [0.0, inf) 
             # will be used in pose_base / e^(decay * t)
+stop_movement_frame = 20 # Stop applying force after this frame  
             
 scale = 0.01 # 1.0--> spot
 repose = (0.0, 0.0, 0.0) # (0., 0.7, 0.) --> spot
@@ -74,7 +75,7 @@ cam_eye = (0.5, 1.0, -2.5) # (1.0, 2, -2.5) --> spot
 cam_center = (-0.3, 0.7, 0.5) # (-0.3, 0.7, 0.5) --> spot
 
 start_frame = 0
-end_frame = 250
+end_frame = 300
 save_npz = True
 
 data_path = f"./data/{modelname}"
@@ -207,8 +208,10 @@ if save_npz:
 # =============================================================================
 # ========================== use input ========================================
 written = [False]
+flag = True
 
 def set_movement():
+  global flag
   t = window.get_time() - 1.0
   p_input = points_ik.c_p_ref.to_numpy() # Handles at rest
   
@@ -221,13 +224,21 @@ def set_movement():
     rot_mat = rot.as_matrix()
     
     for i in idxs:
-        translation_from_rotation = (rot_mat @ p_input[i]) - p_input[i]
-        
-        p_input[i] += translation_vec  
-        p_input[i] += translation_from_rotation # TODO: How can I directly set rotations? This is still translation...
-        
-        rest_pose[i] = rotation_degrees # Save rotation for skinning
-        rest_t[i] = translation_vec # Save translation for skinning
+        if (window.get_total_frames() < stop_movement_frame or np.sum(np.abs(rotation_degrees)) > 1) and flag:
+            translation_from_rotation = (rot_mat @ p_input[i]) - p_input[i]
+            
+            p_input[i] += translation_vec  
+            p_input[i] += translation_from_rotation # TODO: How can I directly set rotations? This is still translation...
+            
+            rest_pose[i] = rotation_degrees # Save rotation for skinning
+            rest_t[i] = translation_vec # Save translation for skinning
+        else:    
+            if flag:
+                print(">>> Stopping movement...")
+                flag = False #indicate the motion shall end after the first encounter of 0 rotation
+            rest_pose[i] = np.zeros(3) # Save rotation for skinning
+            rest_t[i] = np.zeros(3) # Save translation for skinning
+            
     
   points.c_p_input.from_numpy(p_input)
 

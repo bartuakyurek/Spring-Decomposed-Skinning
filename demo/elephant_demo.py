@@ -77,14 +77,14 @@ MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.3
 BASE_COLOR = [0.8,0.7,1.0] # RGB
 
-BACKGROUND_COLOR = "black"
+BACKGROUND_COLOR = "white"
 DEFAULT_BONE_COLOR = "white"
 CPBD_BONE_COLOR ="green" # CPBD stands for Controllable PBD (the paper we compare against)
 CPBD_FIXED_BONE_COLOR = "red"
 SPRING_BONE_COLOR = "blue"
 LBS_INPUT_BONE_COLOR = "yellow"
 
-CLOSE_AFTER_ITER = 3 # Set to False or an int, for number of repetitions before closing
+CLOSE_AFTER_ITER = 1 # Set to False or an int, for number of repetitions before closing
 WINDOW_SIZE = (1200, 1600)
 
 # SIMULATION PARAMETERS
@@ -94,7 +94,7 @@ INTEGRATION = "PBD" # PBD or Euler
 AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
 COMPLIANCE = 0.05 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
-FIXED_SCALE = True
+FIXED_SCALE = False
 POINT_SPRING = False # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
@@ -121,14 +121,14 @@ SPOT_EXTRACTED_DATA_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_extracted
 # Read Wu et al. output
 with np.load(SPOT_EXTRACTED_DATA_PATH) as data:
     verts_cpbd = data["verts_yoharol"]
-    faces = data["faces"]
+    tet_faces = data["faces"]
     fixed_handles = data["fixed_yoharol"]
     user_input_idxs = data["user_input"]
     
     handle_locations_cpbd = data["handles_yoharol"]
     handle_locations_rigid = data["handles_rigid"]
-    handle_poses = data["handles_pose"]
-    handle_trans = data["handles_t"]
+    handle_poses = data["handles_pose"] # !!!!! --> unused variable
+    handle_trans = data["handles_t"]    # !!!!! --> unused variable
     original_weights = data["weights"]
     
 verts_rest = verts_cpbd[0]
@@ -136,6 +136,7 @@ handle_locations_rest = handle_locations_rigid[0] #cpbd[0]
 
 #### edit for input rest verts V, W, T, anim
 verts_rest, _, _, faces, _, _ = igl.read_obj(OBJ_PATH)
+
 original_weights = igl.read_dmat(WEIGHT_DMAT_PATH)
 point_weights = np.zeros((original_weights.shape[0], original_weights.shape[1]+1))
 point_weights[:, :-1] = original_weights
@@ -267,7 +268,7 @@ def set_lights(plotter):
 def adjust_camera(plotter):
     plotter.camera.tight(padding=0.4, view="zy", adjust_render_window=False)
     plotter.camera.clipping_range = (-3, 3) # -1 is to fix near clipping range
-    plotter.camera.azimuth = 230
+    plotter.camera.azimuth = 90
     
 
 def add_texture(polydata, actor, img_path=None):
@@ -319,11 +320,11 @@ if RENDER_SKEL:
 adjust_camera(plotter)
 frame_text_actor = plotter.add_text("0", (30,0), font_size=18) # Add frame number
 
-"""
+
 # ---------- Second Plot (CPBD) ----------------
 plotter.subplot(1, 0)
 if RENDER_MESH: 
-    mesh_cpbd, mesh_cpbd_actor = add_mesh(plotter, verts_rest, faces, 
+    mesh_cpbd, mesh_cpbd_actor = add_mesh(plotter, verts_cpbd[0], tet_faces, 
                                             color = BASE_COLOR,
                                             return_actor=True, 
                                             opacity=OPACITY, 
@@ -367,7 +368,7 @@ if RENDER_SKEL:
                                                alt_bone_color=SPRING_BONE_COLOR)
 
 adjust_camera(plotter)
-"""
+
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # COMPUTE DEFORMATION
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -384,7 +385,7 @@ def convert_points_to_bones(handles, flatten=True):
     if flatten : point_bones =  np.reshape(point_bones, (-1,3))
     return point_bones
 
-n_frames = len(handle_locations_rigid) # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+n_frames = len(handle_locations_rigid) 
 n_bones_rigid = len(skeleton_rigid.rest_bones)
 V_anim_dyn, J_anim_dyn = [], []
 n_bones_ours = len(skeleton_dyn.rest_bones)
@@ -400,7 +401,7 @@ n_bones = n_handles - 1
 for i in range(n_frames):
     
     start_time = time.time()
-    
+    """
     # --------- LBS -----------------------------------------------------------    
     T_flat = bone_T_anim[:,0] # WARNING: number of bones is one less than number of point handles.
     skel_T = np.repeat([np.eye(4)], n_handles, axis=0)
@@ -408,6 +409,7 @@ for i in range(n_frames):
     tmp = T_flat.reshape((-1,4))
     for j in range(3):
         skel_T[1:, j, :] = tmp[j*n_bones : (j+1) * n_bones]
+        
     
     #skel_T[1:,:-1,:] = np.reshape(T_3by4, (-1,4,3)).swapaxes(1,2)
     
@@ -428,16 +430,13 @@ for i in range(n_frames):
         #skel_T[j,:3,-1] = tmp[j, -3:]
         
     V_lbs = skinning.LBS_from_mat(verts_rest, W_rigid, skel_T)
-    #V_lbs = np.zeros_like(V_lbs)# !!!!!!!!!!
+    
     
     handle_locations_rigid[i] = skinning.LBS_joints(orig_joints, skel_T)
-    # convert original joints to homogeneous
-    # matmul homo joints with transformation
-    # set the result as handle_locations
     """
-    # !!!!!!!!!!!!!!!!!!!!
+   
     V_lbs = get_LBS_spot(handle_locations_rigid[i], rest_handles)
-    """
+    
     
     V_anim_rigid.append(V_lbs)
     J_anim_rigid.append(convert_points_to_bones(handle_locations_rigid[i]))
@@ -484,14 +483,14 @@ report_timing(tot_time_ours, n_frames, "ours")
 V_anim_rigid = np.array(V_anim_rigid)
 V_anim_dyn = np.array(V_anim_dyn)
 
-"""
+
 distance_err_cpbd = np.linalg.norm(V_anim_rigid - verts_cpbd, axis=-1)  # (n_frames, n_verts)
 distance_err_dyn = np.linalg.norm(V_anim_rigid - V_anim_dyn, axis=-1)  # (n_frames, n_verts)
 
 
 normalized_dists_cpbd = normalize_arr_np(distance_err_cpbd)
 normalized_dists_dyn = normalize_arr_np(distance_err_dyn)
-"""
+
 # =============================================================================
 # Display animation
 # =============================================================================
@@ -506,20 +505,20 @@ while (plotter.render_window):
     # Set data for renderer
     if RENDER_MESH: 
         mesh_rigid.points = V_anim_rigid[frame]
-        """
+        
         mesh_cpbd.points = verts_cpbd[frame]
         mesh_dyn.points = V_anim_dyn[frame]
         if COLOR_CODE: # For jigglings
             set_mesh_color_scalars(mesh_cpbd, normalized_dists_cpbd[frame])  
             set_mesh_color_scalars(mesh_dyn, normalized_dists_dyn[frame])  
-        """
+        
         
     if RENDER_SKEL: 
         skel_mesh_rigid.points = J_anim_rigid[frame] 
-        """
+        
         skel_mesh_cpbd.points = convert_points_to_bones(handle_locations_cpbd[frame])
         skel_mesh_dyn.points = J_anim_dyn[frame]
-        """
+        
     frame_text_actor.input = str(frame+1)
     
     if frame < n_frames-1: 
