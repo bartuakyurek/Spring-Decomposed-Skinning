@@ -51,11 +51,8 @@ from src.render.pyvista_render_tools import (add_mesh,
 EXTRACT_REST_OBJ = False # To save the rest pose as .obj for using it in Blender
 
 MODEL_NAME = "spot_helpers" # "spot" or "spot_high"
-AVAILABLE_MODES = ["point springs", "helper rig"]
-MAKE_ALL_SPRING = False # Set true to turn all bones spring bones
-SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
-USE_ORIGINAL_WEIGHTS = False # To keep/override the given weights of original handles in helper rig mode
-USE_POINT_HANDLES_IN_OURS = False # Render the handles as points instead of bones (to match with given point handle rig)
+MAKE_ALL_SPRING = False # Set true to turn all bones spring bones otherwise only helpers will be turned
+#USE_POINT_HANDLES_IN_OURS = True # Render the handles as points instead of bones (to match with given point handle rig)
 
 # RENDER PARAMETERS
 RENDER_AS_GIF = False # If set to False, render as .mp4
@@ -160,23 +157,18 @@ with np.load(HELPER_RIG_PATH) as data:
      
 skeleton = Skeleton(root_vec = [0.,0.,0.]) # pseudo root bone
 
+# Insert bones to skeleton given the kintree
 assert len(blender_kintree) == len(handle_locations_rest), f"Expected the blender exported kintree to include all the bones. Found kintree of shape {blender_kintree.shape} for {len(handle_locations_rest)}"
 for  parentchild in blender_kintree: # WARNING: This assumes kintree has all the bones
      parent, child = parentchild
      point_location = handle_locations_rest[child]
      parent_idx = parent + 1 # TODO: This is because of the dummy root bone in skeleton
-     
      skeleton.insert_bone(endpoint = point_location, 
                           startpoint = point_location,
-                          parent_idx = parent_idx) # pseudo root bone
-
-n_rigid_bones = len(skeleton.rest_bones)  # TODO: ??? are you sure ???
+                          parent_idx = parent_idx) 
 
 # Mark spring bones according to MODE
-if SKELETON_MODE == "point springs": # Make all bones in the existing rig spring bones
-    print(">> INFO: Skeleton is taken as point springs...")
-    
-    # all bones are spring bones
+if MAKE_ALL_SPRING: # Make all bones in the existing rig spring bones
     helper_idxs = [i+1 for i in range(len(skeleton.rest_bones)-1)] # WARNING TODO: +1 is because of the dummy root bone in the rig, should be removed after its removal.
     original_bones = helper_idxs
 else: 
@@ -186,51 +178,6 @@ else:
     for i,rigid_idx in enumerate(rigid_bones_blender):
         helper_idxs.remove(rigid_idx+1) # WARNING TODO: +1 is because of the dummy root bone in the rig, should be removed after its removal.
     
-    """
-    # Adjust the imported rig such that it aligns with the mesh (Blender rig export is weird, I couldn't solve it yet)
-    B =  model_data.adjust_rig(blender_joints, MODEL_NAME)
-    
-    # Adjust rigid bone locations to the original locations (Bleder impored locations differ a bit)
-    
-    for i,rigid_idx in enumerate(rigid_bones_blender): # assumes the rigid bones are aligned with handle locations! 
-        # Adjust endpoint
-        B[rigid_idx, 1] = handle_locations_rest[i]
-        
-        # Adjust startpoint
-        if USE_POINT_HANDLES_IN_OURS:
-            B[rigid_idx, 0] = handle_locations_rest[i]
-        else:
-            kintree_children = blender_kintree[:,1]
-            kintree_idx = kintree_children[kintree_children == rigid_idx]
-            selected_kintree = blender_kintree[kintree_idx]
-            for parent_child in selected_kintree:
-                parent_idx, child_idx = parent_child
-                assert child_idx == rigid_idx
-                if parent_idx != -1: 
-                    B[rigid_idx, 0] = B[parent_idx, 1]   
-      
-                    
-    # Adjust weights 
-    # ---------------
-    # Imported blender joint indices might differ from original data,
-    # The rig adjustment step ensures the indices align with that, so set the
-    # weights after the alignment.
-    w_idxs = original_bones 
-    if USE_ORIGINAL_WEIGHTS: # Override rigid bones' weights with original weights
-        W_dyn[:,w_idxs] = W_rigid # Set rigid bone weights to original, #[1:] excluding dummy root bone I put in blender
-        
-    # Adjust helper bone indices
-    helper_idxs = np.array([i for i in range(1, len(blender_kintree)+1)])
-    if not MAKE_ALL_SPRING:
-        for rigid_bone in original_bones:
-                idx = np.argwhere(helper_idxs == rigid_bone)
-                helper_idxs = np.delete(helper_idxs, idx)
-            
-    
-        
-    # Create a skeleton instance
-    skeleton = create_skeleton_from(B, blender_kintree)
-    """
 
 helper_rig = HelperBonesHandler(skeleton, 
                                 helper_idxs,
@@ -355,11 +302,10 @@ if RENDER_MESH:
 
 if RENDER_SKEL: 
     skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton, 
-                                               alt_idxs=helper_idxs, 
+                                               alt_idxs=np.array(helper_idxs), 
                                                is_smpl=True, # TODO: This is ridiculous, but I have to update the data cause I want to omit the root bone...
                                                default_bone_color=DEFAULT_BONE_COLOR, 
                                                alt_bone_color=SPRING_BONE_COLOR)
-
 adjust_camera_spot(plotter)
 #set_lights(plotter)
 
