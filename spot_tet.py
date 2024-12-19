@@ -52,10 +52,10 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 # =============================================================================
 # Editable parameters ----
 # =============================================================================
-modelname = 'spot' # "spot" or "spot_high"
+modelname = 'spot_helpers' # "spot" or "spot_high"
 
-idxs = [4,5,6,7] # Indices to translate the handles (there are 8) 
-fixed = [0, 1, 2, 3, 7] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
+idxs = [4, 11, 12, 16] # Indices to translate the handles (there are 8) 
+fixed = [0, 1, 2, 3, 16] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
 pose_base = np.array([0.,  0., 30.]) # xyz rotation degrees
 decay = 0.0 # Dampen the user transforms over time, range [0.0, inf) 
@@ -66,7 +66,7 @@ end_frame = 200
 save_npz = True
 
 save_path =  f"./data/{modelname}/{modelname}_extracted.npz" 
-            
+save_only_surface = False       
 # =============================================================================
 # Load data
 # =============================================================================
@@ -161,10 +161,15 @@ if save_npz:
   point_color[comp.fixed] = np.array([1.0, 0.0, 0.0], dtype=np.float32)
   mesh.update_surface_verts()
   
-  verts.append(mesh.surface_v_p.to_numpy())
-  faces_np = mesh.surface_f_i.to_numpy() 
-  weights_np = points.weights_np[mesh.surface_v_i.to_numpy()] # To extract weights of surface
-  
+  if save_only_surface:
+      verts.append(mesh.surface_v_p.to_numpy())
+      faces_np = mesh.surface_f_i.to_numpy() 
+      weights_np = points.weights_np[mesh.surface_v_i.to_numpy()] # To extract weights of surface
+  else:
+      verts.append(mesh.v_p.to_numpy()) # surface_v_p
+      faces_np = mesh.f_i.to_numpy() 
+      weights_np = points.weights_np #[mesh.surface_v_i.to_numpy()] # To extract weights of surface
+      
   handles.append(points.c_p.to_numpy()) # Dynamically posed handles
   handles_rigid.append(points.c_p_input.to_numpy()) # Rigidly posed handles
   
@@ -177,7 +182,10 @@ if save_npz:
     print("update verts and handles at frame", frame)
     mesh.update_surface_verts()    
     
-    verts.append(mesh.surface_v_p.to_numpy())
+    if save_only_surface:
+        verts.append(mesh.surface_v_p.to_numpy())
+    else:
+        verts.append(mesh.v_p.to_numpy())
     handles.append(points.c_p.to_numpy()) #_input
     handles_rigid.append(points.c_p_input.to_numpy()) #  try also c_p_input, it might be the same
     
@@ -212,16 +220,6 @@ def set_movement():
         rest_t[i] = translation_vec # Save translation for skinning
     
   points.c_p_input.from_numpy(p_input)
-
-  if abs(0.5 * t - (-0.5)) < 1e-2 and not written[0]:
-    import meshio
-    mesh.update_surface_verts()
-    meshio.Mesh(mesh.surface_v_p.to_numpy(), [
-        ("triangle", mesh.surface_f_i.to_numpy().reshape(-1, 3))
-    ]).write(os.path.join(path_to_cpbd, "out/spot_tet_ref.obj"))
-    print("write to output obj file")
-    print("control points:", points_ik.c_p)
-    written[0] = True
 
 t_total = 0.0
 t_ik = 0.0

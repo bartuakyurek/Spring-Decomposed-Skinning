@@ -55,12 +55,12 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 modelname = 'elephant' # "spot" or "spot_high"
 
 idxs =  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] #[i for i in range(15)] # Indices to translate the handles (there are 8) 
-fixed = [0, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]  #[i for i in range(15,25)] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
+fixed = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]  #[i for i in range(15,25)] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
-pose_base = np.array([10.,  0., 15.]) # xyz rotation degrees
+pose_base = np.array([10.,  0., 10.]) # xyz rotation degrees
 decay = 0.0 # Dampen the user transforms over time, range [0.0, inf) 
             # will be used in pose_base / e^(decay * t)
-stop_movement_frame = 20 # Stop applying force after this frame  
+stop_movement_frame = 10 # Stop applying force after this frame  
             
 scale = 0.01 # 1.0--> spot
 repose = (0.0, 0.0, 0.0) # (0., 0.7, 0.) --> spot
@@ -75,8 +75,9 @@ cam_eye = (0.5, 1.0, -2.5) # (1.0, 2, -2.5) --> spot
 cam_center = (-0.3, 0.7, 0.5) # (-0.3, 0.7, 0.5) --> spot
 
 start_frame = 0
-end_frame = 300
+end_frame = 100
 save_npz = True
+save_only_surface = False # If set to True, only surface vertices will be used in LBS and Our demo 
 
 data_path = f"./data/{modelname}"
 save_path = os.path.join(data_path, f"{modelname}_extracted.npz")
@@ -180,10 +181,15 @@ if save_npz:
   point_color[comp.fixed] = np.array([1.0, 0.0, 0.0], dtype=np.float32)
   mesh.update_surface_verts()
   
-  verts.append(mesh.surface_v_p.to_numpy())
-  faces_np = mesh.surface_f_i.to_numpy() 
-  weights_np = points.weights_np[mesh.surface_v_i.to_numpy()] # To extract weights of surface
-  
+  if save_only_surface:
+      verts.append(mesh.surface_v_p.to_numpy())
+      faces_np = mesh.surface_f_i.to_numpy() 
+      weights_np = points.weights_np[mesh.surface_v_i.to_numpy()] # To extract weights of surface
+  else:
+      verts.append(mesh.v_p.to_numpy())
+      faces_np = mesh.f_i.to_numpy() 
+      weights_np = points.weights_np#[mesh.surface_v_i.to_numpy()] 
+      
   handles.append(points.c_p.to_numpy()) # Dynamically posed handles
   handles_rigid.append(points.c_p_input.to_numpy()) # Rigidly posed handles
   
@@ -196,7 +202,10 @@ if save_npz:
     print("update verts and handles at frame", frame)
     mesh.update_surface_verts()    
     
-    verts.append(mesh.surface_v_p.to_numpy())
+    if save_only_surface:
+        verts.append(mesh.surface_v_p.to_numpy())
+    else:
+        verts.append(mesh.v_p.to_numpy())
     handles.append(points.c_p.to_numpy()) #_input
     handles_rigid.append(points.c_p_input.to_numpy()) #  try also c_p_input, it might be the same
     
