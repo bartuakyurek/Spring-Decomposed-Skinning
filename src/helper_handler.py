@@ -34,6 +34,7 @@ class HelperBonesHandler:
                  fixed_scale=False,
                  edge_constraint=False,
                  compliance=0.0, # Only works for PBD
+                 compliance_ours=0.005 # TODO: this isnt used in demo codes yet
                  ):
         """
         Create a mass-spring system provided an array of Bone objects.
@@ -65,6 +66,7 @@ class HelperBonesHandler:
         self.helper_idxs = np.array(helper_idxs, dtype=int)
         self.simulator = MassSpringSystem(dt, mode=simulation_mode, edge_constraint=edge_constraint)
         self.FIXED_SCALE = fixed_scale
+        self.compliance_ours = compliance_ours
 
 
         self.helper_lengths = []
@@ -116,7 +118,8 @@ class HelperBonesHandler:
     
     def _preserve_bone_length(self, bone_start : np.ndarray,  
                                 free_mass_idx  : int, 
-                                original_length : float ):
+                                original_length : float,
+                                comp = 0.0):
         """
         Given the original length and start-end locations of the bone, rescale 
         the bone vector to its original length. The scaling is done at the bone 
@@ -141,22 +144,26 @@ class HelperBonesHandler:
         assert free_mass.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {free_mass.mass}."
     
         direction = bone_start - free_mass.center
-        d_norm = np.linalg.norm(direction) 
-        scale = d_norm - original_length
+        d_norm = np.linalg.norm(direction) # TODO: dir_norm would be a better name
         
-        
+        #if d_norm < 1e-8:
+        #    direction += np.array([0.01, 0.01, 0.01]) # fix for point handles case
+        #    d_norm = np.linalg.norm(direction) 
+        complied_orig_length = original_length * np.exp(comp)
+        scale = d_norm - complied_orig_length # TODO: Horrible naming! This isn't scale but difference.
+                                        
         if d_norm > 1e-20:
             adjust_vec = (direction/d_norm) * scale # Normalize direction and scale it
         else:
             print(">> WARNING: Found zero-length norm")
-            adjust_vec = direction * scale
+            adjust_vec = direction * scale # zero vector
             
         # Change the free mass location aligned with the bone length.
         self.simulator.masses[free_mass_idx].center = free_mass.center + adjust_vec
     
         # Sanity check
         new_length = np.linalg.norm(bone_start - self.simulator.masses[free_mass_idx].center)
-        assert np.abs(new_length - original_length) < 1e-4, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {original_length}." 
+        assert np.abs(new_length - complied_orig_length) < 1e-4, f"Expected the adjustment function to preserve original bone lengths got length {new_length} instead of {complied_orig_length}." 
     
         return adjust_vec, self.simulator.masses[free_mass_idx].center
 
@@ -217,9 +224,14 @@ class HelperBonesHandler:
             if self.FIXED_SCALE:
                 free_idx = self.free_idxs[i]  # Warning: this assumes every bone has one free index (and one fixed) 
                 start_idx = helper_idx * 2    # TODO: could we change the data storage such that we don't have to remember to multiply by 2 every time?
-                orig_length = self.helper_lengths[i]         
+                orig_length = self.helper_lengths[i]  #* (1+self.compliance)     
+                
+                #if orig_length < 1e-8: # If point handle
+                #    orig_length += self.compliance 
+               
                 bone_start = simulated_locations[start_idx]
-                _, new_endpoint = self._preserve_bone_length(bone_start, free_idx, orig_length)
+                _, new_endpoint = self._preserve_bone_length(bone_start, free_idx, orig_length, comp=self.compliance_ours)
+                
                 simulated_locations[end_idx] = new_endpoint
                 
             # Adjust the child bones' starting points

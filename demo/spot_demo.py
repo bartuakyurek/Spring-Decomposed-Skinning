@@ -88,7 +88,9 @@ ALGO = "T" # ["T", "RST", "SVD"] RST doesn't work good with this demo, SVD never
 INTEGRATION = "PBD" # PBD or Euler
 
 AUTO_NORMALIZE_WEIGHTS = False # Using unnomalized weights can cause problems
-COMPLIANCE = 0.05 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
+
+COMPLIANCE = 0.001 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
+COMPLIANCE_OURS = 0.5 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
 FIXED_SCALE = True
 POINT_SPRING = False # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
@@ -96,7 +98,7 @@ FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 3. # 5
 STIFFNESS = 100. # 100
-DAMPING = 2.5 # 10
+DAMPING = 20.5 # 10
 MASS_DSCALE = 0.3   #0.5    # Mass velocity damping (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0  #3.0   # Scales spring forces (increase for more jiggling)
 
@@ -190,6 +192,7 @@ helper_rig = HelperBonesHandler(skeleton,
                                 point_spring  = POINT_SPRING,
                                 edge_constraint   = EDGE_CONSTRAINT,
                                 compliance    = COMPLIANCE,
+                                compliance_ours = COMPLIANCE_OURS,
                                 fixed_scale = FIXED_SCALE,
                                 simulation_mode = INTEGRATION) 
 
