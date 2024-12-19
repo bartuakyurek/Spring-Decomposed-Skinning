@@ -50,12 +50,12 @@ from src.render.pyvista_render_tools import (add_mesh,
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 EXTRACT_REST_OBJ = False # To save the rest pose as .obj for using it in Blender
 
-MODEL_NAME = "spot" # "spot" or "spot_high"
+MODEL_NAME = "spot_helpers" # "spot" or "spot_high"
 AVAILABLE_MODES = ["point springs", "helper rig"]
 MAKE_ALL_SPRING = False # Set true to turn all bones spring bones
 SKELETON_MODE = AVAILABLE_MODES[1] # "point springs" or "helper rig" 
 USE_ORIGINAL_WEIGHTS = False # To keep/override the given weights of original handles in helper rig mode
-USE_POINT_HANDLES_IN_OURS = True # Render the handles as points instead of bones (to match with given point handle rig)
+USE_POINT_HANDLES_IN_OURS = False # Render the handles as points instead of bones (to match with given point handle rig)
 
 # RENDER PARAMETERS
 RENDER_AS_GIF = False # If set to False, render as .mp4
@@ -117,7 +117,7 @@ SPOT_EXTRACTED_DATA_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_extracted
 with np.load(SPOT_EXTRACTED_DATA_PATH) as data:
     
     verts_cpbd = data["verts_yoharol"]
-    faces = data["faces"]
+    cpbd_faces = data["faces"]
     fixed_handles = data["fixed_yoharol"]
     user_input_idxs = data["user_input"]
     
@@ -127,7 +127,11 @@ with np.load(SPOT_EXTRACTED_DATA_PATH) as data:
     handle_trans = data["handles_t"]
     original_weights = data["weights"]
     
+#verts_rest =  verts_cpbd[0] -> the indices of this might not correspond with the indices in blender
+#verts_rest, _, _, faces, _, _ = igl.read_obj(OBJ_PATH)
 verts_rest = verts_cpbd[0]
+faces = cpbd_faces
+
 handle_locations_rest = handle_locations_rigid[0] #cpbd[0]
 
 if EXTRACT_REST_OBJ:
@@ -146,40 +150,48 @@ print("> Handle locations at rest :\n", handle_locations_rest)
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # SETUP RIGS
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-W_rigid = np.array(original_weights)
+W_rigid = W_dyn = np.array(original_weights)  # TODO: This is redundant.
 
 print(">> WARNING: Assuming the provided handle locations are sparse point handles ")
 
-skeleton_rigid = Skeleton(root_vec = [0.,0.,0.]) # pseudo root bone
-for point_location in handle_locations_rest:
-     skeleton_rigid.insert_bone(endpoint = point_location, 
+with np.load(HELPER_RIG_PATH) as data:
+     blender_kintree = data["kintree"]#[1:] - 1# Excluding dummy root bone I put in blender
+     rigid_bones_blender = data["rigid_idxs"] 
+     
+skeleton = Skeleton(root_vec = [0.,0.,0.]) # pseudo root bone
+
+assert len(blender_kintree) == len(handle_locations_rest), f"Expected the blender exported kintree to include all the bones. Found kintree of shape {blender_kintree.shape} for {len(handle_locations_rest)}"
+for  parentchild in blender_kintree: # WARNING: This assumes kintree has all the bones
+     parent, child = parentchild
+     point_location = handle_locations_rest[child]
+     parent_idx = parent + 1 # TODO: This is because of the dummy root bone in skeleton
+     
+     skeleton.insert_bone(endpoint = point_location, 
                           startpoint = point_location,
-                          parent_idx = 0) # pseudo root bone
+                          parent_idx = parent_idx) # pseudo root bone
 
+n_rigid_bones = len(skeleton.rest_bones)  # TODO: ??? are you sure ???
 
-n_rigid_bones = len(skeleton_rigid.rest_bones) 
-# Add helper bones according to mode
+# Mark spring bones according to MODE
 if SKELETON_MODE == "point springs": # Make all bones in the existing rig spring bones
     print(">> INFO: Skeleton is taken as point springs...")
-    skeleton_dyn = skeleton_rigid
-    W_dyn = W_rigid
-    helper_idxs = [i+1 for i in range(len(skeleton_dyn.rest_bones)-1)]
+    
+    # all bones are spring bones
+    helper_idxs = [i+1 for i in range(len(skeleton.rest_bones)-1)] # WARNING TODO: +1 is because of the dummy root bone in the rig, should be removed after its removal.
     original_bones = helper_idxs
-else: # Load helper rig as an addition to rigid rig
-    print(">> INFO: Loading helper rig...")
-    # Load joint locations, kintree and weights
-    with np.load(HELPER_RIG_PATH) as data:
-         W_dyn = data["weights"] #[:,1:] # Excluding dummy root bone I put in blender
-         blender_joints = data["joints"]#[1:]
-         blender_kintree = data["kintree"]#[1:] - 1# Excluding dummy root bone I put in blender
-         rigid_bones_blender = data["rigid_idxs"] 
+else: 
+    original_bones = [i+1 for i in range(len(skeleton.rest_bones)-1)] # WARNING TODO: +1 is because of the dummy root bone in the rig, should be removed after its removal.
     
-    original_bones = rigid_bones_blender + 1 # [ 1,  2,  3,  4,  5,  13, 14, 18] TODO: root...
+    helper_idxs = list(original_bones) # Only mark the spring bones as helper bones
+    for i,rigid_idx in enumerate(rigid_bones_blender):
+        helper_idxs.remove(rigid_idx+1) # WARNING TODO: +1 is because of the dummy root bone in the rig, should be removed after its removal.
     
+    """
     # Adjust the imported rig such that it aligns with the mesh (Blender rig export is weird, I couldn't solve it yet)
     B =  model_data.adjust_rig(blender_joints, MODEL_NAME)
     
     # Adjust rigid bone locations to the original locations (Bleder impored locations differ a bit)
+    
     for i,rigid_idx in enumerate(rigid_bones_blender): # assumes the rigid bones are aligned with handle locations! 
         # Adjust endpoint
         B[rigid_idx, 1] = handle_locations_rest[i]
@@ -196,6 +208,7 @@ else: # Load helper rig as an addition to rigid rig
                 assert child_idx == rigid_idx
                 if parent_idx != -1: 
                     B[rigid_idx, 0] = B[parent_idx, 1]   
+      
                     
     # Adjust weights 
     # ---------------
@@ -213,13 +226,13 @@ else: # Load helper rig as an addition to rigid rig
                 idx = np.argwhere(helper_idxs == rigid_bone)
                 helper_idxs = np.delete(helper_idxs, idx)
             
-     
+    
         
     # Create a skeleton instance
-    skeleton_dyn = create_skeleton_from(B, blender_kintree)
-    
+    skeleton = create_skeleton_from(B, blender_kintree)
+    """
 
-helper_rig = HelperBonesHandler(skeleton_dyn, 
+helper_rig = HelperBonesHandler(skeleton, 
                                 helper_idxs,
                                 mass          = MASS, 
                                 stiffness     = STIFFNESS,
@@ -292,7 +305,7 @@ if RENDER_MESH:
          add_texture(mesh_rigid, mesh_rigid_actor, TEXTURE_PATH)
   
 if RENDER_SKEL: 
-    skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton_rigid, 
+    skel_mesh_rigid = add_skeleton_from_Skeleton(plotter, skeleton, 
                                                  default_bone_color=DEFAULT_BONE_COLOR,
                                                  alt_idxs=user_input_idxs,
                                                  alt_bone_color=LBS_INPUT_BONE_COLOR)
@@ -303,7 +316,7 @@ frame_text_actor = plotter.add_text("0", (30,0), font_size=18) # Add frame numbe
 # ---------- Second Plot (CPBD) ----------------
 plotter.subplot(1, 0)
 if RENDER_MESH: 
-    mesh_cpbd, mesh_cpbd_actor = add_mesh(plotter, verts_rest, faces, 
+    mesh_cpbd, mesh_cpbd_actor = add_mesh(plotter, verts_cpbd[0], cpbd_faces, 
                                             color = BASE_COLOR,
                                             return_actor=True, 
                                             opacity=OPACITY, 
@@ -317,7 +330,7 @@ if RENDER_MESH:
        add_texture(mesh_cpbd, mesh_cpbd_actor, TEXTURE_PATH)
        
 if RENDER_SKEL: 
-    skel_mesh_cpbd = add_skeleton_from_Skeleton(plotter, skeleton_rigid, 
+    skel_mesh_cpbd = add_skeleton_from_Skeleton(plotter, skeleton, 
                                                 default_bone_color=CPBD_BONE_COLOR,
                                                 alt_idxs=fixed_handles,
                                                 alt_bone_color=CPBD_FIXED_BONE_COLOR)
@@ -341,7 +354,7 @@ if RENDER_MESH:
        add_texture(mesh_dyn, mesh_dyn_actor, TEXTURE_PATH)
 
 if RENDER_SKEL: 
-    skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton_dyn, 
+    skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton, 
                                                alt_idxs=helper_idxs, 
                                                is_smpl=True, # TODO: This is ridiculous, but I have to update the data cause I want to omit the root bone...
                                                default_bone_color=DEFAULT_BONE_COLOR, 
@@ -367,13 +380,13 @@ def convert_points_to_bones(handles, flatten=True):
     return point_bones
 
 n_frames = len(handle_locations_rigid)
-n_bones_rigid = len(skeleton_rigid.rest_bones)
+n_bones_rigid = len(skeleton.rest_bones)
 V_anim_dyn, J_anim_dyn = [], []
-n_bones_ours = len(skeleton_dyn.rest_bones)
+n_bones_ours = len(skeleton.rest_bones)
 n_additional_bones = n_bones_ours - n_bones_rigid
 V_anim_rigid = []
 J_anim_rigid = []
-rest_bone_locations = skeleton_dyn.get_rest_bone_locations(exclude_root=False)
+rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False)
 tot_time_lbs, tot_time_ours = 0.0, 0.0
 rest_handles = handle_locations_rigid[0]
 for i in range(n_frames):
@@ -381,21 +394,37 @@ for i in range(n_frames):
     start_time = time.time()
     
     # --------- LBS -----------------------------------------------------------    
-    V_lbs = get_LBS_spot(handle_locations_rigid[i], rest_handles)
-    V_anim_rigid.append(V_lbs)
-    J_anim_rigid.append(convert_points_to_bones(handle_locations_rigid[i]))
-    
-    tot_time_lbs += time.time() - start_time 
-    # --------- Ours -----------------------------------------------------------
-    start_time = time.time()
-
-    # Prepare translation and rotations
+    #V_lbs = get_LBS_spot(handle_locations_rigid[i], rest_handles)
+    #diff = handle_locations_rigid[i] - rest_handles
+    #M = np.array([translation_vector_to_matrix(t) for t in diff])
+    #V_lbs = skinning.LBS_from_mat(verts_rest, W_rigid, M, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
     t = np.zeros((n_bones_ours,3))
     t[original_bones,:] = handle_locations_rigid[i] - rest_handles
     pose = np.zeros((n_bones_ours, 3))
-     
-    # Pose with FK 
-    rigidly_posed_handles = skeleton_dyn.pose_bones(pose, t, degrees=True)    
+    #rigidly_posed_handles = skeleton.pose_bones(pose, t, degrees=True)  
+    #rigidly_posed_handles = rigidly_posed_handles[1:] # exclude dummy root
+    abs_rot, abs_t = skeleton.get_absolute_transformations(pose,t)
+    rigidly_posed_handles = skeleton.compute_bone_locations(abs_rot, abs_t)
+    
+    cur_handles = rigidly_posed_handles[np.array(original_bones) * 2]
+    V_lbs = get_LBS_spot(cur_handles, rest_handles)
+    handle_locations_rigid[i] = cur_handles ## ---> update for kintree
+    
+    V_anim_rigid.append(V_lbs)
+    J_anim_rigid.append(convert_points_to_bones(handle_locations_rigid[i]))
+    #J_anim_rigid.append(rigidly_posed_handles) -> this changes output handles?.. 
+    
+    tot_time_lbs += time.time() - start_time 
+    # --------- Ours -----------------------------------------------------------
+    #start_time = time.time()
+
+    # Prepare translation and rotations
+    #t = np.zeros((n_bones_ours,3))
+    #t[original_bones,:] = handle_locations_rigid[i] - rest_handles
+    #pose = np.zeros((n_bones_ours, 3))
+ 
+    # Pose 
+    #rigidly_posed_handles = skeleton.pose_bones(pose, t, degrees=True)    
     dyn_posed_handles = helper_rig.update_bones(rigidly_posed_handles)
     
     M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, 
