@@ -26,7 +26,7 @@ class Bone():
         if parent is not None:
             self.start_location = parent.end_location
         
-        self.t = np.zeros(3)
+        #self.t = np.zeros(3)
         self.parent = parent
         self.children = []
         
@@ -68,13 +68,18 @@ class Bone():
                 print(">> WARNING: You're overriding the bone rest pose locations. Turn override parameter off if you intend to use this function as pose mode.")
             self.set_start_location(start_translated)
             self.end_location = end_translated
-            if keep_trans:
-                self.t += offset_vec
-        else:
-            self.t += offset_vec
+        #     if keep_trans:
+        #         self.t += offset_vec
+        # else:
+        #     self.t += offset_vec
     
         return (start_translated, end_translated)
 
+    def correct_rel_trans(self):
+        # In case the bone's start location is changed, update the relative translations
+        self.t  = self.parent.end_location - self.start_location
+        return
+    
     def rotate(self, axsang, override=True, keep_trans=True):
         """
         Sets the bone rotation and adjust the endpoint location of the bone.
@@ -383,6 +388,7 @@ class Skeleton():
         else:
             self.rest_bones[new_bone.idx].set_start_location(startpoint)
         
+        self.rest_bones[new_bone.idx].correct_rel_trans()
         # Sanity check the created bone.idx corresponds to its index the bones list
         assert new_bone.idx == len(self.rest_bones)-1
         return new_bone.idx

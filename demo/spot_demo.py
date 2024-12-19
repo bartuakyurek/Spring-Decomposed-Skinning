@@ -312,13 +312,6 @@ adjust_camera_spot(plotter)
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # COMPUTE DEFORMATION
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-#print(">> WARNING: This demo assumes the handles are only translated.")
-def get_LBS_spot(cur_handles, prev_handles):
-   diff = cur_handles - prev_handles
-   M = np.array([translation_vector_to_matrix(t) for t in diff])
-   V_lbs = skinning.LBS_from_mat(verts_rest, W_rigid, M, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
-
-   return V_lbs # Note: I didn't compute LBS joints via FK since we are given the positions
 
 def convert_points_to_bones(handles, flatten=True):
     point_bones =[[p,p] for p in handles]
@@ -340,22 +333,18 @@ for i in range(n_frames):
     start_time = time.time()
     
     # --------- LBS -----------------------------------------------------------    
-   
-    t = np.zeros((n_bones_ours,3))
+    t = np.zeros((n_bones_ours,3)) # This demo assumes handles are only translated in compared demo code
     t[original_bones,:] = handle_locations_rigid[i] - rest_handles
     pose = np.zeros((n_bones_ours, 3))
     
+    # Compute joint locations and their transforms (translation based for this demo) 
     abs_rot, abs_t = skeleton.get_absolute_transformations(pose,t)
     rigidly_posed_handles = skeleton.compute_bone_locations(abs_rot, abs_t)
-    
     cur_handles = rigidly_posed_handles[np.array(original_bones) * 2]
-    
-   
-    # Compute joint locations
-    #V_lbs = get_LBS_spot(cur_handles, rest_handles)
+
     handle_locations_rigid[i] = cur_handles ## ---> update for kintree
     
-    # compute LBS
+    # Compute LBS
     diff = cur_handles - rest_handles
     M_rigid = np.array([translation_vector_to_matrix(t) for t in diff])
     V_lbs = skinning.LBS_from_mat(verts_rest, W_rigid, M_rigid,
@@ -402,10 +391,8 @@ report_timing(tot_time_ours, n_frames, "ours")
 V_anim_rigid = np.array(V_anim_rigid)
 V_anim_dyn = np.array(V_anim_dyn)
 
-
 distance_err_cpbd = np.linalg.norm(V_anim_rigid - verts_cpbd, axis=-1)  # (n_frames, n_verts)
 distance_err_dyn = np.linalg.norm(V_anim_rigid - V_anim_dyn, axis=-1)  # (n_frames, n_verts)
-
 
 normalized_dists_cpbd = normalize_arr_np(distance_err_cpbd)
 normalized_dists_dyn = normalize_arr_np(distance_err_dyn)

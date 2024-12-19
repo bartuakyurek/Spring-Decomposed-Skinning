@@ -225,7 +225,7 @@ class HelperBonesHandler:
             # Adjust the child bones' starting points
             for child in bone.children:
                 child_start_idx = child.idx * 2
-                child_bone_start = simulated_locations[end_idx]         # Parent's endpoint is the new start point
+                child_bone_start = simulated_locations[end_idx]  - child.t       # Parent's endpoint is the new start point
                 #child_bone_start += child.t # add relative offset --> this doesn't work right now
                 
                 previous_start = simulated_locations[child_start_idx].copy() # without copying, translation gets zero.
