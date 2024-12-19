@@ -34,7 +34,7 @@ class HelperBonesHandler:
                  fixed_scale=False,
                  edge_constraint=False,
                  compliance=0.0, # Only works for PBD
-                 compliance_ours=0.005 # TODO: this isnt used in demo codes yet
+                 compliance_ours=0.0 
                  ):
         """
         Create a mass-spring system provided an array of Bone objects.
