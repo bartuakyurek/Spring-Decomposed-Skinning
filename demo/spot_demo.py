@@ -87,7 +87,7 @@ WINDOW_SIZE = (1200, 1600)
 ALGO = "T" # ["T", "RST", "SVD"] RST doesn't work good with this demo, SVD never works good either
 INTEGRATION = "PBD" # PBD or Euler
 
-AUTO_NORMALIZE_WEIGHTS = True # Using unnomalized weights can cause problems
+AUTO_NORMALIZE_WEIGHTS = False # Using unnomalized weights can cause problems
 COMPLIANCE = 0.05 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
 FIXED_SCALE = True
@@ -340,21 +340,27 @@ for i in range(n_frames):
     start_time = time.time()
     
     # --------- LBS -----------------------------------------------------------    
-    #V_lbs = get_LBS_spot(handle_locations_rigid[i], rest_handles)
-    #diff = handle_locations_rigid[i] - rest_handles
-    #M = np.array([translation_vector_to_matrix(t) for t in diff])
-    #V_lbs = skinning.LBS_from_mat(verts_rest, W_rigid, M, use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
+   
     t = np.zeros((n_bones_ours,3))
     t[original_bones,:] = handle_locations_rigid[i] - rest_handles
     pose = np.zeros((n_bones_ours, 3))
-    #rigidly_posed_handles = skeleton.pose_bones(pose, t, degrees=True)  
-    #rigidly_posed_handles = rigidly_posed_handles[1:] # exclude dummy root
+    
     abs_rot, abs_t = skeleton.get_absolute_transformations(pose,t)
     rigidly_posed_handles = skeleton.compute_bone_locations(abs_rot, abs_t)
     
     cur_handles = rigidly_posed_handles[np.array(original_bones) * 2]
-    V_lbs = get_LBS_spot(cur_handles, rest_handles)
+    
+   
+    # Compute joint locations
+    #V_lbs = get_LBS_spot(cur_handles, rest_handles)
     handle_locations_rigid[i] = cur_handles ## ---> update for kintree
+    
+    # compute LBS
+    diff = cur_handles - rest_handles
+    M_rigid = np.array([translation_vector_to_matrix(t) for t in diff])
+    V_lbs = skinning.LBS_from_mat(verts_rest, W_rigid, M_rigid,
+                                  use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
+
     
     V_anim_rigid.append(V_lbs)
     J_anim_rigid.append(convert_points_to_bones(handle_locations_rigid[i]))
@@ -362,23 +368,17 @@ for i in range(n_frames):
     
     tot_time_lbs += time.time() - start_time 
     # --------- Ours -----------------------------------------------------------
-    #start_time = time.time()
-
-    # Prepare translation and rotations
-    #t = np.zeros((n_bones_ours,3))
-    #t[original_bones,:] = handle_locations_rigid[i] - rest_handles
-    #pose = np.zeros((n_bones_ours, 3))
- 
-    # Pose 
-    #rigidly_posed_handles = skeleton.pose_bones(pose, t, degrees=True)    
+     
     dyn_posed_handles = helper_rig.update_bones(rigidly_posed_handles)
     
+    #M_rigid = np.array([translation_vector_to_matrix(t) for t in diff])
+    M_hybrid = np.array(M_rigid)
     M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, 
                                                         dyn_posed_handles, 
                                                         return_mat=True, 
                                                         algorithm=ALGO)[1:]  # TODO: get rid of root
     
-    M_hybrid = M # TODO -> _, q,t = pose_bones(get_transformas=True) and M_rigid = compose_mat(q,t)
+    M_hybrid[helper_idxs] = M[helper_idxs] # TODO -> _, q,t = pose_bones(get_transformas=True) and M_rigid = compose_mat(q,t)
     J_dyn = dyn_posed_handles[2:] # TODO: remove root...
     V_dyn = skinning.LBS_from_mat(verts_rest, W_dyn, M_hybrid, 
                                   use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
