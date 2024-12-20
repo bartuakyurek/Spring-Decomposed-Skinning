@@ -54,8 +54,8 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 # =============================================================================
 modelname = 'spot_helpers' # "spot" or "spot_high"
 
-idxs = [4, 11, 12, 16] # Indices to translate the handles (there are 8) 
-fixed = [0, 1, 2, 3, 4, 11, 12, 16] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
+idxs = [4, 11] # Indices to translate the handles (there are 8) 
+fixed = [0, 1, 2, 3, 4, 11] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
 pose_base = np.array([0.,  0., 30.]) # xyz rotation degrees
 decay = 0.0 # Dampen the user transforms over time, range [0.0, inf) 
@@ -65,14 +65,15 @@ start_frame = 0
 end_frame = 200
 save_npz = True
 
+data_path = "./data/"
 save_path =  f"./data/{modelname}/{modelname}_extracted.npz" 
 save_only_surface = False       
 # =============================================================================
 # Load data
 # =============================================================================
-tgf_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}.tgf')
-model_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}.mesh')
-weight_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}_w.txt')
+tgf_path = os.path.join(data_path, f'{modelname}/{modelname}.tgf')
+model_path = os.path.join(data_path, f'{modelname}/{modelname}.mesh')
+weight_path = os.path.join(data_path, f'{modelname}/{modelname}_w.txt')
 
 scale = 1.0
 repose = (0,0.,0) # To be consistent with my blender rig I reset this #(0.0, 0.7, 0.0) # I guess it acts as global translation of the model

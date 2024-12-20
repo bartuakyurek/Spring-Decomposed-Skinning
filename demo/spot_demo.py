@@ -91,13 +91,13 @@ AUTO_NORMALIZE_WEIGHTS = False # Using unnomalized weights can cause problems
 
 COMPLIANCE = 0.002 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 EDGE_CONSTRAINT = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
-COMPLIANCE_OURS = 0.5 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
+COMPLIANCE_OURS = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
 FIXED_SCALE = True
 POINT_SPRING = False # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 3. # 5
-STIFFNESS = 20. # 100
+STIFFNESS = 120. # 100
 DAMPING = 10.5 # 10
 MASS_DSCALE = 0.2   #0.5    # Mass velocity damping (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 2.0  #3.0   # Scales spring forces (increase for more jiggling)
@@ -386,18 +386,14 @@ for i in range(n_frames):
     V_lbs = skinning.LBS_from_mat(verts_rest, W_rigid, M_rigid,
                                   use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
 
-    
     V_anim_rigid.append(V_lbs)
     J_anim_rigid.append(rigidly_posed_handles[2:]) # TODO: remove dummy root
-    #(convert_points_to_bones(handle_locations_rigid[i]))
-    #J_anim_rigid.append(rigidly_posed_handles) -> this changes output handles?.. 
     
     tot_time_lbs += time.time() - start_time 
     # --------- Ours -----------------------------------------------------------
      
     dyn_posed_handles = helper_rig.update_bones(rigidly_posed_handles)
     
-    #M_rigid = np.array([translation_vector_to_matrix(t) for t in diff])
     M_hybrid = np.array(M_rigid)
     M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, 
                                                         dyn_posed_handles, 
