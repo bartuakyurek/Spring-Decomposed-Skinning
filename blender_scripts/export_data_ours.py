@@ -1,58 +1,32 @@
 """
-HOW TO USE THIS SCRIPT?
---------------------------------------------------------------------------------------------------
-In Blender,
-- Import the object you want to rig (see the warning below)
-- Setup an armature with a single root bone. This armature will be used as helper rig in Spring
-  Decomposition pipeline.
-- Bind the armature to the mesh via automatic weights.
-- Edit the weights via weight painting. Note that not all the bones have to have weights.
-- (Optional) Make all the weights of root bone 1.0 to check the influence of helper bones clearly.
-
-Given this procedure, this script assumes the root bone will NOT be exported. 
-It will export "helper_data.npz" which includes:
-    
-    - Kintree : Parent-child relationships between bones. The root bone index is -1. It will be
-                replaced with the actual rig bone index in Spring Decomposition pipeline. 
-                Every entry has (parent_idx, bone_idx) tuples.
-                Has shape (n_helpers, 2). Access via data['kintree'] after loading the .npz.
-                
-    - J : Enpdpoint locations of each bone (for now, please make sure there's no
-          offset between bones, offset configuration has not been tested on our pipeline yet).
-          Has shape (n_helpers, 2, 3). Access via data['joints'] after loading the .npz.
-    
-    - W : Vertex-bone binding weights that are via weight paintign or automatic methods.
-          Has shape(n_verts, n_helpers). Access via data['weights'] after loading the .npz.
-
-In this script,
-    - Simply edit the parameters listed right after the imports.
-    
-------------------------------------------------------------------------------------------------------------------------------------------------
-WARNING: Blender's imported vertex indices might not match with the .obj indices.
-To solve it, refer to https://stackoverflow.com/questions/68078267/when-importing-obj-files-the-vertex-indices-order-is-changed-is-there-any-way
-or if you're in a similar version 3.6.4 like me, uncheck the split option while importing .obj, see:
-https://docs.blender.org/manual/en/2.80/addons/io_scene_obj.html#import
-
-If you omit this step you might lose vertices or vertex order that might cause problems in your external pipeline
-(I was losing 1 vertex and quarter of vertices were in different order).
-------------------------------------------------------------------------------------------------------------------------------------------------
-WARNING: If the exported rig is rotated, you can rotate it in Blender to match
-with the space axes in the pipeline. For me, I've applied -90d Rotation along X axis
-(F3 -> Apply Rotation).
-
-------------------------------------------------------------------------------------------------------------------------------------------------
+    This script is intended to export the necessary data for our pipeline.
+    That includes:
+        - data['kintree'] : (parent, child) pairs of bone indices  (x, 2)
+        - data['joints'] : Endpoint locations for bones (n_bones, 2, 3)
+        - data['weights'] : vertex-bone binding weights (n_verts, n_bones)
+        - data['rigid_idxs'] : indices of rigid bones in the rig (n_rigid)
 """
+import os
 import bpy
+import mathutils
 import numpy as np
-
 
 # Editable Parameters
 # ---------------------------------------------------------------------------------------
-armature_name = "Armature" # Name of the armature on the right panel, by default it is "Armature"
-mesh_name = "smpl_rest"    # Use the mesh name on the right panel
-OUT_FILENAME = "helper_rig_data.npz" 
-PATH = "/Users/bartu/Documents/Github/Spring-Decomp/data/" # Directory to save the output
-RESET_ROOT_WEIGHTS = True  # Set True you want to set root bone weights to zero
+modelname = "spot_helpers"
+armature_name = "armature" # Name of the armature on the right panel, by default it is "Armature"
+mesh_name = "tetmesh"     # Use the mesh name on the right panel
+RIGID_NAME = "Rigid" # Set None or Rigid bone basename
+
+save_txt_weights = True
+#save_regular_tgf = True  # Named regular to distinguish Wu et al.'s point handle tgf format with regular tgf
+RESET_ROOT_WEIGHTS = False  # Set True you want to set root bone weights to zero
+
+OUT_FILENAME = f"{modelname}_rig_data.npz" 
+PATH = f"/Users/bartu/Documents/Github/Spring-Decomp/data/{modelname}/" # Directory to save the output
+weight_path = os.path.join(PATH, f"{modelname}_w.txt")
+#regular_tgf_path = os.path.join(PATH, f"{modelname}_regular.tgf")
+
 # ---------------------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------------------
@@ -71,24 +45,42 @@ def get_kintree(armature_obj):
             parent_idx = -1
         kintree.append([parent_idx, bone_idx])
         
-    return kintree 
+    return kintree
+
+def get_bone_name_idx(armature_obj, name):
+    # Get the bone indices corresponding to name basename.
+    armature = armature_obj.data
+    name_idxs = []
+    for bone_idx, bone in enumerate(armature.bones):
+        if str.lower(bone.basename) == str.lower(name):
+            name_idxs.append(bone_idx)
+        
+    return name_idxs
 
 # ---------------------------------------------------------------------------------------
 # Part 2 - Extract the bone head and tail positions of shape (n_bones, 2, 3)
 # ---------------------------------------------------------------------------------------
-def get_joint_locations(armature_obj):
-    
-    t =  armature_obj.location
-    print("Armature location:", t)
+def get_joint_locations(armature_obj, name="", local=True):
+    """
+    Get the joint locations in the tree.
+    NOTE: Every bone is assumed to have two joints: bone.head and bone.tail
+    """
+    if local: t = mathutils.Vector([0,0,0])
+    else: t =  armature_obj.location
+    print("Armature location is taken as:", t)
     
     armature = armature_obj.data
     n_bones = len(armature.bones)
     J = np.empty((n_bones,2,3))
     
+    name_idxs = []
     for i, bone in enumerate(armature.bones):
         J[i,:,:] = np.array([bone.head_local + t, bone.tail_local + t])
         
-    return J
+        if str.lower(bone.basename) == str.lower(name):
+            name_idxs.append(i)
+            
+    return J, name_idxs
 
 # ---------------------------------------------------------------------------------------
 # Part 3 - Extract the vertex-bone weights of shape (n_verts, n_bones)
@@ -133,8 +125,8 @@ mesh_obj = bpy.data.objects[mesh_name]
 armature_obj = bpy.data.objects[armature_name]
 
 kintree = get_kintree(armature_obj)
-J = get_joint_locations(armature_obj)
-W = get_binding_weights(mesh_obj)
+J, rigid_idxs  = get_joint_locations(armature_obj, RIGID_NAME, local=True)
+W = get_binding_weights(mesh_obj)#[:,3:]
 
 print("Obtained kintree (parent_idx, bone_idx):\n", kintree)
 print("Obtained joint locations:\n", np.round(J,4))
@@ -147,9 +139,19 @@ data['kintree'] = kintree
 data['joints'] = J
 data['weights'] = W
 
+#if RIGID_NAME is not None: 
+    #rigid_idxs = get_bone_name_idx(armature_obj, RIGID_NAME)
+data['rigid_idxs'] = rigid_idxs
+
 np.savez(PATH + OUT_FILENAME, **data) 
 print(f">> Kintree {kintree} is saved.")
 print(f">> Joints of shape {J.shape} is saved.")
 print(f">> Weights of shape {W.shape} saved. Are root weights set to zero? {RESET_ROOT_WEIGHTS}.")
 
-     
+if save_txt_weights:
+    np.savetxt(weight_path, W)
+    print(f">>> INFO: Saved weights at {weight_path}")
+    
+#if save_regular_tgf:
+#    write_regular_tgf(J, kintree, regular_tgf_path)
+#    print(f">>> INFO: Saved a regular .tgf at {regular_tgf_path}")
