@@ -55,7 +55,7 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 modelname = 'spot_helpers' # "spot" or "spot_high"
 
 idxs = [4, 11, 12, 16] # Indices to translate the handles (there are 8) 
-fixed = [0, 1, 2, 3, 16] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
+fixed = [0, 1, 2, 3, 4, 11, 12, 16] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
 trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
 pose_base = np.array([0.,  0., 30.]) # xyz rotation degrees
 decay = 0.0 # Dampen the user transforms over time, range [0.0, inf) 
@@ -75,7 +75,7 @@ model_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}.mesh')
 weight_path = os.path.join(path_to_cpbd, f'assets/{modelname}/{modelname}_w.txt')
 
 scale = 1.0
-repose = (0.0, 0.7, 0.0) # I guess it acts as global translation of the model
+repose = (0,0.,0) # To be consistent with my blender rig I reset this #(0.0, 0.7, 0.0) # I guess it acts as global translation of the model
 
 points = points_data.load_points_data(tgf_path, weight_path, scale, repose)
 mesh = tet_data.load_tets(model_path, scale, repose)
