@@ -90,9 +90,9 @@ INTEGRATION = "PBD" # PBD or Euler
 AUTO_NORMALIZE_WEIGHTS = False # Using unnomalized weights can cause problems
 
 COMPLIANCE = 0.002 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
-EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
+EDGE_CONSTRAINT = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
 COMPLIANCE_OURS = 0.5 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
-FIXED_SCALE = False
+FIXED_SCALE = True
 POINT_SPRING = False # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
@@ -163,6 +163,7 @@ skeleton = Skeleton(root_vec = [0.,0.,0.]) # pseudo root bone
 # Insert bones to skeleton given the kintree
 assert len(blender_kintree) == len(handle_locations_rest), f"Expected the blender exported kintree to include all the bones. Found kintree of shape {blender_kintree.shape} for {len(handle_locations_rest)}"
 
+"""
 # WARNING This assumes all bones are point handles! 
 for  parentchild in blender_kintree: # WARNING: This assumes kintree has all the bones
     parent, child = parentchild
@@ -172,14 +173,13 @@ for  parentchild in blender_kintree: # WARNING: This assumes kintree has all the
                               startpoint = point_location,
                               parent_idx = parent_idx) 
     
-
-
+"""
 # Mark spring bones according to MODE
 if MAKE_ALL_SPRING: # Make all bones in the existing rig spring bones
     helper_idxs = [i+1 for i in range(len(handle_locations_rest))] # WARNING TODO: +1 is because of the dummy root bone in the rig, should be removed after its removal.
     original_bones = helper_idxs
     
-    """
+    # instert bones as point handles 
     for  parentchild in blender_kintree: # WARNING: This assumes kintree has all the bones
          parent, child = parentchild
          point_location = handle_locations_rest[child]
@@ -188,7 +188,6 @@ if MAKE_ALL_SPRING: # Make all bones in the existing rig spring bones
                               startpoint = point_location,
                               parent_idx = parent_idx) 
     
-    """
 else: 
     original_bones = [i+1 for i in range(len(handle_locations_rest))] # WARNING TODO: +1 is because of the dummy root bone in the rig, should be removed after its removal.
     
@@ -196,23 +195,24 @@ else:
     for i,rigid_idx in enumerate(rigid_bones_blender):
         helper_idxs.remove(rigid_idx+1) # WARNING TODO: +1 is because of the dummy root bone in the rig, should be removed after its removal.
     
-    """
+    # if only helper bones will be spring bones, insert them as chains 
     orig_helper_idxs = np.array(helper_idxs) - 1 # TODO: remove dummy root
     for  parentchild in blender_kintree: # WARNING: This assumes kintree has all the bones
          parent, child = parentchild
          
          if np.any(orig_helper_idxs == child):
-             start_pt = handle_locations_rest[parent] + np.ones(3) # TODO: remove dummy root #skeleton_joints[child][0]
-             #end_pt = skeleton_joints[child][1]
+             #start_pt = handle_locations_rest[parent]  # TODO: remove dummy root #skeleton_joints[child][0]
+             start_pt = skeleton_joints[child][0] #+ np.array([0.0, 0.7, 0.0])
+             end_pt = skeleton_joints[child][1]
          else:
              start_pt = handle_locations_rest[child]
-         end_pt = handle_locations_rest[child]
+             end_pt = handle_locations_rest[child]
          
          parent_idx = parent + 1 # TODO: This is because of the dummy root bone in skeleton
          skeleton.insert_bone(endpoint = end_pt, 
                               startpoint = start_pt,
                               parent_idx = parent_idx) 
-    """
+    
 
 helper_rig = HelperBonesHandler(skeleton, 
                                 helper_idxs,
@@ -376,8 +376,8 @@ for i in range(n_frames):
     # Compute joint locations and their transforms (translation based for this demo) 
     abs_rot, abs_t = skeleton.get_absolute_transformations(pose,t)
     rigidly_posed_handles = skeleton.compute_bone_locations(abs_rot, abs_t)
+    
     cur_handles = rigidly_posed_handles[np.array(original_bones) * 2]
-
     handle_locations_rigid[i] = cur_handles ## ---> update for kintree
     
     # Compute LBS
@@ -388,7 +388,8 @@ for i in range(n_frames):
 
     
     V_anim_rigid.append(V_lbs)
-    J_anim_rigid.append(convert_points_to_bones(handle_locations_rigid[i]))
+    J_anim_rigid.append(rigidly_posed_handles[2:]) # TODO: remove dummy root
+    #(convert_points_to_bones(handle_locations_rigid[i]))
     #J_anim_rigid.append(rigidly_posed_handles) -> this changes output handles?.. 
     
     tot_time_lbs += time.time() - start_time 
