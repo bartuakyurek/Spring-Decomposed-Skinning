@@ -52,16 +52,21 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 # =============================================================================
 # Editable parameters ----
 # =============================================================================
-modelname = 'spot_helpers' # "spot" or "spot_high"
+modelname = 'elephant_helpers' # "spot" or "spot_high"
 
-idxs = [4, 11] # Indices to translate the handles (there are 8) 
-fixed = [0, 1, 2, 3, 4, 11] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
-trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
-pose_base = np.array([0.,  0., 30.]) # xyz rotation degrees
+#idxs = [4, 11, 14] # Indices to translate the handles (there are 8) 
+#fixed = [0, 1, 2, 3, 4, 11, 14] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
+
+idxs = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+fixed = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+
+trans_base = np.array([0., 0.0, 0.4], dtype=np.float32)  # relative translation 
+pose_base = np.array([0.,  0., 0.]) # xyz rotation degrees
 decay = 0.0 # Dampen the user transforms over time, range [0.0, inf) 
             # will be used in pose_base / e^(decay * t)
 
 start_frame = 0
+stop_movement_frame = 40
 end_frame = 200
 save_npz = True
 
@@ -77,12 +82,14 @@ weight_path = os.path.join(data_path, f'{modelname}/{modelname}_w.txt')
 
 scale = 1.0
 repose = (0,0.,0) # To be consistent with my blender rig I reset this #(0.0, 0.7, 0.0) # I guess it acts as global translation of the model
+reverse_face=False
+remove_duplicate=False # True for spot, but False for Elephant because it creates holes
 
 points = points_data.load_points_data(tgf_path, weight_path, scale, repose)
-mesh = tet_data.load_tets(model_path, scale, repose)
+mesh = tet_data.load_tets(model_path, scale, repose, reverse_face=reverse_face, remove_duplicate=remove_duplicate)
 wireframe = [False]
 points.set_color(fixed=fixed)
-print(mesh.t_i.shape)
+
 # ========================== init simulation ==========================
 g = ti.Vector([0.0, 0.0, 0.0])
 fps = 60
@@ -228,7 +235,8 @@ t_pbd = 0.0
 while window.running():
 
   t = time.time()
-  set_movement()
+  if window.get_total_frames() < stop_movement_frame:
+      set_movement()
 
   for i in range(substeps):
     t_pbd_current = time.time()

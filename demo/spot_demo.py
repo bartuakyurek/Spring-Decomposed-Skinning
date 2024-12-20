@@ -80,6 +80,7 @@ CPBD_FIXED_BONE_COLOR = "red"
 SPRING_BONE_COLOR = "blue"
 LBS_INPUT_BONE_COLOR = "yellow"
 
+SCALE = 0.01
 CLOSE_AFTER_ITER = 1 # Set to False or an int, for number of repetitions before closing
 WINDOW_SIZE = (1200, 1600)
 
@@ -115,13 +116,13 @@ SPOT_EXTRACTED_DATA_PATH = os.path.join(SPOT_DATA_PATH, f"{MODEL_NAME}_extracted
 # Read animation data
 with np.load(SPOT_EXTRACTED_DATA_PATH) as data:
     
-    verts_cpbd = data["verts_yoharol"]
+    verts_cpbd = data["verts_yoharol"] * SCALE
     cpbd_faces = data["faces"]
     fixed_handles = data["fixed_yoharol"]
     user_input_idxs = data["user_input"]
     
-    handle_locations_cpbd = data["handles_yoharol"]
-    handle_locations_rigid = data["handles_rigid"]
+    handle_locations_cpbd = data["handles_yoharol"] * SCALE
+    handle_locations_rigid = data["handles_rigid"] * SCALE
     handle_poses = data["handles_pose"]
     handle_trans = data["handles_t"]
     original_weights = data["weights"]
@@ -155,7 +156,7 @@ print(">> WARNING: Assuming the provided handle locations are sparse point handl
 
 with np.load(HELPER_RIG_PATH) as data:
      blender_kintree = data["kintree"]#[1:] - 1# Excluding dummy root bone I put in blender
-     skeleton_joints = data["joints"]
+     skeleton_joints = data["joints"] * SCALE
      rigid_bones_blender = data["rigid_idxs"] 
      
 skeleton = Skeleton(root_vec = [0.,0.,0.]) # pseudo root bone
