@@ -57,7 +57,7 @@ MAKE_ALL_SPRING = False # Set true to turn all bones spring bones otherwise only
 # RENDER PARAMETERS
 RENDER_AS_GIF = False # If set to False, render as .mp4
 RENDER_MESH = True
-RENDER_SKEL = True
+RENDER_SKEL = False
 WIREFRAME = False
 RENDER_TEXTURE = False # Automatically treated as False if COLOR_CODE is True
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
@@ -68,12 +68,13 @@ LIGHT_POS = (10.5, 3.5, 3.5)
                        
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = False
-OPACITY = 0.8
+OPACITY = 1.0
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.3
 BASE_COLOR = [0.8,0.7,1.0] # RGB
+AZIMUTH = 90 # 230 for spot, 90 for elephant
 
-BACKGROUND_COLOR = "black"
+BACKGROUND_COLOR = "white"
 DEFAULT_BONE_COLOR = "white"
 CPBD_BONE_COLOR ="green" # CPBD stands for Controllable PBD (the paper we compare against)
 CPBD_FIXED_BONE_COLOR = "red"
@@ -91,17 +92,17 @@ INTEGRATION = "PBD" # PBD or Euler
 AUTO_NORMALIZE_WEIGHTS = False # Using unnomalized weights can cause problems
 
 COMPLIANCE = 0.001 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
-EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
+EDGE_CONSTRAINT = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
 COMPLIANCE_OURS = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
-FIXED_SCALE = False
+FIXED_SCALE = True
 POINT_SPRING = False # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 3. # 5
-STIFFNESS = 120. # 100
-DAMPING = 10.5 # 10
-MASS_DSCALE = 0.2   #0.5    # Mass velocity damping (Use [0.0, 1.0] range to slow down)
-SPRING_DSCALE = 2.0  #3.0   # Scales spring forces (increase for more jiggling)
+STIFFNESS = 300. # 120
+DAMPING = 10. # 10
+MASS_DSCALE = 1.0   #0.5    # Mass velocity damping (Use [0.0, 1.0] range to slow down)
+SPRING_DSCALE = 1.0  #3.0   # Scales spring forces (increase for more jiggling)
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # READ DATA
@@ -246,7 +247,7 @@ def set_lights(plotter):
 def adjust_camera_spot(plotter):
     plotter.camera.tight(padding=0.4, view="zy", adjust_render_window=False)
     plotter.camera.clipping_range = (-3, 3) # -1 is to fix near clipping range
-    plotter.camera.azimuth = 230
+    plotter.camera.azimuth = AZIMUTH
     
 
 def add_texture(polydata, actor, img_path=None):
@@ -437,9 +438,9 @@ normalized_dists_dyn = normalize_arr_np(distance_err_dyn)
 # =============================================================================
 
 if RENDER_AS_GIF:
-    plotter.open_gif(os.path.join(RESULT_PATH, f"{MODEL_NAME}_{INTEGRATION}.gif"))
+    plotter.open_gif(os.path.join(RESULT_PATH, f"{MODEL_NAME}.gif"))
 else:
-    plotter.open_movie(os.path.join(RESULT_PATH, f"{MODEL_NAME}_{INTEGRATION}_Complience_{COMPLIANCE}.mp4"))
+    plotter.open_movie(os.path.join(RESULT_PATH, f"{MODEL_NAME}_m{MASS}_ks{STIFFNESS}_kd{DAMPING}_mds{MASS_DSCALE}_ds{SPRING_DSCALE}.mp4"))
 
 frame, rep = 0, 0
 while (plotter.render_window):
