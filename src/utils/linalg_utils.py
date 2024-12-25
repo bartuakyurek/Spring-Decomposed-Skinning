@@ -431,8 +431,11 @@ def get_3d_scale(u, v, return_mat=True, homogeneous=True):
 
     # Post-computation checks 
     scaled_u = xyz * u
-    assert np.abs(LA.norm(scaled_u) - LA.norm(v)) < 1e-12, "Expected the scaled source vector to match the norm of the target vector."
-   
+    if LA.norm(scaled_u) > 1e-12:
+        assert np.abs(LA.norm(scaled_u) - LA.norm(v)) < 1e-12, "Expected the scaled source vector to match the norm of the target vector."
+    else:
+        print("WARNING: Scale is not tested for point handles!")
+        
     # Return
     if return_mat:
         if homogeneous:

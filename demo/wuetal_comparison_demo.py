@@ -50,25 +50,25 @@ from src.render.pyvista_render_tools import (add_mesh,
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 EXTRACT_REST_OBJ = False # To save the rest pose as .obj for using it in Blender
 
-MODEL_NAME = "elephant_helpers" # "spot" or "spot_high"
-MAKE_ALL_SPRING = False # Set true to turn all bones spring bones otherwise only helpers will be turned
+MODEL_NAME = "elephant" # "spot" or "spot_high"
+MAKE_ALL_SPRING = True # Set true to turn all bones spring bones otherwise only helpers will be turned
 #USE_POINT_HANDLES_IN_OURS = True # Render the handles as points instead of bones (to match with given point handle rig)
 
 # RENDER PARAMETERS
 RENDER_AS_GIF = False # If set to False, render as .mp4
 RENDER_MESH = True
-RENDER_SKEL = False
+RENDER_SKEL = True
 WIREFRAME = False
 RENDER_TEXTURE = False # Automatically treated as False if COLOR_CODE is True
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
+SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
+RENDER_PHYS_BASED = False
 
 ADD_LIGHT = True
 LIGHT_INTENSITY = 0.6 # Between [0, 1]
 LIGHT_POS = (10.5, 3.5, 3.5)
                        
-SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
-RENDER_PHYS_BASED = False
-OPACITY = 1.0
+OPACITY = 0.6
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.3
 BASE_COLOR = [0.8,0.7,1.0] # RGB
@@ -86,22 +86,22 @@ CLOSE_AFTER_ITER = 1 # Set to False or an int, for number of repetitions before 
 WINDOW_SIZE = (1200, 1600)
 
 # SIMULATION PARAMETERS
-ALGO = "RST" # ["T", "RST", "SVD"] RST doesn't work good with this demo, SVD never works good either
+ALGO = "T" # ["T", "RST", "SVD"] RST doesn't work good with this demo, SVD never works good either
 INTEGRATION = "PBD" # PBD or Euler
 
 AUTO_NORMALIZE_WEIGHTS = False # Using unnomalized weights can cause problems
 
-COMPLIANCE = 0.001 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
-EDGE_CONSTRAINT = False # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
-COMPLIANCE_OURS = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
-FIXED_SCALE = True
+COMPLIANCE = 0.005 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
+EDGE_CONSTRAINT = True # Setting it True can stabilize springs but it'll kill the motion after the first iteration 
+COMPLIANCE_OURS = 0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
+FIXED_SCALE = False
 POINT_SPRING = False # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the masses won't move at all due to hard constraint.
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 3. # 5
-STIFFNESS = 300. # 120
-DAMPING = 10. # 10
-MASS_DSCALE = 1.0   #0.5    # Mass velocity damping (Use [0.0, 1.0] range to slow down)
+STIFFNESS = 20. # 120
+DAMPING = 5. # 10
+MASS_DSCALE = 0.5   #0.5    # Mass velocity damping (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0  #3.0   # Scales spring forces (increase for more jiggling)
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------

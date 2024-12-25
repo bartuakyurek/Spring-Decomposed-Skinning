@@ -52,28 +52,36 @@ ti.init(arch=ti.x64, cpu_max_num_threads=1)
 # =============================================================================
 # Editable parameters ----
 # =============================================================================
-modelname = 'elephant_helpers' # "spot_helpers", "spot" or "spot_high"
+modelname = 'elephant' # "elephant", "elephant_helpers", "spot_helpers", "spot" or "spot_high"
 
 # Spot
 #idxs = [4, 11, 14] # Indices to translate the handles (there are 8) 
 #fixed = [0, 1, 2, 3, 4, 11, 14] # Fixed handles --> make sure to include one free index because only fixed indices can have user inputs (otherwise output is static)
 
-# Elephant -> move upper body, fix every bone except ears and nose
-idxs = [i for i in range(37)]   #[0, 1, 2, 3, 4, 5, 12, 20, 28,29,30,31,32,33,34,35,36] #[i for i in range(28)] #[0, 1, 2, 3, 4, 5, 12, 20, 28]
-fixed = [0,1,2,3,4,5,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46]    #[0, 1, 2, 3, 4, 5, 29,30,31,32,33,34,35,36]   # [i for i in range(28)] # [0, 1, 2, 3, 4, 5, 12, 20, 28] 
 
-trans_base = np.array([0., 0.0, 0.0], dtype=np.float32)  # relative translation 
-pose_base = np.array([2.,  0., 8.]) # xyz rotation degrees
+# Elephant
+idxs = [i for i in range(15)]
+fixed = [i for i in range(15)]
+
+trans_base = np.array([0, 0, 0.], dtype=np.float32)  # relative translation 
+pose_base = np.array([0.,  0., 10.]) # xyz rotation degrees
+
+# Elephant_helpers -> move upper body, fix every bone except ears and nose
+#idxs = [i for i in range(37)]   #[0, 1, 2, 3, 4, 5, 12, 20, 28,29,30,31,32,33,34,35,36] #[i for i in range(28)] #[0, 1, 2, 3, 4, 5, 12, 20, 28]
+#fixed = [0,1,2,3,4,5,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46]    #[0, 1, 2, 3, 4, 5, 29,30,31,32,33,34,35,36]   # [i for i in range(28)] # [0, 1, 2, 3, 4, 5, 12, 20, 28] 
+
+#trans_base = np.array([0, 0.0, 0], dtype=np.float32)  # relative translation 
+#pose_base = np.array([0.,  0., 3.]) # xyz rotation degrees
 decay = 0.0 # Dampen the user transforms over time, range [0.0, inf) 
             # will be used in pose_base / e^(decay * t)
 
 start_frame = 0
 stop_movement_frame = 10
-end_frame = 200
+end_frame = 120
 save_npz = True
 
 data_path = "./data/"
-save_path =  f"./data/{modelname}/{modelname}_extracted.npz" 
+save_path =  data_path + f"{modelname}/{modelname}_extracted.npz" 
 save_only_surface = False       
 # =============================================================================
 # Load data
@@ -82,7 +90,7 @@ tgf_path = os.path.join(data_path, f'{modelname}/{modelname}.tgf')
 model_path = os.path.join(data_path, f'{modelname}/{modelname}.mesh')
 weight_path = os.path.join(data_path, f'{modelname}/{modelname}_w.txt')
 
-scale = 1.0
+scale = 0.01
 repose = (0,0.,0) # To be consistent with my blender rig I reset this #(0.0, 0.7, 0.0) # I guess it acts as global translation of the model
 reverse_face=False
 remove_duplicate=False # True for spot, but False for Elephant because it creates holes
@@ -227,7 +235,8 @@ def set_movement():
             translation_from_rotation = (rot_mat @ p_input[i]) - p_input[i]
             
             p_input[i] += translation_vec  
-            p_input[i] += translation_from_rotation # TODO: How can I directly set rotations? This is still translation...
+            if np.sum(np.abs(rotation_degrees)) > 1e-4:
+                p_input[i] += translation_from_rotation # TODO: How can I directly set rotations? This is still translation...
             
             rest_pose[i] = rotation_degrees # Save rotation for skinning
             rest_t[i] = translation_vec # Save translation for skinning

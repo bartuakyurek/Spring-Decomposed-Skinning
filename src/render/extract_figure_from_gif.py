@@ -5,7 +5,8 @@ This script is created to extract frames in a GIF and display them
 side by side using Matplotlib. The results are intended to be used
 in my thesis figures.
 
-The script is intended to be directly run here.
+The script is intended to be directly run here. Set up the input GIF
+and select the frames to be extracted in the editable parameters below.
 
 Created on Wed Nov 20 14:05:13 2024
 @author: bartu
@@ -16,18 +17,20 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 # =============================================================================
-# 
+# Editable parameters
 # =============================================================================
-model_name = "smpl_50004_8" #"spot_cc" #"cloth"  
-SELECTED_MODELS = [ #f"{model_name}_opaque",
+model_name = "elephant_helpers" #"spot_cc" #"cloth"  
+SELECTED_MODELS = [ f"{model_name}_opaque",
                     f"{model_name}_skel",
+                    f"{model_name}_cc"
                    ]
                    #"cloth_rig1", "cloth_rig3"]
                    #f"{model_name}_skel",
-                   #f"{model_name}_cc"]
+                   #]
                    #f"{model_name}_opaque"]
                    #f"{model_name}_cc"] # See datadict for available options
 
+elephant_frames     = [1, 3, 8, 12, 15, 19, 23, 67]
 spot_frames     = [1, 21, 31, 41, 51]
 monstera_frames = [1, 25, 50, 100, 124, 149, 189]
 duck_frames     = [1, 11, 63, 76, 110, 130, 149]
@@ -40,11 +43,28 @@ REL_GIF_PATH = "../../results/gifs/"
 
 datadict = { 
     
+    "elephant_helpers_skel" : {
+                     'gif_path' : REL_GIF_PATH + "elephant_helpers_skel.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  elephant_frames,
+    },
+    "elephant_helpers_opaque" : {
+                     'gif_path' : REL_GIF_PATH + "elephant_helpers_opaque.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes': elephant_frames,
+    },
+    "elephant_helpers_cc" : {
+                     'gif_path' : REL_GIF_PATH + "elephant_helpers_cc.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  elephant_frames,
+    },
+    
     "spot_opaque" : {
                      'gif_path' : REL_GIF_PATH + "spot.gif",
                      'crop'     : [630, -350, None, None],
                      'keyframes':  spot_frames,
     },
+    
     "spot_skel" : {
                      'gif_path' : REL_GIF_PATH + "spot.gif",
                      'crop'     : [330, -600, None, None],
@@ -170,6 +190,7 @@ datadict = {
     },
     
     }
+
 # Same across all figures
 V_SPACE = 0.0
 H_SPACE = 0.0
