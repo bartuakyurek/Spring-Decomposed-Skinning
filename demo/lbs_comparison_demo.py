@@ -32,17 +32,17 @@ from src.render.pyvista_render_tools import (add_mesh,
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODEL_NAME = "duck" # Available options: "duck", "blob", "cloth", "monstera"
+MODEL_NAME = "monstera" # Available options: "duck", "blob", "cloth", "monstera"
 
 RENDER_AS_GIF = False # If set to False, render as .mp4 (WARNING: GIF export is buggy, you might need to render several times, or turn off ADD_LIGHT)
 RENDER_TEXTURE = False
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
 WIREFRAME = False
 RENDER_MESH = True
-RENDER_SKEL = True
+RENDER_SKEL = False
 SMOOTH_SHADING = True # Automatically set True if RENDER_PHYS_BASED = True
 RENDER_PHYS_BASED = False
-OPACITY = 0.8
+OPACITY = 1.0
 MATERIAL_METALLIC = 0.0
 MATERIAL_ROUGHNESS = 0.2
 WINDOW_SIZE = (1920, 1080)
@@ -51,6 +51,7 @@ ADD_LIGHT = True
 LIGHT_INTENSITY = 0.3 # Between [0, 1]
 LIGHT_POS = (10.5, 3.5, 3.5)
 SPRING_BONE_COLOR =  "blue"
+BACKGROUND_COLOR = "white"
 
 INTEGRATION = "PBD" # PBD or Euler
 ALGO = "RST" # RST, SVD, T
@@ -59,7 +60,7 @@ NORMALIZE_WEIGHTS = True
 FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length
 EDGE_CONSTRAINT = False # Recommended to set either FIXED_SCALE or EDGE_CONSTRAINT True
 COMPLIANCE = 0.0 # Set between [0.0, inf], if 0.0 hard constraints are applied, only available if EDGE_CONSTRAINT=True    
-POINT_SPRING = True # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
+POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
 DEGREES = True # Set true if pose is represented with degrees as Euler angles.
 N_REPEAT = 2
@@ -68,10 +69,10 @@ N_REST = 1
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 2.5
-STIFFNESS = 200.
+STIFFNESS = 100.
 DAMPING = 25.            
-MASS_DSCALE = 0.5       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
-SPRING_DSCALE = 1.5     # Scales spring forces (increase for more jiggling)
+MASS_DSCALE = 0.8       # Scales mass velocity (Use [0.0, 1.0] range to slow down)
+SPRING_DSCALE = 1.0     # Scales spring forces (increase for more jiggling)
 
 model_dict = model_data.model_dict[MODEL_NAME]
 OBJ_PATH = model_dict["OBJ_PATH"]
@@ -117,6 +118,7 @@ helper_rig = HelperBonesHandler(skeleton,
 # ---------------------------------------------------------------------------- 
 RENDER = True
 plotter = pv.Plotter(notebook=False, off_screen=not RENDER, window_size = WINDOW_SIZE, border=False, shape = (1,2))
+plotter.set_background(BACKGROUND_COLOR)
 
 # Add light
 if ADD_LIGHT:
