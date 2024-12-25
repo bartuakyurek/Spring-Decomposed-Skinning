@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 # =============================================================================
 # Editable parameters
 # =============================================================================
-model_name = "elephant_helpers" #"spot_cc" #"cloth"  
+model_name = "elephant" #"elephant_helpers" #"spot_cc" #"cloth"
 SELECTED_MODELS = [ f"{model_name}_opaque",
                     f"{model_name}_skel",
                     f"{model_name}_cc"
@@ -30,7 +30,8 @@ SELECTED_MODELS = [ f"{model_name}_opaque",
                    #f"{model_name}_opaque"]
                    #f"{model_name}_cc"] # See datadict for available options
 
-elephant_frames     = [1, 3, 8, 12, 15, 19, 23, 67]
+elephant_frames     = [1, 8,18 , 22, 30, 36, 41]
+elephant_helper_frames   = [1, 3, 8, 12, 15, 19, 23, 67]
 spot_frames     = [1, 21, 31, 41, 51]
 monstera_frames = [1, 25, 50, 100, 124, 149, 189]
 duck_frames     = [1, 11, 63, 76, 110, 130, 149]
@@ -43,20 +44,36 @@ REL_GIF_PATH = "../../results/gifs/"
 
 datadict = { 
     
+    "elephant_skel" : {
+                     'gif_path' : REL_GIF_PATH + "elephant_skel.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  elephant_frames,
+    },
+    "elephant_opaque" : {
+                     'gif_path' : REL_GIF_PATH + "elephant_opaque.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes': elephant_frames,
+    },
+    "elephant_cc" : {
+                     'gif_path' : REL_GIF_PATH + "elephant_cc.gif",
+                     'crop'     : [None, None, None, None],
+                     'keyframes':  elephant_frames,
+    },
+    
     "elephant_helpers_skel" : {
                      'gif_path' : REL_GIF_PATH + "elephant_helpers_skel.gif",
                      'crop'     : [None, None, None, None],
-                     'keyframes':  elephant_frames,
+                     'keyframes':  elephant_helper_frames,
     },
     "elephant_helpers_opaque" : {
                      'gif_path' : REL_GIF_PATH + "elephant_helpers_opaque.gif",
                      'crop'     : [None, None, None, None],
-                     'keyframes': elephant_frames,
+                     'keyframes': elephant_helper_frames,
     },
     "elephant_helpers_cc" : {
                      'gif_path' : REL_GIF_PATH + "elephant_helpers_cc.gif",
                      'crop'     : [None, None, None, None],
-                     'keyframes':  elephant_frames,
+                     'keyframes':  elephant_helper_frames,
     },
     
     "spot_opaque" : {
