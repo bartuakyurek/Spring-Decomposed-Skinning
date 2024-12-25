@@ -57,7 +57,7 @@ MAKE_ALL_SPRING = True # Set true to turn all bones spring bones otherwise only 
 # RENDER PARAMETERS
 RENDER_AS_GIF = False # If set to False, render as .mp4
 RENDER_MESH = True
-RENDER_SKEL = True
+RENDER_SKEL = False
 WIREFRAME = False
 RENDER_TEXTURE = False # Automatically treated as False if COLOR_CODE is True
 COLOR_CODE = False # True if you want to visualize the distances between rigid and dynamic
@@ -68,13 +68,13 @@ ADD_LIGHT = True
 LIGHT_INTENSITY = 0.6 # Between [0, 1]
 LIGHT_POS = (10.5, 3.5, 3.5)
                        
-OPACITY = 0.6
+OPACITY = 1.0
 MATERIAL_METALLIC = 0.2
 MATERIAL_ROUGHNESS = 0.3
 BASE_COLOR = [0.8,0.7,1.0] # RGB
 AZIMUTH = 90 # 230 for spot, 90 for elephant
 
-BACKGROUND_COLOR = "white"
+BACKGROUND_COLOR = "black"
 DEFAULT_BONE_COLOR = "white"
 CPBD_BONE_COLOR ="green" # CPBD stands for Controllable PBD (the paper we compare against)
 CPBD_FIXED_BONE_COLOR = "red"
@@ -99,7 +99,7 @@ POINT_SPRING = False # if EDGE_CONSTRAINT=True set COMPLIENCE > 0 otherwise the 
 FRAME_RATE = 24 # 24, 30, 60
 TIME_STEP = 1./FRAME_RATE  
 MASS = 3. # 5
-STIFFNESS = 20. # 120
+STIFFNESS = 120. # 120
 DAMPING = 5. # 10
 MASS_DSCALE = 0.5   #0.5    # Mass velocity damping (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 1.0  #3.0   # Scales spring forces (increase for more jiggling)
