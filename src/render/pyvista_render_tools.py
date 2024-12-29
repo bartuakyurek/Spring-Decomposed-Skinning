@@ -180,7 +180,7 @@ def color_bones(skel_mesh, n_bones, default_color, alt_idxs=None, alt_color=None
     """
     # Define colors
     colors = np.zeros((n_bones))
-    if alt_idxs is not None: colors[alt_idxs] = 1.0
+    if alt_idxs is not None and len(alt_idxs) > 0: colors[alt_idxs] = 1.0
 
     cmap = [default_color, alt_color]
     if np.sum(colors) == n_bones:

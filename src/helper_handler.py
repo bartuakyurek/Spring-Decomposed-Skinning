@@ -70,7 +70,11 @@ class HelperBonesHandler:
 
 
         self.helper_lengths = []
-        helper_bones = np.array(skeleton.rest_bones)[helper_idxs]
+        if len(helper_idxs):
+            helper_bones = np.array(skeleton.rest_bones)[helper_idxs]
+        else:
+            helper_bones = np.array([])
+            
         n_helper = len(helper_bones)
         for i in range(n_helper):
             helper_start = helper_bones[i].start_location
