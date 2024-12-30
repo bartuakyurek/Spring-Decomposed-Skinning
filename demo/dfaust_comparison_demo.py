@@ -15,6 +15,7 @@ distance error isn't on the jiggling tissues.
 @author: bartu
 """
 
+import time
 import numpy as np
 import pyvista as pv
 from matplotlib import cm
@@ -172,7 +173,10 @@ prev_V = V_smpl[0]
 
 n_bones = len(skeleton.rest_bones)
 n_bones_rigid = n_bones - len(helper_idxs)
+tot_time_ours = 0.0
 for frame in range(n_frames):
+    
+    start_time = time.time()
     # WARNING:I'm using pose parameters in the dataset to apply FK for helper bones
     # but when the bones are actually posed with these parameters, the skeleton 
     # is not the same as the provided joint locations from the SMPL model. That is
@@ -224,9 +228,20 @@ for frame in range(n_frames):
     
     prev_J = dyn_posed_locations
     prev_V = V_smpl[frame]
+    
+    tot_time_ours += time.time() - start_time 
 
 J_dyn = np.array(J_dyn, dtype=float)[:,2:,:] # TODO: get rid of the root bone
 # TODO: Report simulation timing
+
+
+def report_timing(tot_time, n_frames, note):
+    print("\n===========================================================")
+    print(f">> INFO: Total time ({note}): ", tot_time * 1000, " ms")
+    print(f">> INFO: Average time ({note}): ", tot_time/n_frames * 1000 , " ms")
+    print("===========================================================\n")
+
+report_timing(tot_time_ours, n_frames, "ours")
 
 # =============================================================================
 # # ---------------------------------------------------------------------------
