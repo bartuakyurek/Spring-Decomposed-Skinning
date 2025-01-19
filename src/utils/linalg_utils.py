@@ -98,7 +98,6 @@ def angle_between_vectors_np(u, v, degrees=True):
         return 0.0
     
     cos_theta = np.dot(u, v) / (norm_u * norm_v)
-    
     angle_rad = np.arccos(np.clip(cos_theta, -1.0, 1.0))
    
     if not degrees:
@@ -256,7 +255,6 @@ def scale_this_matrix(mat, scale):
     -------
     mat : np.ndarray
         Scaled version of the given matrix, has the same shape.
-
     """
     assert mat.shape == (3,3) or mat.shape == (4,4), f"Expected 3x3 or 4x4 matrix to be scaled. Got {mat.shape}."
     
@@ -276,7 +274,7 @@ def get_aligning_rotation(src_vec, target_vec, homogeneous=False):
     
     WARNING: If the given vectors does share the same norm, then the
     rotation will cause scaling as well. Also note that this function
-    fails if the two vectors are opposite of each other.
+    fails if the two vectors are the opposite of each other.
     
     DISCLAIMER: This function is adopted from
     https://gist.github.com/kevinmoran/b45980723e53edeb8a5a43c49f134724
