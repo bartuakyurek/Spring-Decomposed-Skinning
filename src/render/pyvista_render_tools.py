@@ -198,7 +198,7 @@ def add_skeleton_from_Skeleton(plotter, skeleton, alt_idxs=None, is_smpl=False,
                                exclude_root=True):
     # Given the Skeleton instance and helper indices array, this function
     # creates a mesh and colors the bones respectively.
-    #print("WARNING: It is assumed helper_idxs includes root bone so they are one index more than the usual. TODO: resolve it...")
+    
     if is_smpl:
         if alt_idxs is not None: alt_idxs = np.array(alt_idxs) - 1
     

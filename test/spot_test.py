@@ -155,7 +155,7 @@ else: # Load helper rig as an addition to rigid rig
          rigid_bones_blender = data["rigid_idxs"] 
         
     # Adjust weights 
-    original_bones = rigid_bones_blender + 1 # [ 1,  2,  3,  4,  5,  13, 14, 18] TODO: root...
+    original_bones = rigid_bones_blender + 1 # [ 1,  2,  3,  4,  5,  13, 14, 18]  
     W_dyn[:,original_bones] = W_rigid # Set rigid bone weights to original, #[1:] excluding dummy root bone I put in blender
         
     # Adjust helper bone indices
@@ -279,7 +279,7 @@ if RENDER_MESH:
 if RENDER_SKEL: 
     skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton_dyn, 
                                                helper_idxs=helper_idxs, 
-                                               is_smpl=True, # TODO: This is ridiculous, but I have to update the data cause I want to omit the root bone...
+                                               is_smpl=True, 
                                                default_bone_color=DEFAULT_BONE_COLOR, 
                                                spring_bone_color=SPRING_BONE_COLOR)
 
@@ -333,10 +333,10 @@ for i in range(n_frames):
     M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, 
                                                         dyn_posed_handles, 
                                                         return_mat=True, 
-                                                        algorithm=ALGO)[1:]  # TODO: get rid of root
+                                                        algorithm=ALGO)[1:] 
     
-    M_hybrid = M # TODO -> _, q,t = pose_bones(get_transformas=True) and M_rigid = compose_mat(q,t)
-    J_dyn = dyn_posed_handles[2:] # TODO: remove root...
+    M_hybrid = M 
+    J_dyn = dyn_posed_handles[2:] 
     V_dyn = skinning.LBS_from_mat(verts_rest, W_dyn, M_hybrid, 
                                   use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
                

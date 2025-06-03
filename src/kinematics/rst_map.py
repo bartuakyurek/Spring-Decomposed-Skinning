@@ -23,7 +23,7 @@ try:
                                         angle_between_vectors_np,
                                         get_3d_scale, normalize_vec3)
     
-except: # TODO: Can we do imports better, with less repetition?
+except: 
     import __init__
     from src.utils.linalg_utils import(get_aligning_rotation, 
                                         translation_vector_to_matrix,
@@ -57,38 +57,11 @@ def get_RST(src_segment, target_segment, normalize_before_rotation=True):
     if normalize_before_rotation:
         u = u / LA.norm(u)
         v = v / LA.norm(v)
-        #u = normalize_vec3(u) # This step is not necessary as even if the rotation changes scale,
-        #v = normalize_vec3(v) # we scale back to the target length. I'm adding this to see if warnings are silenced.
-        # TODO: normalize_vec3 doesnt normalize?
         assert np.isclose(LA.norm(v), 1) and np.isclose(LA.norm(u), 1)
         
     R = get_aligning_rotation(u, v, homogeneous=True)
     
-    """
-    crossprod = np.cross(u,v)
-    cosA = np.dot(u,v)
-    sinA = LA.norm(crossprod)
-    axis = crossprod / sinA
-    
-    k = 1./(1.+cosA)
-    
-    omega = np.array([ 
-                      [0. , -axis[2], axis[1]],
-                      [axis[2], 0 , -axis[0]],
-                      [-axis[1], axis[0], 0]
-                        ])
-    
-    #rotation_matrix = np.eye(3) + (omega) + (omega @ omega) * k # --> this also works (without normalized axis, same as below) 
-    # See: https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
-    rotation_matrix = np.eye(3)  + omega * sinA + (omega @ omega) * (1- cosA)
-    R = np.eye(4)
-    R[:3,:3] = rotation_matrix
-    
-    """
-    
     src_bs_rotated = R[:3,:3] @ src_bone_space[1]
-    # Check if the angle between is practically zero (note that lower than 1e-6 can fail)
-    # TODO: You could just check if the dot product is zero
     angle = angle_between_vectors_np(src_bs_rotated, tgt_bone_space[1])
     assert angle < 1e-5, f"Expected the rotated bone space vector to be aligned with target at bone space. Got angle {angle} > 1e-5."
     

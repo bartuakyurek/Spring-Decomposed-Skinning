@@ -79,11 +79,8 @@ n_frames = len(J)
 for _ in range(n_repeats):
     for frame in range(n_frames):
         
-        # TODO: Update mesh points
         theta = np.reshape(pose[frame].numpy(), newshape=(-1, 3))
         t = trans[frame].numpy()
-        # TODO: (because it's global t, should be only applied to root)
-        # we're not using t, we should handle it after correcting the FK.
      
         posed_bone_locations = smpl_skeleton.pose_bones(theta)
         skel_mesh.points = posed_bone_locations[2:]

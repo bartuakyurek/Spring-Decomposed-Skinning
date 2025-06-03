@@ -62,7 +62,6 @@ def _get_bone_SVD_optimal_rigid(bone_rest_tuple, bone_cur_tuple):
     return R_mat, t
 
 def _get_bone_RST(bone_rest, bone_cur):
-    # TODO: Do we really need this?
     if type(bone_rest) is list: bone_rest = np.array(bone_rest)
     if type(bone_cur) is list: bone_cur = np.array(bone_cur)
     M = get_RST(bone_rest, bone_cur)
@@ -112,7 +111,7 @@ def get_absolute_transformations(rest_locations,
         3D vectors for absolute translation
     """        
     
-    n_bones = int(len(posed_locations)/2) # TODO: get rid of root bone
+    n_bones = int(len(posed_locations)/2) 
     
     abs_rot_quats = np.empty((n_bones, 4))
     abs_trans =  np.empty((n_bones, 3))
@@ -130,8 +129,8 @@ def get_absolute_transformations(rest_locations,
     # Loop over rest bones
     for i in range(n_bones):
         # Get bone matrices
-        bone_rest = np.array([rest_locations[2*i], rest_locations[2*i+1]]) # TODO: Why don't you directly store np.array in bones?
-        bone_cur = np.array([posed_locations[2*i], posed_locations[2*i+1]]) # TODO: get rid of root bone thing.
+        bone_rest = np.array([rest_locations[2*i], rest_locations[2*i+1]]) #
+        bone_cur = np.array([posed_locations[2*i], posed_locations[2*i+1]]) # 
         
         if algorithm == "SVD": 
             R_mat, t = get_bone_mats(bone_rest, bone_cur)

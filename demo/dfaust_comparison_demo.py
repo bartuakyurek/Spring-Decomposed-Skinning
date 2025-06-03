@@ -57,7 +57,7 @@ DAMPING = 10 #50.
 MASS_DSCALE = 0.2        # Scales mass velocity (Use [0.0, 1.0] range to slow down)
 SPRING_DSCALE = 3.0     # Scales spring forces (increase for more jiggling)
 
-ALGO = "T" # T or RST, if T is selected, only translations will be concerned. Note that RST fails at current stage. TODO: investigate it.
+ALGO = "T" 
 ERR_MODE = "SMPL" # "DFAUST" or "SMPL", determines which mesh to take as reference for error distances
 err_cmap = cm.jet #winter, jet, brg, gnuplot2, autumn, viridis or see https://matplotlib.org/stable/users/explain/colors/colormaps.html
 COLOR_CODE = False
@@ -108,7 +108,7 @@ with np.load(HELPER_RIG_PATH) as data:
 n_verts = V_smpl.shape[1]
 n_rigid_bones = J.shape[1]
 n_helper_bones = helper_joints.shape[0]
-HELPER_ROOT_PARENT = 9 # See https://www.researchgate.net/figure/Layout-of-23-joints-in-the-SMPL-models_fig2_351179264
+HELPER_ROOT_PARENT = 9
 
 assert HELPER_ROOT_PARENT < n_rigid_bones, f"Please select a valid parent index from: [0,..,{n_rigid_bones-1}]."
 assert helper_kintree[0,0] == -1, "Expected first entry to be the root bone."
@@ -117,19 +117,12 @@ assert helper_joints.shape == (n_helper_bones,2,3), f"Expected helper joints to 
 assert helper_W.shape == (n_verts, n_helper_bones), f"Expected helper bone weights to have shape ({n_verts},{n_helper_bones}), got {helper_W.shape}."
 
 helper_kintree = helper_kintree + n_rigid_bones # Update helper indices to match with current skeleton
-helper_kintree[0,0] = HELPER_ROOT_PARENT            # Bind the helper tree to a bone in rigid skeleton
+helper_kintree[0,0] = HELPER_ROOT_PARENT        # Bind the helper tree to a bone in rigid skeleton
 
-helper_parents = helper_kintree[:,0]                  # Extract parents (TODO: could you require less steps to setup helpers please?)
-helper_endpoints = helper_joints[:,-1,:]            # TODO: we should be able to insert helper bones with head,tail data
-                                                    # We can do that by start_points but also we should be able to provide [n_bones,2,3] shape, that is treated as headtail automatically.
-# helper_startpoints --> I assume the data is given as joint-edge structure like in SMPL so I didnt pass startpoints (assumes no offset)
-
-initial_skel_J = J[0] #J_rest
-#global_trans = bpt[-1][0].numpy()  # (3,)
-#if ADD_GLOBAL_T: initial_skel_J += global_trans
-
-#helper_rig_t = initial_skel_J[HELPER_ROOT_PARENT] - helper_endpoints[0] * 0.5
-#helper_endpoints += helper_rig_t # Translate the helper rig
+helper_parents = helper_kintree[:,0]                
+helper_endpoints = helper_joints[:,-1,:]            
+                                                
+initial_skel_J = J[0] 
 
 assert len(helper_parents) == n_helper_bones, f"Expected all helper bones to have parents. Got {len(helper_parents)} parents instead of {n_helper_bones}."
 
@@ -138,7 +131,6 @@ skeleton = create_skeleton(initial_skel_J, smpl_kintree)
 helper_idxs = add_helper_bones(skeleton, 
                                helper_endpoints, 
                                helper_parents,
-                               #startpoints=helper_startpoints
                                )
 helper_idxs = np.array(helper_idxs, dtype=int)
 
@@ -183,8 +175,6 @@ for frame in range(n_frames):
     # because SMPL use a regressor to estimate the bone locations.
     
     diff = J[frame] - J[0]
-    
-    # Set theta to zero, and just use translations because the given poses differ from regressed locations
     theta = np.zeros((n_bones_rigid, 3)) #np.reshape(poses[frame].numpy(),newshape=(-1, 3)) # (24,3)
     theta = np.vstack((theta, helper_poses))                  # (34,3)
     t = np.zeros((n_bones,3))
@@ -195,11 +185,6 @@ for frame in range(n_frames):
 
     rigidly_posed_locations = skeleton.pose_bones(theta, t, degrees=DEGREES) 
     
-    #global_trans = translations[frame].numpy()            # (3,)
-    #if ADD_GLOBAL_T: rigidly_posed_locations += global_trans
-    
-    # Since the regressed joint locations of SMPL is different, keep them as given in the dataset
-    # (Try to comment the couple lines right below this to see the effect.)
     smpl_J_frame = extract_headtail_locations(J[frame], smpl_kintree, exclude_root=False)
     rigidly_posed_locations[:len(smpl_J_frame)] = smpl_J_frame 
     
@@ -211,8 +196,7 @@ for frame in range(n_frames):
         # 1.2 - Get the transformations through IK (cancelled for SMPL)
         #M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, dyn_posed_locations, return_mat=True, algorithm="RST")
         M = inverse_kinematics.get_absolute_transformations(prev_J, dyn_posed_locations, return_mat=True, algorithm="RST")
-        M = M[helper_idxs] # TODO: you may need to change it after excluding root bone? make sure you're retrieving correct transformations
-        
+        M = M[helper_idxs] 
         # 1.3 - Feed them to skinning and obtain dynamically deformed vertices. (cancelled for SMPL)
         delta_jiggle = skinning.LBS_from_mat(prev_V, helper_W, M, use_normalized_weights=NORMALIZE_WEIGHTS) 
         
@@ -231,9 +215,7 @@ for frame in range(n_frames):
     
     tot_time_ours += time.time() - start_time 
 
-J_dyn = np.array(J_dyn, dtype=float)[:,2:,:] # TODO: get rid of the root bone
-# TODO: Report simulation timing
-
+J_dyn = np.array(J_dyn, dtype=float)[:,2:,:] # exclude invisible root 
 
 def report_timing(tot_time, n_frames, note):
     print("\n===========================================================")
@@ -333,14 +315,6 @@ elif ERR_MODE == "DFAUST":
     distance_err_rigid = np.linalg.norm(base_verts - V_smpl, axis=-1)  # (n_frames, n_verts)
     distance_err_dyn = np.linalg.norm(base_verts - V_dyn, axis=-1)  # (n_frames, n_verts)
     
-    # # Clamp errors
-    # clamp_ratio = 0.1
-    # max_err = np.max(distance_err_rigid) 
-    # err_cap = max_err * clamp_ratio
-    # err_idxs = distance_err_rigid > err_cap
-    # distance_err_rigid[err_idxs] = 0.0 #err_cap
-    # distance_err_dyn[err_idxs] = 0.0
-    
     # Select vertices based on Laplacian FFT Scores ---------------------------
     with np.load(DATA_PATH + "laplacian_scores.npz") as data:
         vertex_scores = data["arr_0"]
@@ -386,8 +360,7 @@ result_fname = "dfaust_comparison" + "_" + str(SELECTED_SUBJECT) + "_" + str(SEL
 plotter.open_movie(RESULT_PATH + f"{result_fname}.mp4")
 for frame in range(n_frames):
     rigid_skel_mesh.points = J[frame]   # Update mesh points in the renderer.
-    dyn_skel_mesh.points = J_dyn[frame] # TODO: update it!
-    
+    dyn_skel_mesh.points = J_dyn[frame] 
     dfaust_mesh.points = V_gt[frame]
     rigid_smpl_mesh.points = V_smpl[frame]
     dyn_smpl_mesh.points = V_dyn[frame]

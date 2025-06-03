@@ -4,6 +4,8 @@
 """
 This file is created to demonstrate dynamic animation of a plant pot.
 
+DEPRECATED, use lbs_comparison_demo.py
+
 Created on Thu Oct 10 14:34:34 2024
 @author: bartu
 """

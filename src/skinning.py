@@ -56,11 +56,11 @@ def bind_weights(mesh_verts, skel_verts, method="Envelope", envelope=10.0):
     """
     assert type(mesh_verts) == np.ndarray
     assert type(skel_verts) == np.ndarray
-    # TODO change shapes for these asserts when we hold skeleton data as (n_bones, 2, 3)
+    
     assert len(skel_verts.shape) == 2, f"Expected skeleton vertices to have shape length 2 for (n_bones * 2, 3). Got shape {skel_verts.shape}." 
     assert skel_verts.shape[0] % 2 == 0, f"First dimension of skeleton vertices is expected to be an even number, as every bone has 2 joints. Got {skel_verts.shape[0]} \at dim 0."
     
-    n_bones = int(skel_verts.shape[0] / 2) # TODO: should be changed if we change to shape (n_bones, 2, 3) 
+    n_bones = int(skel_verts.shape[0] / 2) 
     n_verts = mesh_verts.shape[0]
     
     weights = None
@@ -71,8 +71,8 @@ def bind_weights(mesh_verts, skel_verts, method="Envelope", envelope=10.0):
         for i in range(n_verts):
             for j in range(n_bones):
                 vert = mesh_verts[i]
-                line_segment[0] = skel_verts[2*j]     # TODO: change to [j, 0] or even better:
-                line_segment[1] = skel_verts[2*j + 1] # TODO: it should be line_segment = skel_verts[j]
+                line_segment[0] = skel_verts[2*j]     # 
+                line_segment[1] = skel_verts[2*j + 1] # 
                     
                 dist = min_distance(vert, line_segment)
                 

@@ -236,7 +236,7 @@ def set_movement():
             
             p_input[i] += translation_vec  
             if np.sum(np.abs(rotation_degrees)) > 1e-4:
-                p_input[i] += translation_from_rotation # TODO: How can I directly set rotations? This is still translation...
+                p_input[i] += translation_from_rotation 
             
             rest_pose[i] = rotation_degrees # Save rotation for skinning
             rest_t[i] = translation_vec # Save translation for skinning

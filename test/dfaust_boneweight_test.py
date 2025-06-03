@@ -100,9 +100,8 @@ assert helper_W.shape == (n_verts, n_helper_bones), f"Expected helper bone weigh
 helper_kintree = helper_kintree + n_rigid_bones # Update helper indices to match with current skeleton
 helper_kintree[0,0] = HELPER_ROOT_PARENT            # Bind the helper tree to a bone in rigid skeleton
 
-helper_parents = helper_kintree[:,0]                  # Extract parents (TODO: could you require less steps to setup helpers please?)
-helper_endpoints = helper_joints[:,-1,:]            # TODO: we should be able to insert helper bones with head,tail data
-                                                    # We can do that by start_points but also we should be able to provide [n_bones,2,3] shape, that is treated as headtail automatically.
+helper_parents = helper_kintree[:,0]                  # Extract parents  
+helper_endpoints = helper_joints[:,-1,:]             
 
 initial_skel_J = J[0] #J_rest
 helper_rig_t = initial_skel_J[HELPER_ROOT_PARENT] - helper_endpoints[0] * 0.5
@@ -168,7 +167,7 @@ for frame in range(n_frames):
     # 1.2 - Get the transformations through IK
     #M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, dyn_posed_locations, return_mat=True, algorithm="RST")
     M = inverse_kinematics.get_absolute_transformations(prev_J, dyn_posed_locations, return_mat=True, algorithm="RST")
-    M = M[helper_idxs] # TODO: you may need to change it after excluding root bone? make sure you're retrieving correct transformations
+    M = M[helper_idxs] 
     
     # 1.3 - Feed them to skinning and obtain dynamically deformed vertices.
     mesh_points = skinning.LBS_from_mat(prev_V, helper_W, M, use_normalized_weights=NORMALIZE_WEIGHTS) 
@@ -183,8 +182,7 @@ for frame in range(n_frames):
     prev_J = dyn_posed_locations
     prev_V = V_smpl[frame]
 
-J_dyn = np.array(J_dyn, dtype=float)[:,2:,:] # TODO: get rid of the root bone
-# TODO: Report simulation timing
+J_dyn = np.array(J_dyn, dtype=float)[:,2:,:]
 
 # -----------------------------------------------------------------------------
 # Create a plotter object and add meshes
@@ -239,8 +237,8 @@ plotter.camera_position = [[-0.5,  1.5,  5.5],
 selected_bone_idx = -1
 n_bones = n_helper_bones # n_rigid_bones + n_helper_bones 
 bone_start_idx = 0 #n_rigid_bones - 1
-weights = helper_W                     # TODO: extract interface?
-mesh_to_be_colored = dyn_smpl_mesh     # TODO: extract interface?
+weights = helper_W                    
+mesh_to_be_colored = dyn_smpl_mesh    
 
 def change_colors():
     global selected_bone_idx
@@ -250,7 +248,7 @@ def change_colors():
         selected_bone_idx = bone_start_idx
         
     selected_bone_idx += 1
-    if selected_bone_idx >= n_bones-1: # TODO: remove -1 when you get rid of root bone
+    if selected_bone_idx >= n_bones-1: 
         selected_bone_idx = -1
     
     if selected_bone_idx >= 0:
@@ -282,7 +280,7 @@ plotter.open_movie(RESULT_PATH + f"{result_fname}.mp4")
 n_frames = V_smpl.shape[0]
 for frame in range(n_frames):
     rigid_skel_mesh.points = J[frame]   # Update mesh points in the renderer.
-    dyn_skel_mesh.points = J_dyn[frame] # TODO: update it!
+    dyn_skel_mesh.points = J_dyn[frame] 
     
     dfaust_mesh.points = V_gt[frame]
     rigid_smpl_mesh.points = V_smpl[frame]

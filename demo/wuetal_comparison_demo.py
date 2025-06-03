@@ -151,7 +151,7 @@ print("> Handle locations at rest :\n", handle_locations_rest)
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # SETUP RIGS
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-W_rigid = W_dyn = np.array(original_weights)  # TODO: This is redundant.
+W_rigid = W_dyn = np.array(original_weights)  
 
 print(">> WARNING: Assuming the provided handle locations are sparse point handles ")
 
@@ -165,52 +165,41 @@ skeleton = Skeleton(root_vec = [0.,0.,0.]) # pseudo root bone
 # Insert bones to skeleton given the kintree
 assert len(blender_kintree) == len(handle_locations_rest), f"Expected the blender exported kintree to include all the bones. Found kintree of shape {blender_kintree.shape} for {len(handle_locations_rest)}"
 
-"""
-# WARNING This assumes all bones are point handles! 
-for  parentchild in blender_kintree: # WARNING: This assumes kintree has all the bones
-    parent, child = parentchild
-    point_location = handle_locations_rest[child]
-    parent_idx = parent + 1 # TODO: This is because of the dummy root bone in skeleton
-    skeleton.insert_bone(endpoint = point_location, 
-                              startpoint = point_location,
-                              parent_idx = parent_idx) 
-    
-"""
+
 # Mark spring bones according to MODE
 if MAKE_ALL_SPRING: # Make all bones in the existing rig spring bones
-    helper_idxs = [i+1 for i in range(len(handle_locations_rest))] # WARNING TODO: +1 is because of the dummy root bone in the rig, should be removed after its removal.
+    helper_idxs = [i+1 for i in range(len(handle_locations_rest))] #
     original_bones = helper_idxs
     
     # instert bones as point handles 
     for  parentchild in blender_kintree: # WARNING: This assumes kintree has all the bones
          parent, child = parentchild
          point_location = handle_locations_rest[child]
-         parent_idx = parent + 1 # TODO: This is because of the dummy root bone in skeleton
+         parent_idx = parent + 1 #
          skeleton.insert_bone(endpoint = point_location, 
                               startpoint = point_location,
                               parent_idx = parent_idx) 
     
 else: 
-    original_bones = [i+1 for i in range(len(handle_locations_rest))] # WARNING TODO: +1 is because of the dummy root bone in the rig, should be removed after its removal.
+    original_bones = [i+1 for i in range(len(handle_locations_rest))] # 
     
     helper_idxs = list(original_bones) # Only mark the spring bones as helper bones
     for i,rigid_idx in enumerate(rigid_bones_blender):
-        helper_idxs.remove(rigid_idx+1) # WARNING TODO: +1 is because of the dummy root bone in the rig, should be removed after its removal.
+        helper_idxs.remove(rigid_idx+1) # 
     
     # if only helper bones will be spring bones, insert them as chains 
-    orig_helper_idxs = np.array(helper_idxs) - 1 # TODO: remove dummy root
+    orig_helper_idxs = np.array(helper_idxs) - 1 #
     for  parentchild in blender_kintree: # WARNING: This assumes kintree has all the bones
          parent, child = parentchild
          
          if np.any(orig_helper_idxs == child):
-             #start_pt = handle_locations_rest[parent]  # TODO: remove dummy root #skeleton_joints[child][0]
-             start_pt = skeleton_joints[child][0] #+ np.array([0.0, 0.7, 0.0])
+             start_pt = skeleton_joints[child][0]
              end_pt = skeleton_joints[child][1]
          else:
              start_pt = handle_locations_rest[child]
              end_pt = handle_locations_rest[child]
          
-         parent_idx = parent + 1 # TODO: This is because of the dummy root bone in skeleton
+         parent_idx = parent + 1 #
          skeleton.insert_bone(endpoint = end_pt, 
                               startpoint = start_pt,
                               parent_idx = parent_idx) 
@@ -321,7 +310,7 @@ if RENDER_SKEL:
                                                 alt_idxs=fixed_handles,
                                                 alt_bone_color=CPBD_FIXED_BONE_COLOR)
 
-#set_lights(plotter)
+
 adjust_camera_spot(plotter)
 
 # ---------- Third Plot (Ours) ----------------
@@ -342,11 +331,11 @@ if RENDER_MESH:
 if RENDER_SKEL: 
     skel_mesh_dyn = add_skeleton_from_Skeleton(plotter, skeleton, 
                                                alt_idxs=np.array(helper_idxs), 
-                                               is_smpl=True, # TODO: This is ridiculous, but I have to update the data cause I want to omit the root bone...
+                                               is_smpl=True, 
                                                default_bone_color=DEFAULT_BONE_COLOR, 
                                                alt_bone_color=SPRING_BONE_COLOR)
 adjust_camera_spot(plotter)
-#set_lights(plotter)
+
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # COMPUTE DEFORMATION
@@ -390,7 +379,7 @@ for i in range(n_frames):
                                   use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
 
     V_anim_rigid.append(V_lbs)
-    J_anim_rigid.append(rigidly_posed_handles[2:]) # TODO: remove dummy root
+    J_anim_rigid.append(rigidly_posed_handles[2:]) # 
     
     tot_time_lbs += time.time() - start_time 
     # --------- Ours -----------------------------------------------------------
@@ -401,10 +390,10 @@ for i in range(n_frames):
     M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, 
                                                         dyn_posed_handles, 
                                                         return_mat=True, 
-                                                        algorithm=ALGO)[1:]  # TODO: get rid of root
+                                                        algorithm=ALGO)[1:]  # 
     
-    M_hybrid[helper_idxs-1] = M[helper_idxs-1] # TODO -> _, q,t = pose_bones(get_transformas=True) and M_rigid = compose_mat(q,t)
-    J_dyn = dyn_posed_handles[2:] # TODO: remove root...
+    M_hybrid[helper_idxs-1] = M[helper_idxs-1] 
+    J_dyn = dyn_posed_handles[2:] # 
     V_dyn = skinning.LBS_from_mat(verts_rest, W_dyn, M_hybrid, 
                                   use_normalized_weights=AUTO_NORMALIZE_WEIGHTS)
 

@@ -262,7 +262,7 @@ class Skeleton():
         Returns
         -------
         final_bone_locations : np.ndarray
-            Has shape (n_bones * 2). TODO: make it (n_bones, 2) and please exclude root from n_bones.
+            Has shape (n_bones * 2). 
             Here n_bones include root bone but it's often confusing. 
 
         """
@@ -323,14 +323,7 @@ class Skeleton():
         
         abs_rot_quat, abs_trans = self.get_absolute_transformations(theta, trans, degrees)
         final_bone_locations = self.compute_bone_locations(abs_rot_quat, abs_trans)
-    
-        #if exclude_root:
-            # Warning: This still assumes absolute transformations are returned for all joints
-            # so it doesn't exclude root. It just excludes root bone assuming the descedents are
-            # connected to them without an offset. 
-            # TODO: Couldn't we design better so that we won't need this option at all?
-        #    final_bone_locations = final_bone_locations[2:] 
-            
+  
         if get_transforms:
             return final_bone_locations, abs_rot_quat, abs_trans
         return final_bone_locations
@@ -451,8 +444,6 @@ class Skeleton():
 # =============================================================================
 # Helper Routines    
 # =============================================================================
-# TODO: Could we move these functions to skeleton class so that every other test
-# can utilize them?
 def create_skeleton(joint_locations, kintree):
     """
     WARNING: This function is suited for SMPL-like data where joints are treated
@@ -490,21 +481,18 @@ def create_skeleton_from(bone_locations, kintree):
 
     n_bones = len(kintree)
     
-    skeleton = Skeleton(root_vec=bone_locations[kintree[0][1]][0]) ## TODO: this would be global translation when we remove root_bone
+    skeleton = Skeleton(root_vec=bone_locations[kintree[0][1]][0]) #
     
     print(">> Warning: kintree is modified to fit the implementation. This should be removed once the root bone issue is resolved.")
     for i in range(n_bones):
         parent_id, bone_id = kintree[i]
         skeleton.insert_bone(
-                              parent_idx = parent_id + 1 , # TODO: this is because of root bone issue
+                              parent_idx = parent_id + 1 , # 
                               startpoint =  bone_locations[bone_id][0],
                               endpoint = bone_locations[bone_id][1]
                              ) 
     return skeleton
                                   
-    
-# TODO: this could be a general function to add multiple bones because 
-# there's nothing specific about helper bones here.
 def add_helper_bones(test_skeleton, 
                      helper_bone_endpoints, 
                      helper_bone_parents,

@@ -17,10 +17,7 @@ from .skeleton import Skeleton, Bone
 from .mass_spring import MassSpringSystem
 
 class HelperBonesHandler:
-    
-    # TODO: We should be able to change the individual masses and stiffness, 
-    # for optimization we should be able to provide an array of particle mass
-    # that will update the individual Particle.mass in the system
+ 
     def __init__(self, 
                  skeleton, 
                  helper_idxs, 
@@ -53,9 +50,6 @@ class HelperBonesHandler:
         assert type(point_spring) == bool, f"Expected point_spring parameter to \
                                              be boolean. Got {type(point_spring)}."
        
-        # TODO: If what you're returning is actually the JOINT locations, why are you
-        # calling these variables and functions as BONE locations? What is a location of
-        # a bone afterall?
         self.skeleton = skeleton
         self.prev_sim_locations = None
         
@@ -148,13 +142,13 @@ class HelperBonesHandler:
         assert free_mass.mass > 1e-18, f"Expected free mass to have a weight greater than zero, got mass {free_mass.mass}."
     
         direction = bone_start - free_mass.center
-        d_norm = np.linalg.norm(direction) # TODO: dir_norm would be a better name
+        d_norm = np.linalg.norm(direction) 
         
         #if d_norm < 1e-8:
         #    direction += np.array([0.01, 0.01, 0.01]) # fix for point handles case
         #    d_norm = np.linalg.norm(direction) 
         complied_orig_length = original_length * np.exp(comp)
-        scale = d_norm - complied_orig_length # TODO: Horrible naming! This isn't scale but difference.
+        scale = d_norm - complied_orig_length 
                                         
         if d_norm > 1e-20:
             adjust_vec = (direction/d_norm) * scale # Normalize direction and scale it
@@ -205,7 +199,6 @@ class HelperBonesHandler:
         diff = rigidly_posed_locations - self.prev_sim_locations # rigidly_posed_locations is the target. 
         helper_end_idxs = (2 * self.helper_idxs) + 1 # bone locations have 2 joints per bone
         translate_vec = diff[helper_end_idxs] 
-        # TODO: how to handle an offset? For now, we assume there's no offset between parent and this bone.
  
         # Step 1 - Translate the fixed masses at the endpoint of each helper bone
         for i, helper_idx in enumerate(self.helper_idxs):
@@ -219,7 +212,7 @@ class HelperBonesHandler:
         free_mass_locations = cur_mass_locations[self.free_idxs] 
         simulated_locations[helper_end_idxs] = free_mass_locations 
         
-        # Step 4 - Adjust the bone starting points to parent's simulated end point + TODO: offset?
+        # Step 4 - Adjust the bone starting points to parent's simulated end point 
         for i, helper_idx in enumerate(self.helper_idxs):            
             bone = self.skeleton.rest_bones[helper_idx]
             end_idx = helper_idx * 2 + 1
@@ -227,7 +220,7 @@ class HelperBonesHandler:
             # Adjust the bone to preserve its original length (optional)
             if self.FIXED_SCALE:
                 free_idx = self.free_idxs[i]  # Warning: this assumes every bone has one free index (and one fixed) 
-                start_idx = helper_idx * 2    # TODO: could we change the data storage such that we don't have to remember to multiply by 2 every time?
+                start_idx = helper_idx * 2    
                 orig_length = self.helper_lengths[i]  #* (1+self.compliance)     
                 
                 #if orig_length < 1e-8: # If point handle
@@ -245,7 +238,6 @@ class HelperBonesHandler:
                 
                 previous_start = simulated_locations[child_start_idx].copy() # without copying, translation gets zero.
                 simulated_locations[child_start_idx] = child_bone_start # Save the new start location
-                # TODO: how about if a child has an offset? we should add it to child_bone_start
                 # Translate the child endpoint too
                 translation_amount = child_bone_start - previous_start
                 #if np.sum(translation_amount) > 0: print("translation: ", translation_amount)
@@ -253,8 +245,6 @@ class HelperBonesHandler:
                 
         # This part didn't work, I'll keep our kinematic constraints outside of PBD, without velocity updates.      
         # # Update final mass locations and velocities --> PBD updating velocities after constraints
-        # # TODO: Can Step 4 above moved inside mass_spring? because it is a constraint. 
-        # # If so, the lines below is already in mass_spring, we can remove this repetition.
         # for i, helper_idx in enumerate(self.helper_idxs):
 
         #     free_i = int(2*i)

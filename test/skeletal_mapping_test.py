@@ -40,7 +40,7 @@ from src.render.pyvista_render_tools import add_skeleton
 from src.skeleton import Skeleton, create_skeleton, add_helper_bones
 
 # ---------------------------------------------------------------------------- 
-# Set skeletal animation data (TODO: Can we do it in another script and retrieve the data with 1-2 lines?)
+# Set skeletal animation data 
 # ---------------------------------------------------------------------------- 
 TGF_PATH = IGL_DATA_PATH + "arm.tgf"
 joint_locations, kintree, _, _, _, _ = igl.read_tgf(TGF_PATH)
@@ -49,7 +49,7 @@ pose = poses.igl_arm_pose
 # ----------------------------------------------------------------------------
 # Declare parameters
 # ----------------------------------------------------------------------------
-MODE = "Dynamic" #"Rigid" or "Dynamic" TODO: could you use more robust way to set it?
+MODE = "Dynamic" #"Rigid" or "Dynamic" 
 FIXED_SCALE = True # Set true if you want the jiggle bone to preserve its length 
 POINT_SPRING = False # Set true for less jiggling (point spring at the tip), set False to jiggle the whole bone as a spring.
 EXCLUDE_ROOT = True # Set true in order not to render the invisible root bone (it's attached to origin)
@@ -84,13 +84,13 @@ another_helper_idxs = add_helper_bones(test_skeleton,
                                        helper_bone_parents = helper_idxs,
                                        offset_ratio=0.0,
                                        )
-# TODO: This wasn't the way we supposed to add helpers. Can we change it to a single call?
+
 another_helper_idxs2 = add_helper_bones(test_skeleton,
                                        helper_bone_endpoints * 2, 
                                        helper_bone_parents = another_helper_idxs,
                                        offset_ratio=0.0,
                                        )
-# TODO: Again, can we change the adding of the helpers a single call by declaring
+
 all_helper_idxs = helper_idxs + another_helper_idxs + another_helper_idxs2
 helper_rig = HelperBonesHandler(test_skeleton, 
                                 all_helper_idxs,
@@ -116,9 +116,6 @@ plotter.camera.view_angle = 90 # This works like zoom actually
 # ---------------------------------------------------------------------------- 
 # Add skeleton mesh based on T-pose locations
 # ---------------------------------------------------------------------------- 
-# TODO: rename get_rest_bone_locations() to get_rest_bones() that will also return
-# line_segments based on exclude_root variable
-# (note that you need to re-run other skeleton tests)
 n_bones = len(test_skeleton.rest_bones)
 rest_bone_locations = test_skeleton.get_rest_bone_locations(exclude_root=EXCLUDE_ROOT)
 line_segments = np.reshape(np.arange(0, 2*(n_bones-1)), (n_bones-1, 2))
@@ -136,8 +133,6 @@ def render_loop():
         for pose_idx in range(n_poses): # Loop keyframes, this could be refactored.
             for frame_idx in range(FRAME_RATE):
                 
-                # TODO: add function to animation utils, prep_poses_from_keyframes()
-                # to prepare poses for every frame beforehand.
                 if pose_idx: # If not the first pose
                         theta = lerp(pose[pose_idx-1], pose[pose_idx], frame_idx/FRAME_RATE)
                 else:        # Lerp with the last pose for boomerang
@@ -155,7 +150,7 @@ def render_loop():
                 diff = np.linalg.norm(estimated_locations - posed_locations)
                 assert diff < 1e-12, f"Expected difference to be less than 1e-12, got {diff}."
                
-                skel_mesh_points = estimated_locations[2:] # TODO: get rig of root bone convention
+                skel_mesh_points = estimated_locations[2:] # exclude root
                 assert skel_mesh_points.shape == ( (n_bones-EXCLUDE_ROOT) * 2, 3)
                 
                 skel_mesh.points = skel_mesh_points # Update mesh points in the renderer.

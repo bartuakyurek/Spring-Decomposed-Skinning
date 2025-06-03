@@ -113,7 +113,7 @@ def adjust_camera(plotter, MODEL_NAME, resize_window=False):
     elif MODEL_NAME == "monstera":
         plotter.camera_position = 'zy'
         plotter.camera.position = [-8.0, 2.0, 0]
-        plotter.camera.view_angle = 20 # This works like zoom actually
+        plotter.camera.view_angle = 20 
         plotter.camera.focal_point = (0.0, 0.65, 0.0)
     else:
         plotter.camera.tight(padding=3, view="yz")

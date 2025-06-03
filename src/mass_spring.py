@@ -132,7 +132,6 @@ class Spring:
                  verbose : bool = VERBOSE
                  ):
         
-        # TODO: Are you going to implement squared norms for optimized performance?
         self.k = stiffness
         self.kd = damping
         self.distance_scale = dscale
@@ -323,7 +322,7 @@ class MassSpringSystem:
             
     def simulate_euler(self, dt=None):
         """
-        Mass-Spring simulation with explicit Euler Integration (TODO: needs verification).
+        Mass-Spring simulation
 
         Parameters
         ----------
@@ -423,13 +422,7 @@ class MassSpringSystem:
         free_mass_indices = np.delete(indices, self.fixed_indices)
         return np.array(free_mass_indices)
         
-    def remove_mass(self, mass_idx):
-        # TODO: remove mass dictionary entry
-        print("WARNING: This function remove_mass() have not been implemented yet.")
-        pass
-    
     def translate_mass(self, mass_idx, translate_vec):
-        # TODO: why don't you write a typecheck function in sanity.py?
         assert type(mass_idx) is int, f"Expected mass_idx to be int, got {type(mass_idx)}"
         assert mass_idx < len(self.masses), "Provided mass index is out of bounds."
         
@@ -469,14 +462,12 @@ class MassSpringSystem:
         pass
     
     def get_mass_locations(self):
-        # TODO: could we store it dynamically rather than gathering them every time?
         mass_locations = np.zeros((len(self.masses),_SPACE_DIMS_))
         for i, mass_particle in enumerate(self.masses):
             mass_locations[i] = mass_particle.center
         return mass_locations
     
     def get_spring_meshes(self):
-        # TODO: is this function even used? we should remove it.
         meshes = []
         for line in self.connections:
             mass_first = self.masses[line[0]]

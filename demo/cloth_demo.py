@@ -158,7 +158,7 @@ if RENDER_MESH:
 plotter.open_movie(RESULT_PATH + f"/{FNAME}-{ALGO}-{MODE}-Rig{RIG_OPTION}.mp4")
 n_poses = keyframe_poses.shape[0]
 n_bones = len(skeleton.rest_bones)
-trans = np.zeros((n_bones, 3)) # TODO: remove +1 when you remove root bone issue
+trans = np.zeros((n_bones, 3)) 
 
 # ---------------------------------------------------------------------------------
 # Simulate and save data
@@ -176,17 +176,17 @@ for rep in range(N_REPEAT + N_REST):         # This can be refactored too as it'
               
             posed_locations = skeleton.pose_bones(theta, trans, degrees=DEGREES)
             abs_rot_quat, abs_trans = skeleton.get_absolute_transformations(theta, trans, degrees=DEGREES)
-            M_rigid = skinning.get_transform_mats_from_quat_rots(abs_trans, abs_rot_quat)[1:] # TODO...
+            M_rigid = skinning.get_transform_mats_from_quat_rots(abs_trans, abs_rot_quat)[1:] # exclude root
                 
             if MODE=="Rigid":
-                skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
-                if RENDER_MESH: mesh_points = skinning.LBS_from_quat(V_rest, W, abs_rot_quat[1:], abs_trans[1:], use_normalized_weights=NORMALIZE_WEIGHTS) # TODO: get rid of root
+                skel_mesh_points = posed_locations[2:] # root 
+                if RENDER_MESH: mesh_points = skinning.LBS_from_quat(V_rest, W, abs_rot_quat[1:], abs_trans[1:], use_normalized_weights=NORMALIZE_WEIGHTS) # root
             else:
                 posed_locations = helper_rig.update_bones(posed_locations) # Update the rigidly posed locations
-                skel_mesh_points = posed_locations[2:] # TODO: get rid of root bone convention
+                skel_mesh_points = posed_locations[2:] # root 
                    
-                rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False) # TODO: Remove this line from here
-                M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, posed_locations, return_mat=True, algorithm=ALGO)[1:]  # TODO: get rid of root
+                rest_bone_locations = skeleton.get_rest_bone_locations(exclude_root=False) 
+                M = inverse_kinematics.get_absolute_transformations(rest_bone_locations, posed_locations, return_mat=True, algorithm=ALGO)[1:]  # root
                     
                 M_hybrid = M_rigid
                 M_hybrid[helper_idxs] = M[helper_idxs]
