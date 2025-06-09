@@ -1,6 +1,7 @@
 # Spring Decomposed Skinning (SDS)
 
-For further information, please refer to our paper [SDS webpage](https://bartuakyurek.github.io/publications/SDS/)
+> [!IMPORTANT]  
+> For further information, please refer to our paper [SDS webpage](https://bartuakyurek.github.io/publications/SDS/)
 
 ### Summary of Features
 
